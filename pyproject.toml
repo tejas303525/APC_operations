@@ -1,0 +1,17 @@
+[project]
+name = "apc_operations"
+authors = [{ name = "APC", email = "admin@apc.com"}]
+description = "APC Operations System for Shipping, Transportation, QC, Security, and Production"
+requires-python = ">=3.10"
+readme = "README.md"
+dynamic = ["version"]
+dependencies = [
+    "frappe",
+]
+
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.module]
+name = "apc_operations"

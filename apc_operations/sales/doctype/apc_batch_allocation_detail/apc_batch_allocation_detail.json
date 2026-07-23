@@ -1,0 +1,161 @@
+{
+ "actions": [],
+ "creation": "2026-05-01 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "allocation_item_section",
+  "sales_demand_item",
+  "item",
+  "item_name",
+  "batch",
+  "batch_number",
+  "column_break_1",
+  "coa",
+  "manufacturing_date",
+  "fifo_sequence",
+  "quantity_section",
+  "required_quantity",
+  "allocated_quantity",
+  "dispatched_quantity",
+  "remaining_quantity",
+  "warehouse",
+  "status"
+ ],
+ "fields": [
+  {
+   "fieldname": "allocation_item_section",
+   "fieldtype": "Section Break",
+   "label": "Allocation Item"
+  },
+  {
+   "fieldname": "sales_demand_item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Sales Demand Item",
+   "options": "APC Sales Demand Item"
+  },
+  {
+   "fetch_from": "sales_demand_item.item",
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Product",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Item Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "batch",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Batch",
+   "options": "APC Batch",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "batch.batch_number",
+   "fieldname": "batch_number",
+   "fieldtype": "Data",
+   "label": "Batch Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "coa",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "COA",
+   "options": "APC COA",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "batch.manufacturing_date",
+   "fieldname": "manufacturing_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Manufacturing Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fifo_sequence",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "FIFO Sequence"
+  },
+  {
+   "fieldname": "quantity_section",
+   "fieldtype": "Section Break",
+   "label": "Quantities"
+  },
+  {
+   "fieldname": "required_quantity",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Required Quantity",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "allocated_quantity",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Allocated Quantity",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "dispatched_quantity",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Dispatched Quantity",
+   "non_negative": 1,
+   "default": 0
+  },
+  {
+   "fieldname": "remaining_quantity",
+   "fieldtype": "Float",
+   "label": "Remaining Quantity",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "batch.warehouse",
+   "fieldname": "warehouse",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Warehouse",
+   "options": "Warehouse",
+   "read_only": 1
+  },
+  {
+   "default": "Allocated",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Allocated\nPartially Dispatched\nDispatched\nReleased\nCancelled"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-05-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Sales",
+ "name": "APC Batch Allocation Detail",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "fifo_sequence",
+ "sort_order": "ASC",
+ "states": []
+}

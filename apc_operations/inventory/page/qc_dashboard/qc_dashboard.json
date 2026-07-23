@@ -1,0 +1,30 @@
+{
+ "creation": "2026-05-05 00:00:00.000000",
+ "doctype": "Page",
+ "module": "Inventory",
+ "name": "qc-dashboard",
+ "page_name": "qc-dashboard",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Quality Manager"
+  },
+  {
+   "role": "Quality User"
+  },
+  {
+   "role": "Production Manager"
+  },
+  {
+   "role": "Production User"
+  },
+  {
+   "role": "Shipping Manager"
+  }
+ ],
+ "standard": "Yes",
+ "system_page": 0,
+ "title": "QC Dashboard"
+}

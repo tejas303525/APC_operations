@@ -1,0 +1,88 @@
+{
+ "actions": [],
+ "creation": "2026-05-05 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "nas_base_path",
+  "section_break_1",
+  "nas_server",
+  "nas_share",
+  "nas_username",
+  "nas_password",
+  "notes_section",
+  "notes"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Enable NAS Storage"
+  },
+  {
+   "depends_on": "enabled",
+   "fieldname": "nas_base_path",
+   "fieldtype": "Data",
+   "label": "NAS Base Path",
+   "description": "Absolute path on the server filesystem where NAS is mounted. Example: /mnt/nas/APC Operations"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_1",
+   "fieldtype": "Section Break",
+   "label": "Connection Details (Informational)"
+  },
+  {
+   "fieldname": "nas_server",
+   "fieldtype": "Data",
+   "label": "NAS Server / Host"
+  },
+  {
+   "fieldname": "nas_share",
+   "fieldtype": "Data",
+   "label": "Share Name"
+  },
+  {
+   "fieldname": "nas_username",
+   "fieldtype": "Data",
+   "label": "Username"
+  },
+  {
+   "fieldname": "nas_password",
+   "fieldtype": "Password",
+   "label": "Password"
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text",
+   "label": "Notes"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-05-05 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Zoho",
+ "name": "APC NAS Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

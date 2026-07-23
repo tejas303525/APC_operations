@@ -1,0 +1,209 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"Dcz5TvUXsx\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Shipping Console\",\"col\":4}},{\"id\":\"sec_console_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Security Console\",\"col\":4}},{\"id\":\"qc_console_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"QC Console\",\"col\":4}},{\"id\":\"fdFtCcTp_W\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"JjScDkZoO2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Create Booking\",\"col\":3}},{\"id\":\"5lWNWGDUsL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pending CRO\",\"col\":3}},{\"id\":\"vKjzXOwzUW\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Generate Transport\",\"col\":3}},{\"id\":\"HLYxAXKrG0\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"View Shipments\",\"col\":3}},{\"id\":\"sXDUMIibIg\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"vvGt-IVRTQ\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\">QUICK LINKS</span>\",\"col\":12}},{\"id\":\"CcI7fKQa_2\",\"type\":\"card\",\"data\":{\"card_name\":\"Shipping Bookings\",\"col\":4}},{\"id\":\"uZ_IeuYrub\",\"type\":\"card\",\"data\":{\"card_name\":\"Transportation\",\"col\":4}}]",
+ "creation": "2026-04-27 14:05:58.196405",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "up-line",
+ "idx": 0,
+ "indicator_color": "",
+ "is_hidden": 0,
+ "label": "Shipping",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Shipping Bookings",
+   "link_count": 5,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Shipping Booking",
+   "link_count": 0,
+   "link_to": "Shipping Booking",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Transport Schedule",
+   "link_count": 0,
+   "link_to": "Transport Schedule",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Security Dispatch",
+   "link_count": 0,
+   "link_to": "Security Dispatch",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Gate Pass",
+   "link_count": 0,
+   "link_to": "Gate Pass",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Bill of Lading",
+   "link_count": 0,
+   "link_to": "Bill of Lading",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Transportation",
+   "link_count": 2,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Delivery Order",
+   "link_count": 0,
+   "link_to": "Delivery Order",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Container Detail",
+   "link_count": 0,
+   "link_to": "Container Detail",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-04-28 16:59:01.257692",
+ "modified_by": "Administrator",
+ "module": "Shipping",
+ "name": "Shipping",
+ "number_cards": [
+  {
+   "label": "Pending CROs",
+   "number_card_name": "Pending CROs"
+  },
+  {
+   "label": "Pending Pull Outs",
+   "number_card_name": "Pending Pull Outs"
+  },
+  {
+   "label": "Upcoming Cutoffs",
+   "number_card_name": "Upcoming Cutoffs"
+  },
+  {
+   "label": "Pending Transport",
+   "number_card_name": "Pending Transport"
+  },
+  {
+   "label": "Open Gate Passes",
+   "number_card_name": "Open Gate Passes"
+  },
+  {
+   "label": "DG Pending Approval",
+   "number_card_name": "DG Pending Approval"
+  }
+ ],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [
+  {
+   "role": "Shipping Manager"
+  },
+  {
+   "role": "Shipping User"
+  },
+  {
+   "role": "Transportation Manager"
+  }
+ ],
+ "sequence_id": 3.0,
+ "shortcuts": [
+  {
+   "color": "Purple",
+   "label": "Shipping Console",
+   "link_to": "shipping-console",
+   "type": "Page"
+  },
+  {
+   "color": "Cyan",
+   "label": "Security Console",
+   "link_to": "security-console",
+   "type": "Page"
+  },
+  {
+   "color": "Orange",
+   "label": "QC Console",
+   "link_to": "qc-console",
+   "type": "Page"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "format": "{count} Pending",
+   "label": "Create Booking",
+   "link_to": "Shipping Booking",
+   "stats_filter": "[[\"Shipping Booking\",\"booking_status\",\"=\",\"Draft\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "format": "{count} Awaiting CRO",
+   "label": "Pending CRO",
+   "link_to": "Shipping Booking",
+   "stats_filter": "[[\"Shipping Booking\",\"cro_status\",\"=\",\"Pending\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "format": "{count} Scheduled",
+   "label": "Generate Transport",
+   "link_to": "Transport Schedule",
+   "stats_filter": "[[\"Transport Schedule\",\"transport_status\",\"in\",[\"Scheduled\",\"Pending\"],false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Cyan",
+   "doc_view": "List",
+   "format": "{count} In Transit",
+   "label": "View Shipments",
+   "link_to": "Shipping Booking",
+   "stats_filter": "[[\"Shipping Booking\",\"transport_status\",\"in\",[\"In Progress\",\"Scheduled\"],false]]",
+   "type": "DocType"
+  }
+ ],
+ "title": "Shipping"
+}

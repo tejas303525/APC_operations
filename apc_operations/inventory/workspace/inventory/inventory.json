@@ -1,0 +1,161 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"invQCShortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"QC Dashboard\",\"col\":6}},{\"id\":\"invBatchShortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Batch Allocation\",\"col\":6}},{\"id\":\"invSpacer1\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"invHeaderQL\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\">QUICK LINKS</span>\",\"col\":12}},{\"id\":\"invCardQC\",\"type\":\"card\",\"data\":{\"card_name\":\"Quality Control\",\"col\":4}},{\"id\":\"invCardBatch\",\"type\":\"card\",\"data\":{\"card_name\":\"Batch Management\",\"col\":4}},{\"id\":\"invCardCOA\",\"type\":\"card\",\"data\":{\"card_name\":\"Certificates of Analysis\",\"col\":4}}]",
+ "creation": "2026-05-05 00:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "package",
+ "idx": 0,
+ "indicator_color": "",
+ "is_hidden": 0,
+ "label": "Inventory",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Quality Control",
+   "link_count": 2,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "QC Report Request",
+   "link_count": 0,
+   "link_to": "QC Report Request",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Security Inspection",
+   "link_count": 0,
+   "link_to": "Security Inspection",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Batch Management",
+   "link_count": 2,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "APC Batch",
+   "link_count": 0,
+   "link_to": "APC Batch",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "APC Batch Allocation",
+   "link_count": 0,
+   "link_to": "APC Batch Allocation",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Certificates of Analysis",
+   "link_count": 1,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "APC COA",
+   "link_count": 0,
+   "link_to": "APC COA",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-05-05 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Inventory",
+ "name": "Inventory",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Quality Manager"
+  },
+  {
+   "role": "Quality User"
+  },
+  {
+   "role": "Production Manager"
+  },
+  {
+   "role": "Production User"
+  },
+  {
+   "role": "Shipping Manager"
+  }
+ ],
+ "sequence_id": 5.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "label": "QC Dashboard",
+   "link_to": "qc-dashboard",
+   "type": "Page"
+  },
+  {
+   "color": "Teal",
+   "label": "Batch Allocation",
+   "link_to": "batch-allocation-dashboard",
+   "type": "Page"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "label": "QC Requests",
+   "link_to": "QC Report Request",
+   "type": "DocType"
+  },
+  {
+   "color": "Purple",
+   "doc_view": "List",
+   "label": "COA Register",
+   "link_to": "APC COA",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Batch Register",
+   "link_to": "APC Batch",
+   "type": "DocType"
+  }
+ ],
+ "title": "Inventory"
+}

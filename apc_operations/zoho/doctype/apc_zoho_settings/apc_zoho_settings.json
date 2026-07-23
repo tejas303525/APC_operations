@@ -1,0 +1,160 @@
+{
+ "actions": [],
+ "autoname": "format:APC Zoho Settings",
+ "creation": "2026-05-04 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "api_configuration_section",
+  "api_key",
+  "api_secret",
+  "column_break_1",
+  "organization_id",
+  "environment",
+  "section_endpoints",
+  "sales_order_endpoint",
+  "delivery_note_endpoint",
+  "column_break_2",
+  "inventory_endpoint",
+  "webhook_secret",
+  "sync_settings_section",
+  "auto_sync_sales_orders",
+  "auto_sync_delivery_notes",
+  "sync_interval_minutes",
+  "column_break_3",
+  "last_sync_date",
+  "sync_status"
+ ],
+ "fields": [
+  {
+   "fieldname": "api_configuration_section",
+   "fieldtype": "Section Break",
+   "label": "API Configuration"
+  },
+  {
+   "fieldname": "api_key",
+   "fieldtype": "Password",
+   "label": "API Key",
+   "description": "API key for authentication. Share this with Zoho developers."
+  },
+  {
+   "fieldname": "api_secret",
+   "fieldtype": "Password",
+   "label": "API Secret"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "organization_id",
+   "fieldtype": "Data",
+   "label": "Zoho Organization ID"
+  },
+  {
+   "fieldname": "environment",
+   "fieldtype": "Select",
+   "label": "Environment",
+   "options": "Production\nSandbox"
+  },
+  {
+   "fieldname": "section_endpoints",
+   "fieldtype": "Section Break",
+   "label": "API Endpoints"
+  },
+  {
+   "fieldname": "sales_order_endpoint",
+   "fieldtype": "Data",
+   "label": "Sales Order Endpoint",
+   "description": "Zoho Books API endpoint for sales orders"
+  },
+  {
+   "fieldname": "delivery_note_endpoint",
+   "fieldtype": "Data",
+   "label": "Delivery Note Endpoint",
+   "description": "Zoho Books API endpoint for delivery notes"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "inventory_endpoint",
+   "fieldtype": "Data",
+   "label": "Inventory Endpoint",
+   "description": "Zoho Books API endpoint for inventory"
+  },
+  {
+   "fieldname": "webhook_secret",
+   "fieldtype": "Password",
+   "label": "Webhook Secret",
+   "description": "Secret key for validating webhooks from Zoho"
+  },
+  {
+   "fieldname": "sync_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Sync Settings"
+  },
+  {
+   "fieldname": "auto_sync_sales_orders",
+   "fieldtype": "Check",
+   "label": "Auto Sync Sales Orders",
+   "description": "Automatically sync sales orders from Zoho Books"
+  },
+  {
+   "fieldname": "auto_sync_delivery_notes",
+   "fieldtype": "Check",
+   "label": "Auto Sync Delivery Notes",
+   "description": "Automatically sync delivery notes back to Zoho Books"
+  },
+  {
+   "fieldname": "sync_interval_minutes",
+   "fieldtype": "Int",
+   "label": "Sync Interval (Minutes)",
+   "default": "15"
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "last_sync_date",
+   "fieldtype": "Datetime",
+   "label": "Last Sync Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sync_status",
+   "fieldtype": "Select",
+   "label": "Sync Status",
+   "options": "Idle\nSyncing\nError",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-05-04 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Zoho",
+ "name": "APC Zoho Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

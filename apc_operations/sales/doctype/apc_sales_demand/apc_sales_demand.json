@@ -1,0 +1,260 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:DEMAND-{YYYY}-{#####}",
+ "creation": "2026-05-01 00:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "zoho_section",
+  "zoho_sales_order_id",
+  "zoho_sales_order_number",
+  "zoho_sync_status",
+  "zoho_sync_date",
+  "customer_section",
+  "customer",
+  "customer_name",
+  "customer_reference",
+  "column_break_1",
+  "sales_order_date",
+  "required_dispatch_date",
+  "priority",
+  "status",
+  "totals_section",
+  "total_demand_quantity",
+  "total_allocated_quantity",
+  "total_dispatched_quantity",
+  "column_break_2",
+  "total_production_required_quantity",
+  "allocation_status",
+  "fulfillment_status",
+  "items_section",
+  "items",
+  "notes_section",
+  "notes",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "zoho_section",
+   "fieldtype": "Section Break",
+   "label": "Zoho Books Integration"
+  },
+  {
+   "fieldname": "zoho_sales_order_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Zoho Sales Order ID",
+   "search_index": 1
+  },
+  {
+   "fieldname": "zoho_sales_order_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Zoho Sales Order Number",
+   "search_index": 1
+  },
+  {
+   "fieldname": "zoho_sync_status",
+   "fieldtype": "Select",
+   "label": "Zoho Sync Status",
+   "options": "Not Synced\nSynced\nSync Failed\nManual Entry"
+  },
+  {
+   "fieldname": "zoho_sync_date",
+   "fieldtype": "Datetime",
+   "label": "Zoho Sync Date"
+  },
+  {
+   "fieldname": "customer_section",
+   "fieldtype": "Section Break",
+   "label": "Customer Information"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Customer",
+   "options": "Customer",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "customer.customer_name",
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Customer Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer_reference",
+   "fieldtype": "Data",
+   "label": "Customer Reference"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sales_order_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Sales Order Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "required_dispatch_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Required Dispatch Date"
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "label": "Priority",
+   "options": "Normal\nHigh\nUrgent"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nConfirmed\nPartially Allocated\nFully Allocated\nIn Production\nReady for Dispatch\nPartially Dispatched\nFully Dispatched\nCompleted\nCancelled",
+   "reqd": 1
+  },
+  {
+   "fieldname": "totals_section",
+   "fieldtype": "Section Break",
+   "label": "Totals"
+  },
+  {
+   "fieldname": "total_demand_quantity",
+   "fieldtype": "Float",
+   "label": "Total Demand Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_allocated_quantity",
+   "fieldtype": "Float",
+   "label": "Total Allocated Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_dispatched_quantity",
+   "fieldtype": "Float",
+   "label": "Total Dispatched Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_production_required_quantity",
+   "fieldtype": "Float",
+   "label": "Total Production Required Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "allocation_status",
+   "fieldtype": "Select",
+   "label": "Allocation Status",
+   "options": "Not Allocated\nPartially Allocated\nFully Allocated",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fulfillment_status",
+   "fieldtype": "Select",
+   "label": "Fulfillment Status",
+   "options": "Not Started\nIn Progress\nReady for Dispatch\nPartially Dispatched\nFully Dispatched",
+   "read_only": 1
+  },
+  {
+   "fieldname": "items_section",
+   "fieldtype": "Section Break",
+   "label": "Demand Items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "APC Sales Demand Item"
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text Editor",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "APC Sales Demand",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-05-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Sales",
+ "name": "APC Sales Demand",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Shipping Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Production Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "required_dispatch_date",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1
+}

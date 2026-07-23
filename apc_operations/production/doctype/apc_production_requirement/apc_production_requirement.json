@@ -1,0 +1,310 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:PROD-REQ-{YYYY}-{#####}",
+ "creation": "2026-05-01 00:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "demand_section",
+  "sales_demand",
+  "sales_demand_item",
+  "customer",
+  "column_break_1",
+  "status",
+  "priority",
+  "product_section",
+  "item",
+  "item_name",
+  "grade",
+  "specification",
+  "column_break_2",
+  "packaging_type",
+  "uom",
+  "warehouse",
+  "quantity_section",
+  "required_quantity",
+  "produced_quantity",
+  "remaining_quantity",
+  "column_break_3",
+  "wip_quantity",
+  "scheduled_quantity",
+  "dates_section",
+  "required_date",
+  "planned_date",
+  "column_break_4",
+  "production_order",
+  "batch_created",
+  "notes_section",
+  "notes",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "demand_section",
+   "fieldtype": "Section Break",
+   "label": "Demand Reference"
+  },
+  {
+   "fieldname": "sales_demand",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Sales Demand",
+   "options": "APC Sales Demand",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "sales_demand_item",
+   "fieldtype": "Link",
+   "label": "Sales Demand Item",
+   "options": "APC Sales Demand Item",
+   "search_index": 1
+  },
+  {
+   "fetch_from": "sales_demand.customer",
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Customer",
+   "options": "Customer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nPlanned\nIn Production\nPartially Completed\nCompleted\nCancelled",
+   "reqd": 1
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "label": "Priority",
+   "options": "Normal\nHigh\nUrgent"
+  },
+  {
+   "fieldname": "product_section",
+   "fieldtype": "Section Break",
+   "label": "Product Details"
+  },
+  {
+   "fetch_from": "sales_demand_item.item",
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item",
+   "options": "Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Item Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "sales_demand_item.grade",
+   "fieldname": "grade",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Grade",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "sales_demand_item.specification",
+   "fieldname": "specification",
+   "fieldtype": "Data",
+   "label": "Specification",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "sales_demand_item.packaging_type",
+   "fieldname": "packaging_type",
+   "fieldtype": "Data",
+   "label": "Packaging Type",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "sales_demand_item.uom",
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "label": "UOM",
+   "options": "UOM",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "sales_demand_item.warehouse",
+   "fieldname": "warehouse",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Warehouse",
+   "options": "Warehouse",
+   "read_only": 1
+  },
+  {
+   "fieldname": "quantity_section",
+   "fieldtype": "Section Break",
+   "label": "Quantities"
+  },
+  {
+   "fetch_from": "sales_demand_item.production_required_quantity",
+   "fieldname": "required_quantity",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Required Quantity",
+   "non_negative": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "produced_quantity",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Produced Quantity",
+   "non_negative": 1,
+   "default": 0
+  },
+  {
+   "fieldname": "remaining_quantity",
+   "fieldtype": "Float",
+   "label": "Remaining Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "wip_quantity",
+   "fieldtype": "Float",
+   "label": "WIP Quantity",
+   "non_negative": 1,
+   "default": 0
+  },
+  {
+   "fieldname": "scheduled_quantity",
+   "fieldtype": "Float",
+   "label": "Scheduled Quantity",
+   "non_negative": 1,
+   "default": 0
+  },
+  {
+   "fieldname": "dates_section",
+   "fieldtype": "Section Break",
+   "label": "Dates"
+  },
+  {
+   "fieldname": "required_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Required Date"
+  },
+  {
+   "fieldname": "planned_date",
+   "fieldtype": "Date",
+   "label": "Planned Date"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "production_order",
+   "fieldtype": "Link",
+   "label": "Production Order",
+   "options": "Production Order"
+  },
+  {
+   "default": "0",
+   "fieldname": "batch_created",
+   "fieldtype": "Check",
+   "label": "Batch Created"
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "APC Production Requirement",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-05-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Production",
+ "name": "APC Production Requirement",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Production Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Shipping Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "required_date",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1
+}

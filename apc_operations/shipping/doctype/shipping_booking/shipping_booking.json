@@ -1,0 +1,442 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:SB-{YYYY}-{#####}",
+ "creation": "2026-04-27 00:00:00",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "booking_details_section",
+  "job_order_number",
+  "customer",
+  "customer_name",
+  "supplier",
+  "supplier_name",
+  "job_order",
+  "commercial_movement",
+  "incoterm",
+  "shipping_line",
+  "container_type",
+  "container_count",
+  "column_break_1",
+  "port_of_loading",
+  "port_of_discharge",
+  "cargo_details_section",
+  "cargo_description",
+  "cargo_weight",
+  "is_dangerous_goods",
+  "dg_class",
+  "un_number",
+  "notes",
+  "vessel_details_section",
+  "vessel_name",
+  "vessel_date",
+  "vessel_status",
+  "cro_details_section",
+  "cro_number",
+  "cro_date",
+  "cutoff_dates_section",
+  "cutoff_date",
+  "pull_out_date",
+  "si_cutoff",
+  "column_break_2",
+  "gate_in_date",
+  "gate_cutoff",
+  "vgm_cutoff",
+  "freight_charges_section",
+  "freight_rate",
+  "currency",
+  "total_freight_charges",
+  "column_break_3",
+  "thc",
+  "tluc",
+  "export_declaration",
+  "transportation_section",
+  "linked_transport",
+  "linked_dispatch",
+  "status_section",
+  "booking_status",
+  "cro_status",
+  "transport_status",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "booking_details_section",
+   "fieldtype": "Section Break",
+   "label": "Booking Details"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "fetch_from": "customer.customer_name",
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "Customer Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "label": "Supplier",
+   "options": "Supplier"
+  },
+  {
+   "fetch_from": "supplier.supplier_name",
+   "fieldname": "supplier_name",
+   "fieldtype": "Data",
+   "label": "Supplier Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "job_order",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Computer generted Order Id",
+   "options": "Job Order",
+   "search_index": 1
+  },
+  {
+   "fetch_from": "job_order.commercial_movement",
+   "fieldname": "commercial_movement",
+   "fieldtype": "Data",
+   "label": "Commercial movement",
+   "read_only": 1
+  },
+  {
+   "fieldname": "shipping_line",
+   "fieldtype": "Link",
+   "label": "Shipping Line",
+   "options": "Shipping Line"
+  },
+  {
+   "fieldname": "container_type",
+   "fieldtype": "Select",
+   "label": "Container Type",
+   "options": "20FT Standard\n40FT Standard\n40FT High Cube\n20FT Reefer\n40FT Reefer\n20FT Open Top\n40FT Open Top\n20FT Flat Rack\n40FT Flat Rack"
+  },
+  {
+   "default": "1",
+   "fieldname": "container_count",
+   "fieldtype": "Int",
+   "label": "Container Count"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "port_of_loading",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Port of Loading (POL)",
+   "options": "Port"
+  },
+  {
+   "fieldname": "port_of_discharge",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Port of Discharge (POD)",
+   "options": "Port"
+  },
+  {
+   "fieldname": "cargo_details_section",
+   "fieldtype": "Section Break",
+   "label": "Cargo Details"
+  },
+  {
+   "fieldname": "cargo_description",
+   "fieldtype": "Small Text",
+   "label": "Cargo Description"
+  },
+  {
+   "fieldname": "cargo_weight",
+   "fieldtype": "Float",
+   "label": "Cargo Weight (MT)"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_dangerous_goods",
+   "fieldtype": "Check",
+   "label": "Dangerous Goods (DG)"
+  },
+  {
+   "depends_on": "eval:doc.is_dangerous_goods",
+   "fieldname": "dg_class",
+   "fieldtype": "Select",
+   "label": "DG Class",
+   "options": "\nClass 1 - Explosives\nClass 2 - Gases\nClass 3 - Flammable Liquids\nClass 4 - Flammable Solids\nClass 5 - Oxidizing Substances\nClass 6 - Toxic Substances\nClass 7 - Radioactive Materials\nClass 8 - Corrosive Substances\nClass 9 - Miscellaneous"
+  },
+  {
+   "depends_on": "eval:doc.is_dangerous_goods",
+   "fieldname": "un_number",
+   "fieldtype": "Data",
+   "label": "UN Number"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text Editor",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "vessel_details_section",
+   "fieldtype": "Section Break",
+   "label": "Vessel Details"
+  },
+  {
+   "fieldname": "vessel_name",
+   "fieldtype": "Data",
+   "label": "Vessel Name"
+  },
+  {
+   "fieldname": "vessel_date",
+   "fieldtype": "Date",
+   "label": "Vessel Date (ETD)"
+  },
+  {
+   "default": "In Transit",
+   "fieldname": "vessel_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Vessel Status",
+   "options": "\nIn Transit\nBerthed\nCleared"
+  },
+  {
+   "fieldname": "cro_details_section",
+   "fieldtype": "Section Break",
+   "label": "CRO Details"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "cro_number",
+   "fieldtype": "Data",
+   "label": "CRO Number"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "cro_date",
+   "fieldtype": "Date",
+   "label": "CRO Date"
+  },
+  {
+   "fieldname": "cutoff_dates_section",
+   "fieldtype": "Section Break",
+   "label": "Cutoff Dates"
+  },
+  {
+   "fieldname": "cutoff_date",
+   "fieldtype": "Date",
+   "label": "Cutoff Date"
+  },
+  {
+   "fieldname": "pull_out_date",
+   "fieldtype": "Date",
+   "label": "Pull Out Date"
+  },
+  {
+   "fieldname": "si_cutoff",
+   "fieldtype": "Date",
+   "label": "SI Cutoff (Shipping Instructions)"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "gate_in_date",
+   "fieldtype": "Date",
+   "label": "Gate In Date"
+  },
+  {
+   "fieldname": "gate_cutoff",
+   "fieldtype": "Date",
+   "label": "Gate Cutoff"
+  },
+  {
+   "fieldname": "vgm_cutoff",
+   "fieldtype": "Date",
+   "label": "VGM Cutoff"
+  },
+  {
+   "fieldname": "freight_charges_section",
+   "fieldtype": "Section Break",
+   "label": "Freight Charges"
+  },
+  {
+   "fieldname": "freight_rate",
+   "fieldtype": "Currency",
+   "label": "Freight Rate (Per Container)"
+  },
+  {
+   "default": "USD",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "total_freight_charges",
+   "fieldtype": "Currency",
+   "label": "Total Freight Charges",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "thc",
+   "fieldtype": "Currency",
+   "label": "THC (Terminal Handling Charge)"
+  },
+  {
+   "fieldname": "tluc",
+   "fieldtype": "Currency",
+   "label": "TLUC (Terminal Loading/Unloading)"
+  },
+  {
+   "fieldname": "export_declaration",
+   "fieldtype": "Currency",
+   "label": "Export Declaration (ED) Charges"
+  },
+  {
+   "fieldname": "transportation_section",
+   "fieldtype": "Section Break",
+   "label": "Transportation"
+  },
+  {
+   "fieldname": "linked_transport",
+   "fieldtype": "Link",
+   "label": "Linked Transport Schedule",
+   "options": "Transport Schedule",
+   "read_only": 1
+  },
+  {
+   "fieldname": "linked_dispatch",
+   "fieldtype": "Link",
+   "label": "Linked Security Dispatch",
+   "options": "Security Dispatch",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status_section",
+   "fieldtype": "Section Break",
+   "label": "Status"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "booking_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Booking Status",
+   "options": "Draft\nTracking\nConfirmed\nCancelled",
+   "read_only": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "cro_status",
+   "fieldtype": "Select",
+   "label": "CRO Status",
+   "options": "Pending\nGenerated\nCompleted",
+   "read_only": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "transport_status",
+   "fieldtype": "Select",
+   "label": "Transport Status",
+   "options": "Pending\nScheduled\nIn Progress\nCompleted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Shipping Booking",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fetch_from": "job_order.terms_of_delivery",
+   "fieldname": "incoterm",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Incoterm",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "job_order.job_order_number",
+   "fieldname": "job_order_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Job order number"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [
+  {
+   "group": "Related",
+   "link_doctype": "Transport Schedule",
+   "link_fieldname": "shipping_booking"
+  },
+  {
+   "group": "Related",
+   "link_doctype": "Transport PO Request",
+   "link_fieldname": "shipping_booking"
+  }
+ ],
+ "modified": "2026-05-01 21:31:09.467978",
+ "modified_by": "Administrator",
+ "module": "Shipping",
+ "name": "Shipping Booking",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Shipping Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Shipping User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Transportation Manager"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

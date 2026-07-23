@@ -1,0 +1,216 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"trans_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Transportation</span>\",\"col\":12}},{\"id\":\"spacer_1\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"transportation_console_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Transportation Console\",\"col\":3}},{\"id\":\"shortcut_transport_schedule\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Transport Schedule\",\"col\":3}},{\"id\":\"shortcut_pending_vehicle\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pending Vehicle Assignment\",\"col\":3}},{\"id\":\"shortcut_in_transit\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"In Transit\",\"col\":3}},{\"id\":\"shortcut_job_orders\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job Orders\",\"col\":3}},{\"id\":\"spacer_2\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"actions_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\">TODAY'S ACTIONS</span>\",\"col\":12}},{\"id\":\"card_pending_transport\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Pending Transport\",\"col\":4}},{\"id\":\"card_pending_vehicle\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Pending Vehicle Assignment\",\"col\":4}},{\"id\":\"card_driver_assignment\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Driver Assignment Pending\",\"col\":4}},{\"id\":\"card_vehicles_dispatch\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Vehicles To Dispatch Today\",\"col\":4}},{\"id\":\"card_in_transit\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"In Transit\",\"col\":4}},{\"id\":\"card_shipments_transit\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Shipments in Transit\",\"col\":4}},{\"id\":\"spacer_3\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"links_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\">QUICK LINKS</span>\",\"col\":12}},{\"id\":\"card_transport_docs\",\"type\":\"card\",\"data\":{\"card_name\":\"Transport Documents\",\"col\":4}},{\"id\":\"card_transport_master\",\"type\":\"card\",\"data\":{\"card_name\":\"Transport Masters\",\"col\":4}},{\"id\":\"card_job_orders\",\"type\":\"card\",\"data\":{\"card_name\":\"Job Orders\",\"col\":4}}]",
+ "creation": "2026-04-28 00:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "truck",
+ "idx": 0,
+ "indicator_color": "blue",
+ "is_hidden": 0,
+ "label": "Transportation",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Transport Documents",
+   "link_count": 3,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Transport Schedule",
+   "link_count": 0,
+   "link_to": "Transport Schedule",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Transport PO Request",
+   "link_count": 0,
+   "link_to": "Transport PO Request",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Delivery Order",
+   "link_count": 0,
+   "link_to": "Delivery Order",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Transport Masters",
+   "link_count": 3,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Transporter",
+   "link_count": 0,
+   "link_to": "Transporter",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Vehicle",
+   "link_count": 0,
+   "link_to": "Vehicle",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Driver",
+   "link_count": 0,
+   "link_to": "Driver",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Job Orders",
+   "link_count": 2,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Job Order",
+   "link_count": 0,
+   "link_to": "Job Order",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Container Detail",
+   "link_count": 0,
+   "link_to": "Container Detail",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-04-28 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Shipping",
+ "name": "Transportation",
+ "number_cards": [
+  {
+   "label": "Pending Transport",
+   "number_card_name": "Pending Transport"
+  },
+  {
+   "label": "Pending Vehicle Assignment",
+   "number_card_name": "Pending Vehicle Assignment"
+  },
+  {
+   "label": "Driver Assignment Pending",
+   "number_card_name": "Driver Assignment Pending"
+  },
+  {
+   "label": "Vehicles To Dispatch Today",
+   "number_card_name": "Vehicles To Dispatch Today"
+  },
+  {
+   "label": "In Transit",
+   "number_card_name": "In Transit"
+  },
+  {
+   "label": "Shipments in Transit",
+   "number_card_name": "Shipments in Transit"
+  }
+ ],
+ "owner": "Administrator",
+ "parent_page": "Shipping",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [
+  {
+   "role": "Transportation Manager"
+  },
+  {
+   "role": "Shipping Manager"
+  },
+  {
+   "role": "Shipping User"
+  }
+ ],
+ "sequence_id": 3.5,
+ "shortcuts": [
+  {
+   "color": "Purple",
+   "label": "Transportation Console",
+   "link_to": "transportation-console",
+   "type": "Page"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "format": "{count} Scheduled",
+   "label": "Transport Schedule",
+   "link_to": "Transport Schedule",
+   "stats_filter": "[[\"Transport Schedule\",\"transport_status\",\"in\",[\"Scheduled\",\"Pending\"],false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Red",
+   "doc_view": "List",
+   "format": "{count} Awaiting",
+   "label": "Pending Vehicle Assignment",
+   "link_to": "Transport Schedule",
+   "stats_filter": "[[\"Transport Schedule\",\"transport_status\",\"=\",\"Pending\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "format": "{count} In Transit",
+   "label": "In Transit",
+   "link_to": "Transport Schedule",
+   "stats_filter": "[[\"Transport Schedule\",\"transport_status\",\"=\",\"In Transit\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "format": "{count} Open",
+   "label": "Job Orders",
+   "link_to": "Job Order",
+  "stats_filter": "[[\"Job Order\",\"terms_of_delivery\",\"=\",\"EXW\",false],[\"Job Order\",\"transport_required\",\"=\",1,false]]",
+   "type": "DocType"
+  }
+ ],
+ "title": "Transportation"
+}

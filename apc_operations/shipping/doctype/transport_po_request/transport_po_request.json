@@ -1,0 +1,251 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:TPO-{YYYY}-{#####}",
+ "creation": "2026-04-28 00:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "source_section",
+  "transport_schedule",
+  "job_order",
+  "shipping_booking",
+  "transport_section",
+  "transport_type",
+  "outward_type",
+  "transporter",
+  "vehicle",
+  "driver",
+  "schedule_section",
+  "scheduled_date",
+  "pickup_location",
+  "delivery_location",
+  "cost_section",
+  "transport_charges",
+  "currency",
+  "payables_status",
+  "zoho_books_reference",
+  "notes_section",
+  "notes",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_section",
+   "fieldtype": "Section Break",
+   "label": "Source"
+  },
+  {
+   "fieldname": "transport_schedule",
+   "fieldtype": "Link",
+   "label": "Transport Schedule",
+   "options": "Transport Schedule",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "transport_schedule.job_order",
+   "fieldname": "job_order",
+   "fieldtype": "Link",
+   "label": "Job Order",
+   "options": "Job Order",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "transport_schedule.shipping_booking",
+   "fieldname": "shipping_booking",
+   "fieldtype": "Link",
+   "label": "Shipping Booking",
+   "options": "Shipping Booking",
+   "read_only": 1
+  },
+  {
+   "fieldname": "transport_section",
+   "fieldtype": "Section Break",
+   "label": "Transport Details"
+  },
+  {
+   "fetch_from": "transport_schedule.transport_type",
+   "fieldname": "transport_type",
+   "fieldtype": "Select",
+   "label": "Transport Type",
+   "options": "Inward\nOutward",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "transport_schedule.outward_type",
+   "fieldname": "outward_type",
+   "fieldtype": "Select",
+   "label": "Outward Type",
+   "options": "Export Container\nLocal Delivery\nTanker Delivery\nTrailer Delivery",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "transport_schedule.transporter",
+   "fieldname": "transporter",
+   "fieldtype": "Link",
+   "label": "Transporter",
+   "options": "Transporter",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "transport_schedule.assigned_vehicle",
+   "fieldname": "vehicle",
+   "fieldtype": "Link",
+   "label": "Vehicle",
+   "options": "Vehicle",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "transport_schedule.assigned_driver",
+   "fieldname": "driver",
+   "fieldtype": "Link",
+   "label": "Driver",
+   "options": "Driver",
+   "read_only": 1
+  },
+  {
+   "fieldname": "schedule_section",
+   "fieldtype": "Section Break",
+   "label": "Schedule"
+  },
+  {
+   "fetch_from": "transport_schedule.scheduled_pickup_date",
+   "fieldname": "scheduled_date",
+   "fieldtype": "Date",
+   "label": "Scheduled Date",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "transport_schedule.pickup_location",
+   "fieldname": "pickup_location",
+   "fieldtype": "Data",
+   "label": "Pickup Location",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "transport_schedule.delivery_location",
+   "fieldname": "delivery_location",
+   "fieldtype": "Data",
+   "label": "Delivery Location",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cost_section",
+   "fieldtype": "Section Break",
+   "label": "Cost / Payables"
+  },
+  {
+   "fetch_from": "transport_schedule.transport_charges",
+   "fieldname": "transport_charges",
+   "fieldtype": "Currency",
+   "label": "Transport Charges",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "transport_schedule.currency",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "read_only": 1
+  },
+  {
+   "default": "Pending Payables",
+   "fieldname": "payables_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Payables Status",
+   "options": "Draft\nPending Payables\nSent to Zoho Books\nBooked in Zoho Books\nPaid\nCancelled",
+   "reqd": 1
+  },
+  {
+   "fieldname": "zoho_books_reference",
+   "fieldtype": "Data",
+   "label": "Zoho Books Reference"
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Transport PO Request",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-04-28 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Shipping",
+ "name": "Transport PO Request",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Transportation Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Transportation User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "transport_schedule",
+ "track_changes": 1
+}

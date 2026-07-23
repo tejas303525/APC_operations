@@ -1,0 +1,7 @@
+/* Shipping Console — local overrides.
+ * Most styling comes from /assets/apc_operations/css/console.css.
+ */
+
+.apc-console-shipping .apc-console-screen-cards {
+	margin-top: 12px;
+}

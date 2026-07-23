@@ -1,0 +1,24 @@
+{
+ "creation": "2026-05-02 00:00:00.000000",
+ "doctype": "Page",
+ "module": "Inventory",
+ "name": "batch-allocation-dashboard",
+ "page_name": "batch-allocation-dashboard",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Shipping Manager"
+  },
+  {
+   "role": "Production Manager"
+  },
+  {
+   "role": "Quality Manager"
+  }
+ ],
+ "standard": "Yes",
+ "system_page": 0,
+ "title": "Batch Allocation Dashboard"
+}

@@ -1,0 +1,21 @@
+{
+ "creation": "2026-05-01 00:00:00.000000",
+ "doctype": "Page",
+ "module": "Production",
+ "name": "production-calendar",
+ "page_name": "production-calendar",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Production Manager"
+  },
+  {
+   "role": "Production User"
+  }
+ ],
+ "standard": "Yes",
+ "system_page": 0,
+ "title": "Production Capacity Calendar"
+}

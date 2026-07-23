@@ -1,0 +1,288 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:SDDN-{YYYY}-{#####}",
+ "creation": "2026-04-28 00:00:00",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "source_section",
+  "transport_schedule",
+  "job_order_number",
+  "customer",
+  "buyer",
+  "job_order",
+  "terms_of_delivery",
+  "transport_section",
+  "transport_type",
+  "outward_type",
+  "material_description",
+  "quantity",
+  "uom",
+  "container_type",
+  "container_count",
+  "assignment_section",
+  "vehicle",
+  "driver",
+  "transporter",
+  "schedule_section",
+  "pickup_date",
+  "pickup_time",
+  "gate_out_status",
+  "security_status",
+  "sent_to_security_on",
+  "notes_section",
+  "security_notes",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_section",
+   "fieldtype": "Section Break",
+   "label": "Source"
+  },
+  {
+   "fieldname": "transport_schedule",
+   "fieldtype": "Link",
+   "label": "Transport Schedule",
+   "options": "Transport Schedule",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "job_order.job_order_number",
+   "fieldname": "job_order_number",
+   "fieldtype": "Data",
+   "label": "Job Order Number",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "transport_schedule.customer",
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "buyer",
+   "fieldtype": "Link",
+   "label": "Buyer",
+   "options": "Customer"
+  },
+  {
+   "fieldname": "transport_section",
+   "fieldtype": "Section Break",
+   "label": "Transport Details"
+  },
+  {
+   "default": "Outward",
+   "fetch_from": "transport_schedule.transport_type",
+   "fieldname": "transport_type",
+   "fieldtype": "Select",
+   "label": "Transport Type",
+   "options": "Outward\nInward",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "transport_schedule.outward_type",
+   "fieldname": "outward_type",
+   "fieldtype": "Select",
+   "label": "Outward Type",
+   "options": "Export Container\nLocal Delivery\nTanker Delivery\nTrailer Delivery",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "transport_schedule.material_description",
+   "fieldname": "material_description",
+   "fieldtype": "Small Text",
+   "label": "Material Description",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "transport_schedule.container_type",
+   "fieldname": "container_type",
+   "fieldtype": "Data",
+   "label": "Container Type",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "transport_schedule.container_count",
+   "fieldname": "container_count",
+   "fieldtype": "Int",
+   "label": "Container Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "assignment_section",
+   "fieldtype": "Section Break",
+   "label": "Vehicle / Driver"
+  },
+  {
+   "fetch_from": "transport_schedule.assigned_vehicle",
+   "fieldname": "vehicle",
+   "fieldtype": "Link",
+   "label": "Vehicle Number Plate",
+   "options": "Vehicle",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "transport_schedule.assigned_driver",
+   "fieldname": "driver",
+   "fieldtype": "Link",
+   "label": "Driver",
+   "options": "Driver",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "transport_schedule.transporter",
+   "fieldname": "transporter",
+   "fieldtype": "Link",
+   "label": "Transporter",
+   "options": "Transporter",
+   "read_only": 1
+  },
+  {
+   "fieldname": "schedule_section",
+   "fieldtype": "Section Break",
+   "label": "Schedule / Gate Out"
+  },
+  {
+   "fetch_from": "transport_schedule.scheduled_pickup_date",
+   "fieldname": "pickup_date",
+   "fieldtype": "Date",
+   "label": "Pickup Date",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "transport_schedule.pickup_time",
+   "fieldname": "pickup_time",
+   "fieldtype": "Time",
+   "label": "Pickup Time",
+   "read_only": 1
+  },
+  {
+   "default": "Pending Security Review",
+   "fieldname": "gate_out_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Gate Out Status",
+   "options": "Draft\nPending Security Review\nApproved for Gate Out\nGate Out Completed\nCancelled",
+   "reqd": 1
+  },
+  {
+   "default": "Pending Review",
+   "fieldname": "security_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Security Status",
+   "options": "Draft\nPending Review\nApproved\nRejected\nSent to Security\nPending Verification\nVerified\nOn Hold\nLDN Created\nSent to QC\nCompleted",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sent_to_security_on",
+   "fieldtype": "Datetime",
+   "label": "Sent to Security On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "security_notes",
+   "fieldtype": "Text",
+   "label": "Security Notes"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Security Draft Delivery Note",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "job_order",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Job Order",
+   "options": "Job Order",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "job_order.terms_of_delivery",
+   "fieldname": "terms_of_delivery",
+   "fieldtype": "Data",
+   "label": "Terms of Delivery",
+   "read_only": 1
+  },
+  {
+   "fieldname": "quantity",
+   "fieldtype": "Float",
+   "label": "Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "label": "UOM",
+   "options": "UOM",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-05-09 13:33:50.862447",
+ "modified_by": "Administrator",
+ "module": "Security",
+ "name": "Security Draft Delivery Note",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Security Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Security User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Transportation Manager",
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "transport_schedule",
+ "track_changes": 1
+}

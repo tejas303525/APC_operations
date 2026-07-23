@@ -1,0 +1,21 @@
+{
+ "creation": "2026-04-29 00:00:00.000000",
+ "doctype": "Page",
+ "module": "Shipping",
+ "name": "job-dashboard",
+ "page_name": "job-dashboard",
+ "roles": [
+  {
+   "role": "Shipping Manager"
+  },
+  {
+   "role": "Shipping User"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
+ "standard": "Yes",
+ "system_page": 0,
+ "title": "Job Order Dashboard"
+}

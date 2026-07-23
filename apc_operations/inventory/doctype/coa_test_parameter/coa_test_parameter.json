@@ -1,0 +1,178 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:parameter_name",
+ "creation": "2026-05-01 00:00:00",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "parameter_section",
+  "parameter_name",
+  "parameter_code",
+  "product_group",
+  "active",
+  "column_break_1",
+  "test_type",
+  "uom",
+  "value_type",
+  "defaults_section",
+  "default_min_value",
+  "default_max_value",
+  "default_standard_value",
+  "allowed_values",
+  "mandatory_by_default",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "parameter_section",
+   "fieldtype": "Section Break",
+   "label": "Parameter"
+  },
+  {
+   "fieldname": "parameter_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Parameter Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "parameter_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Parameter Code",
+   "search_index": 1
+  },
+  {
+   "fieldname": "product_group",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Product Group",
+   "options": "\nSolvent\nOil\nLubricant\nPlasticizer\nWhite Oil\nPetroleum Jelly\nOther"
+  },
+  {
+   "default": "1",
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Active"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "test_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Test Type",
+   "options": "\nPhysical\nChemical\nVisual\nDocument"
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "UOM"
+  },
+  {
+   "default": "Text",
+   "fieldname": "value_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Value Type",
+   "options": "Numeric\nText\nSelect\nCheck",
+   "reqd": 1
+  },
+  {
+   "fieldname": "defaults_section",
+   "fieldtype": "Section Break",
+   "label": "Default Specification"
+  },
+  {
+   "fieldname": "default_min_value",
+   "fieldtype": "Float",
+   "label": "Default Min Value"
+  },
+  {
+   "fieldname": "default_max_value",
+   "fieldtype": "Float",
+   "label": "Default Max Value"
+  },
+  {
+   "fieldname": "default_standard_value",
+   "fieldtype": "Data",
+   "label": "Specification"
+  },
+  {
+   "fieldname": "allowed_values",
+   "fieldtype": "Small Text",
+   "label": "Allowed Values"
+  },
+  {
+   "default": "0",
+   "fieldname": "mandatory_by_default",
+   "fieldtype": "Check",
+   "label": "Mandatory by Default"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Method"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-05-07 09:17:08.550390",
+ "modified_by": "Administrator",
+ "module": "Inventory",
+ "name": "COA Test Parameter",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Quality Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Quality User",
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "parameter_name",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,0 +1,219 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:SEC-{YYYY}-{#####}",
+ "creation": "2026-04-27 00:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "source_section",
+  "transport_schedule",
+  "shipping_booking",
+  "job_order",
+  "column_break_source",
+  "customer",
+  "customer_name",
+  "dispatch_details_section",
+  "dispatch_date",
+  "dispatch_type",
+  "container_count",
+  "column_break_1",
+  "security_status",
+  "status",
+  "actual_dispatch_time",
+  "vehicle_driver_section",
+  "vehicle",
+  "driver",
+  "column_break_vehicle",
+  "security_officer",
+  "notes",
+  "material_description",
+  "security_inspection"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_section",
+   "fieldtype": "Section Break",
+   "label": "Source Details"
+  },
+  {
+   "fieldname": "transport_schedule",
+   "fieldtype": "Link",
+   "label": "Transport Schedule",
+   "options": "Transport Schedule"
+  },
+  {
+   "fieldname": "shipping_booking",
+   "fieldtype": "Link",
+   "label": "Shipping Booking",
+   "options": "Shipping Booking"
+  },
+  {
+   "fieldname": "job_order",
+   "fieldtype": "Link",
+   "label": "Job Order",
+   "options": "Job Order"
+  },
+  {
+   "fieldname": "column_break_source",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "fetch_from": "customer.customer_name",
+   "label": "Customer Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dispatch_details_section",
+   "fieldtype": "Section Break",
+   "label": "Dispatch Details"
+  },
+  {
+   "fieldname": "dispatch_date",
+   "fieldtype": "Date",
+   "label": "Dispatch Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "dispatch_type",
+   "fieldtype": "Select",
+   "label": "Dispatch Type",
+   "options": "\nContainer Pickup\nCargo Escort\nPort Security\nExport Container\nLocal Delivery\nTanker Pickup\nTanker Delivery\nTrailer Pickup\nTrailer Delivery",
+   "reqd": 1
+  },
+  {
+   "fieldname": "container_count",
+   "fieldtype": "Int",
+   "label": "Container Count"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "security_status",
+   "fieldtype": "Select",
+   "label": "Security Status",
+   "options": "\nDraft\nPending Review\nPending Checklist\nPending QC\nReported to QC\nQC Cleared\nQC Hold\nReady for Loading DN\nLoading DN Created\nSent to Receivables\nCompleted\nCancelled",
+   "default": "Draft"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Dispatch Status",
+   "options": "\nPending\nScheduled\nDispatched\nCancelled",
+   "default": "Pending",
+   "reqd": 1
+  },
+  {
+   "fieldname": "actual_dispatch_time",
+   "fieldtype": "Datetime",
+   "label": "Actual Dispatch Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vehicle_driver_section",
+   "fieldtype": "Section Break",
+   "label": "Vehicle & Driver"
+  },
+  {
+   "fieldname": "vehicle",
+   "fieldtype": "Link",
+   "label": "Vehicle",
+   "options": "Vehicle"
+  },
+  {
+   "fieldname": "driver",
+   "fieldtype": "Link",
+   "label": "Driver",
+   "options": "Driver"
+  },
+  {
+   "fieldname": "column_break_vehicle",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "security_officer",
+   "fieldtype": "Link",
+   "label": "Security Officer",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text Editor",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "material_description",
+   "fieldtype": "Small Text",
+   "label": "Material Description"
+  },
+  {
+   "fieldname": "security_inspection",
+   "fieldtype": "Link",
+   "label": "Security Inspection",
+   "options": "Security Inspection",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-04-28 22:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Security",
+ "name": "Security Dispatch",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Security Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Security User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Shipping Manager",
+   "share": 1,
+   "write": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,0 +1,11 @@
+/* Transportation Console — page-local overrides.
+ * The bulk of the styling lives in /assets/apc_operations/css/console.css.
+ */
+
+.apc-console-transportation .apc-pending-holder {
+	margin-bottom: 12px;
+}
+
+.apc-console-transportation .apc-console-screen-cards {
+	margin-top: 12px;
+}

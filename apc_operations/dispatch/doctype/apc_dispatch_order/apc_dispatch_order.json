@@ -1,0 +1,262 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:DISP-{YYYY}-{#####}",
+ "creation": "2026-05-01 00:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "dispatch_section",
+  "dispatch_number",
+  "sales_demand",
+  "batch_allocation",
+  "customer",
+  "column_break_1",
+  "dispatch_date",
+  "status",
+  "dispatch_type",
+  "delivery_section",
+  "delivery_address",
+  "transporter",
+  "vehicle_number",
+  "driver_name",
+  "column_break_2",
+  "lr_number",
+  "lr_date",
+  "eway_bill_number",
+  "totals_section",
+  "total_quantity",
+  "total_dispatched_quantity",
+  "batch_details_section",
+  "batch_details",
+  "coa_section",
+  "attached_coas",
+  "notes_section",
+  "notes",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "dispatch_section",
+   "fieldtype": "Section Break",
+   "label": "Dispatch Details"
+  },
+  {
+   "fieldname": "dispatch_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Dispatch Number",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "sales_demand",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Sales Demand",
+   "options": "APC Sales Demand",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "batch_allocation",
+   "fieldtype": "Link",
+   "label": "Batch Allocation",
+   "options": "APC Batch Allocation"
+  },
+  {
+   "fetch_from": "sales_demand.customer",
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Customer",
+   "options": "Customer",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "dispatch_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Dispatch Date",
+   "reqd": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nReady\nDispatched\nIn Transit\nDelivered\nCancelled"
+  },
+  {
+   "fieldname": "dispatch_type",
+   "fieldtype": "Select",
+   "label": "Dispatch Type",
+   "options": "Full\nPartial"
+  },
+  {
+   "fieldname": "delivery_section",
+   "fieldtype": "Section Break",
+   "label": "Delivery Details"
+  },
+  {
+   "fieldname": "delivery_address",
+   "fieldtype": "Small Text",
+   "label": "Delivery Address"
+  },
+  {
+   "fieldname": "transporter",
+   "fieldtype": "Link",
+   "label": "Transporter",
+   "options": "Transporter"
+  },
+  {
+   "fieldname": "vehicle_number",
+   "fieldtype": "Data",
+   "label": "Vehicle Number"
+  },
+  {
+   "fieldname": "driver_name",
+   "fieldtype": "Data",
+   "label": "Driver Name"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "lr_number",
+   "fieldtype": "Data",
+   "label": "L/R Number"
+  },
+  {
+   "fieldname": "lr_date",
+   "fieldtype": "Date",
+   "label": "L/R Date"
+  },
+  {
+   "fieldname": "eway_bill_number",
+   "fieldtype": "Data",
+   "label": "E-Way Bill Number"
+  },
+  {
+   "fieldname": "totals_section",
+   "fieldtype": "Section Break",
+   "label": "Totals"
+  },
+  {
+   "fieldname": "total_quantity",
+   "fieldtype": "Float",
+   "label": "Total Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_dispatched_quantity",
+   "fieldtype": "Float",
+   "label": "Total Dispatched Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "batch_details_section",
+   "fieldtype": "Section Break",
+   "label": "Batch Details"
+  },
+  {
+   "fieldname": "batch_details",
+   "fieldtype": "Table",
+   "label": "Batch Details",
+   "options": "APC Dispatch Batch Detail"
+  },
+  {
+   "fieldname": "coa_section",
+   "fieldtype": "Section Break",
+   "label": "Attached COAs"
+  },
+  {
+   "fieldname": "attached_coas",
+   "fieldtype": "Table",
+   "label": "Attached COAs",
+   "options": "APC Dispatch COA Detail",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "APC Dispatch Order",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-05-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Dispatch",
+ "name": "APC Dispatch Order",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Shipping Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Security Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "dispatch_date",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

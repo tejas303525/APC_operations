@@ -1,0 +1,369 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:BATCH-{YYYY}-{#####}",
+ "creation": "2026-05-01 00:00:00",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "batch_details_section",
+  "batch_number",
+  "erpnext_batch",
+  "product",
+  "grade",
+  "specification",
+  "packaging_type",
+  "column_break_1",
+  "batch_status",
+  "quality_status",
+  "stock_status",
+  "coa_status",
+  "warehouse",
+  "job_order",
+  "linked_coa",
+  "quantity_section",
+  "batch_quantity",
+  "available_quantity",
+  "allocated_quantity",
+  "dispatched_quantity",
+  "uom",
+  "column_break_2",
+  "manufacturing_date",
+  "expiry_date",
+  "production_section",
+  "production_order",
+  "production_batch_number",
+  "qc_section",
+  "qc_approved_by",
+  "qc_approved_date",
+  "qc_remarks",
+  "nas_section",
+  "nas_path",
+  "tracking_section",
+  "created_from_demand",
+  "created_from_production",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "batch_details_section",
+   "fieldtype": "Section Break",
+   "label": "Batch Details"
+  },
+  {
+   "fieldname": "batch_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Batch Number",
+   "no_copy": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "erpnext_batch",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "ERPNext Batch",
+   "options": "Batch",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "product",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Product",
+   "options": "Item",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "grade",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Grade",
+   "search_index": 1
+  },
+  {
+   "fieldname": "specification",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Specification",
+   "search_index": 1
+  },
+  {
+   "fieldname": "packaging_type",
+   "fieldtype": "Data",
+   "label": "Packaging Type",
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Active",
+   "fieldname": "batch_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Batch Status",
+   "options": "Active\nOn Hold\nBlocked\nExpired\nCancelled\nDepleted",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "default": "Pending QC",
+   "fieldname": "quality_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Quality Status",
+   "options": "Pending QC\nUnder Review\nQC Cleared\nApproved\nOn Hold\nRetest Required\nQC Rejected\nRejected",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "default": "QC Hold",
+   "fieldname": "stock_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Stock Status",
+   "options": "QC Hold\nAvailable\nReserved\nDispatched\nRejected\nCancelled",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "default": "Not Generated",
+   "fieldname": "coa_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "COA Status",
+   "options": "Not Generated\nPending\nGenerated\nApproved\nRejected",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "warehouse",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Warehouse",
+   "options": "Warehouse",
+   "search_index": 1
+  },
+  {
+   "fieldname": "job_order",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Job Order",
+   "options": "Job Order",
+   "search_index": 1
+  },
+  {
+   "fieldname": "linked_coa",
+   "fieldtype": "Link",
+   "label": "Linked COA",
+   "options": "APC COA",
+   "read_only": 1
+  },
+  {
+   "fieldname": "quantity_section",
+   "fieldtype": "Section Break",
+   "label": "Quantity"
+  },
+  {
+   "fieldname": "batch_quantity",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Batch Quantity",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "available_quantity",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Available Quantity",
+   "non_negative": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "allocated_quantity",
+   "fieldtype": "Float",
+   "label": "Allocated Quantity",
+   "non_negative": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "dispatched_quantity",
+   "fieldtype": "Float",
+   "label": "Dispatched Quantity",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "label": "UOM",
+   "options": "UOM"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "manufacturing_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Manufacturing Date",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "expiry_date",
+   "fieldtype": "Date",
+   "label": "Expiry Date"
+  },
+  {
+   "fieldname": "production_section",
+   "fieldtype": "Section Break",
+   "label": "Production Source"
+  },
+  {
+   "fieldname": "production_order",
+   "fieldtype": "Link",
+   "label": "Production Order",
+   "options": "Production Order"
+  },
+  {
+   "fieldname": "production_batch_number",
+   "fieldtype": "Data",
+   "label": "Production Batch Number"
+  },
+  {
+   "fieldname": "qc_section",
+   "fieldtype": "Section Break",
+   "label": "Quality Control"
+  },
+  {
+   "fieldname": "qc_approved_by",
+   "fieldtype": "Link",
+   "label": "QC Approved By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "qc_approved_date",
+   "fieldtype": "Datetime",
+   "label": "QC Approved Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "qc_remarks",
+   "fieldtype": "Text",
+   "label": "QC Remarks"
+  },
+  {
+   "fieldname": "nas_section",
+   "fieldtype": "Section Break",
+   "label": "NAS Storage"
+  },
+  {
+   "fieldname": "nas_path",
+   "fieldtype": "Data",
+   "label": "NAS Path",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tracking_section",
+   "fieldtype": "Section Break",
+   "label": "Demand Tracking"
+  },
+  {
+   "default": "0",
+   "fieldname": "created_from_demand",
+   "fieldtype": "Check",
+   "label": "Created from Demand"
+  },
+  {
+   "default": "0",
+   "fieldname": "created_from_production",
+   "fieldtype": "Check",
+   "label": "Created from Production"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "APC Batch",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-05-09 17:14:22.957021",
+ "modified_by": "Administrator",
+ "module": "Inventory",
+ "name": "APC Batch",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Production Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Quality Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Shipping Manager",
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "manufacturing_date",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1
+}

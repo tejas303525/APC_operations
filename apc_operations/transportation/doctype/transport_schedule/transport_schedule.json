@@ -1,0 +1,653 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:TRN-{YYYY}-{#####}",
+ "creation": "2026-04-27 00:00:00",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "source_section",
+  "source_document_type",
+  "job_order",
+  "job_order_number",
+  "shipping_booking",
+  "shipping_line",
+  "column_break_1",
+  "vessel_name",
+  "vessel_date",
+  "customer_info_section",
+  "customer",
+  "customer_name",
+  "incoterm",
+  "supplier",
+  "material_description",
+  "cro_details_section",
+  "cro_number",
+  "cro_date",
+  "column_break_cro",
+  "cutoff_date",
+  "gate_cutoff",
+  "pull_out_date",
+  "schedule_details_section",
+  "scheduled_pickup_date",
+  "pickup_time",
+  "scheduled_delivery_date",
+  "column_break_2",
+  "actual_pickup_date",
+  "actual_delivery_date",
+  "gate_in_date",
+  "location_details_section",
+  "origin_location",
+  "pickup_location",
+  "pickup_address",
+  "column_break_3",
+  "destination_location",
+  "delivery_location",
+  "delivery_address",
+  "port_details_section",
+  "port_of_loading",
+  "port_of_discharge",
+  "container_details_section",
+  "container_type",
+  "container_count",
+  "cargo_weight",
+  "column_break_4",
+  "transport_type",
+  "outward_type",
+  "transport_status",
+  "assignment_section",
+  "vehicle_type",
+  "assigned_vehicle",
+  "assigned_driver",
+  "column_break_5",
+  "transporter",
+  "driver_phone",
+  "transporter_contact",
+  "cost_section",
+  "transport_charges",
+  "fuel_cost",
+  "additional_charges",
+  "currency",
+  "column_break_6",
+  "total_cost",
+  "payables_status",
+  "invoice_reference",
+  "payment_status",
+  "security_section",
+  "security_dispatch",
+  "security_draft_delivery_note",
+  "dispatch_status",
+  "dispatch_date",
+  "security_status",
+  "column_break_7",
+  "gate_pass",
+  "gate_pass_status",
+  "transport_po_request",
+  "notes_section",
+  "special_instructions",
+  "notes",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_section",
+   "fieldtype": "Section Break",
+   "label": "Source Details"
+  },
+  {
+   "default": "Manual",
+   "fieldname": "source_document_type",
+   "fieldtype": "Select",
+   "label": "Source Document Type",
+   "options": "Job Order\nShipping Booking\nManual"
+  },
+  {
+   "fetch_from": "job_order.job_order_number",
+   "fieldname": "job_order_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Job Order Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "shipping_booking",
+   "fieldtype": "Link",
+   "label": "Shipping Booking",
+   "options": "Shipping Booking"
+  },
+  {
+   "fieldname": "shipping_line",
+   "fieldtype": "Link",
+   "label": "Shipping Line",
+   "options": "Shipping Line",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "vessel_name",
+   "fieldtype": "Data",
+   "label": "Vessel Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vessel_date",
+   "fieldtype": "Date",
+   "label": "Vessel Date (ETD)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer_info_section",
+   "fieldtype": "Section Break",
+   "label": "Customer Information"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "fetch_from": "customer.customer_name",
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "Customer Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "job_order.terms_of_delivery",
+   "fieldname": "incoterm",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Incoterm",
+   "read_only": 1
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Data",
+   "label": "Supplier / Source"
+  },
+  {
+   "fieldname": "material_description",
+   "fieldtype": "Small Text",
+   "label": "Material Description"
+  },
+  {
+   "fieldname": "cro_details_section",
+   "fieldtype": "Section Break",
+   "label": "CRO Details"
+  },
+  {
+   "fieldname": "cro_number",
+   "fieldtype": "Data",
+   "label": "CRO Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cro_date",
+   "fieldtype": "Date",
+   "label": "CRO Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_cro",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cutoff_date",
+   "fieldtype": "Date",
+   "label": "Gate Cutoff",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "shipping_booking.gate_cutoff",
+   "fieldname": "gate_cutoff",
+   "fieldtype": "Date",
+   "label": "Gate Cutoff Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pull_out_date",
+   "fieldtype": "Date",
+   "label": "Pull Out Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "schedule_details_section",
+   "fieldtype": "Section Break",
+   "label": "Schedule Details"
+  },
+  {
+   "fieldname": "scheduled_pickup_date",
+   "fieldtype": "Date",
+   "label": "Scheduled Pickup Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "pickup_time",
+   "fieldtype": "Time",
+   "label": "Pickup Time"
+  },
+  {
+   "fieldname": "scheduled_delivery_date",
+   "fieldtype": "Date",
+   "label": "Scheduled Delivery Date"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "actual_pickup_date",
+   "fieldtype": "Date",
+   "label": "Actual Pickup Date"
+  },
+  {
+   "fieldname": "actual_delivery_date",
+   "fieldtype": "Date",
+   "label": "Actual Delivery Date"
+  },
+  {
+   "fieldname": "gate_in_date",
+   "fieldtype": "Date",
+   "label": "Gate In Date"
+  },
+  {
+   "fieldname": "location_details_section",
+   "fieldtype": "Section Break",
+   "label": "Location Details"
+  },
+  {
+   "fieldname": "origin_location",
+   "fieldtype": "Link",
+   "label": "Origin Location",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "pickup_location",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Pickup Location"
+  },
+  {
+   "fieldname": "pickup_address",
+   "fieldtype": "Small Text",
+   "label": "Pickup Address"
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "destination_location",
+   "fieldtype": "Link",
+   "label": "Destination Location",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "delivery_location",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Delivery Location"
+  },
+  {
+   "fieldname": "delivery_address",
+   "fieldtype": "Small Text",
+   "label": "Delivery Address"
+  },
+  {
+   "fieldname": "port_details_section",
+   "fieldtype": "Section Break",
+   "label": "Port Details"
+  },
+  {
+   "fieldname": "port_of_loading",
+   "fieldtype": "Link",
+   "label": "Port of Loading (POL)",
+   "options": "Port",
+   "read_only": 1
+  },
+  {
+   "fieldname": "port_of_discharge",
+   "fieldtype": "Link",
+   "label": "Port of Discharge (POD)",
+   "options": "Port",
+   "read_only": 1
+  },
+  {
+   "fieldname": "container_details_section",
+   "fieldtype": "Section Break",
+   "label": "Container Details"
+  },
+  {
+   "fieldname": "container_type",
+   "fieldtype": "Select",
+   "label": "Container Type",
+   "options": "20FT Standard\n40FT Standard\n40FT High Cube\n20FT Reefer\n40FT Reefer\n20FT Open Top\n40FT Open Top\n20FT Flat Rack\n40FT Flat Rack",
+   "read_only": 1
+  },
+  {
+   "fieldname": "container_count",
+   "fieldtype": "Int",
+   "label": "Container Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cargo_weight",
+   "fieldtype": "Float",
+   "label": "Cargo Weight (MT)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Outward",
+   "fieldname": "transport_type",
+   "fieldtype": "Select",
+   "label": "Transport Type",
+   "options": "Inward\nOutward"
+  },
+  {
+   "depends_on": "eval:doc.transport_type == 'Outward'",
+   "fieldname": "outward_type",
+   "fieldtype": "Select",
+   "label": "Outward Type",
+   "options": "\nExport Container\nLocal Delivery\nTanker Delivery\nTrailer Delivery"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "Pending Assignment",
+   "fieldname": "transport_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Transport Status",
+   "options": "Draft\nPending Assignment\nScheduled\nVehicle Assigned\nDriver Assigned\nDispatched\nPicked Up\nGate In\nIn Transit\nDelivered\nCompleted\nCancelled",
+   "reqd": 1
+  },
+  {
+   "fieldname": "assignment_section",
+   "fieldtype": "Section Break",
+   "label": "Assignment"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "vehicle_type",
+   "fieldtype": "Select",
+   "label": "Vehicle Type",
+   "options": "\nTanker\nTrailer\nTruck\nContainer Trailer\nFlatbed\nISO tank"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "assigned_vehicle",
+   "fieldtype": "Link",
+   "label": "Assigned Vehicle",
+   "options": "Vehicle"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "assigned_driver",
+   "fieldtype": "Link",
+   "label": "Assigned Driver",
+   "options": "Driver"
+  },
+  {
+   "fieldname": "column_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "transporter",
+   "fieldtype": "Link",
+   "label": "Transporter",
+   "options": "Transporter"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "driver_phone",
+   "fieldtype": "Data",
+   "label": "Driver Phone"
+  },
+  {
+   "allow_on_submit": 1,
+   "fetch_from": "transporter.phone",
+   "fieldname": "transporter_contact",
+   "fieldtype": "Data",
+   "label": "Transporter Contact",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cost_section",
+   "fieldtype": "Section Break",
+   "label": "Cost Details"
+  },
+  {
+   "fieldname": "transport_charges",
+   "fieldtype": "Currency",
+   "label": "Transport Charges"
+  },
+  {
+   "fieldname": "fuel_cost",
+   "fieldtype": "Currency",
+   "label": "Fuel Cost"
+  },
+  {
+   "fieldname": "additional_charges",
+   "fieldtype": "Currency",
+   "label": "Additional Charges"
+  },
+  {
+   "default": "USD",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "column_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_cost",
+   "fieldtype": "Currency",
+   "label": "Total Cost",
+   "read_only": 1
+  },
+  {
+   "default": "Not Required",
+   "fieldname": "payables_status",
+   "fieldtype": "Select",
+   "label": "Payables Status",
+   "options": "Not Required\nPending Payables\nSent to Zoho Books\nBooked in Zoho Books\nPaid"
+  },
+  {
+   "fieldname": "invoice_reference",
+   "fieldtype": "Data",
+   "label": "Invoice Reference"
+  },
+  {
+   "fieldname": "payment_status",
+   "fieldtype": "Select",
+   "label": "Payment Status",
+   "options": "\nUnpaid\nPartially Paid\nPaid"
+  },
+  {
+   "fieldname": "security_section",
+   "fieldtype": "Section Break",
+   "label": "Security & Dispatch"
+  },
+  {
+   "fieldname": "security_dispatch",
+   "fieldtype": "Link",
+   "label": "Security Dispatch",
+   "options": "Security Dispatch",
+   "read_only": 1
+  },
+  {
+   "fieldname": "security_draft_delivery_note",
+   "fieldtype": "Link",
+   "label": "Security Draft Delivery Note",
+   "options": "Security Draft Delivery Note",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "security_dispatch.status",
+   "fieldname": "dispatch_status",
+   "fieldtype": "Data",
+   "label": "Dispatch Status",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dispatch_date",
+   "fieldtype": "Date",
+   "label": "Dispatch Date"
+  },
+  {
+   "default": "Not Required",
+   "fieldname": "security_status",
+   "fieldtype": "Select",
+   "label": "Security Status",
+   "options": "Not Required\nDraft\nPending Review\nApproved\nRejected\nSent to Security\nPending Verification\nVerified\nOn Hold\nLDN Created\nSent to QC\nCompleted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_7",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "gate_pass",
+   "fieldtype": "Link",
+   "label": "Gate Pass",
+   "options": "Gate Pass",
+   "read_only": 1
+  },
+  {
+   "fieldname": "gate_pass_status",
+   "fieldtype": "Data",
+   "label": "Gate Pass Status",
+   "read_only": 1
+  },
+  {
+   "fieldname": "transport_po_request",
+   "fieldtype": "Link",
+   "label": "Transport PO Request",
+   "options": "Transport PO Request",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "special_instructions",
+   "fieldtype": "Text Editor",
+   "label": "Special Instructions"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text Editor",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Transport Schedule",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fetch_from": "shipping_booking.job_order",
+   "fieldname": "job_order",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Job Order",
+   "options": "Job Order"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-05-07 14:51:40.913117",
+ "modified_by": "Administrator",
+ "module": "Transportation",
+ "name": "Transport Schedule",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Transportation Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Transportation User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Shipping Manager",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Security Manager",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Security User",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

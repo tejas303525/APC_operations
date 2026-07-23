@@ -1,0 +1,448 @@
+{
+ "actions": [],
+ "autoname": "format:JO-{YYYY}-{#####}",
+ "creation": "2026-04-27 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "job_order_number",
+  "commercial_movement",
+  "customer",
+  "customer_name",
+  "supplier",
+  "supplier_name",
+  "date",
+  "status",
+  "col_break_1",
+  "payment_terms",
+  "pi_number",
+  "bank",
+  "currency",
+  "section_items",
+  "items",
+  "section_logistics",
+  "mode_of_transport",
+  "col_break_2",
+  "port_of_loading",
+  "port_of_discharge",
+  "terms_of_delivery",
+  "booking_requirement",
+  "transport_required",
+  "shipping_required",
+  "transport_schedule",
+  "shipping_booking",
+  "transport_status",
+  "shipping_status",
+  "transport_requirement_status",
+  "transport_requirement_notes",
+  "section_responsibility",
+  "freight_borne_by",
+  "transport_arranged_by",
+  "shipping_arranged_by",
+  "col_break_resp",
+  "insurance_borne_by",
+  "insurance_required",
+  "risk_transfer_point",
+  "section_insurance",
+  "insurance_policy_no",
+  "insurance_value",
+  "col_break_ins",
+  "insurance_provider",
+  "insurance_currency",
+  "section_loading",
+  "loading_instructions",
+  "loading_remarks",
+  "col_break_3",
+  "pallet_instructions",
+  "labelling",
+  "section_documents",
+  "documents_required"
+ ],
+ "fields": [
+  {
+   "default": "Export",
+   "fieldname": "commercial_movement",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Commercial movement",
+   "options": "Export\nImport",
+   "reqd": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "mandatory_depends_on": "eval:doc.commercial_movement=='Export'",
+   "options": "Customer",
+   "search_index": 1
+  },
+  {
+   "fetch_from": "customer.customer_name",
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "Customer Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "label": "Supplier",
+   "mandatory_depends_on": "eval:doc.commercial_movement=='Import'",
+   "options": "Supplier",
+   "search_index": 1
+  },
+  {
+   "fetch_from": "supplier.supplier_name",
+   "fieldname": "supplier_name",
+   "fieldtype": "Data",
+   "label": "Supplier Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Draft\nConfirmed\nIn Progress\nCompleted\nCancelled"
+  },
+  {
+   "fieldname": "col_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "payment_terms",
+   "fieldtype": "Select",
+   "label": "Payment Terms",
+   "options": "100% CASH /TT/CDC IN ADVANCE\n100% cash In Advance Before Shipment/Loading\n100% CASH/TT/CDC AGAINST DELIVERY\n20% Advance Balance 80% against scan copy docs\n25% Advance and Balance 75% CAD at sight thru bank\n30 DAYS FROM INVOICE/DELIVERY DATE\n30 DAYS PDC AGAINST DELIVERY\n30 DAYS PDC IN ADVANCE\n30% Advance Balance 70% against scan copy docs\n50% Advance and Balance 50% CAD at sight thru bank\n50% Advance Balance 50% against scan copy docs\n60 DAYS FROM INVOICE /DELIVERY DATE\n60 DAYS PDC AGAINST DELIVERY\n60 DAYS PDC IN ADVANCE\n90 DAYS FROM INVOICE/ DELIVERY DATE\n90 DAYS PDC AGAINST DELIVERY\n90 DAYS PDC IN ADVANCE\nAvalised Draft 30 Days from Bill of Lading date\nAvalised Draft 60 Days from Bill of Lading date\nAvalised Draft 90 Days from Bill of Lading date\nCash against Documents (CAD)\nCash against Documents (CAD) Payable at sight through Bank\nConfirm Letter of credit payable at 30 days from Bill of Lading date\nConfirm Letter of credit payable at 60 days from Bill of Lading date\nConfirm Letter of credit payable at 90 days from Bill of Lading date\nIrrevocable Letter of Credit payable at sight\nPayable at 30 days from Bill of Lading Date thru Bank\nPayable at 30 days from Shipped on Board Date\nPayable at 60 days from Bill of Lading Date thru Bank\nPayable at 60 days from Shipped on Board Date\nPayable at 90 days from Bill of Lading Date thru Bank\nPayable at 90 days from Shipped on Board Date"
+  },
+  {
+   "fieldname": "pi_number",
+   "fieldtype": "Data",
+   "label": "P.I. Number",
+   "search_index": 1
+  },
+  {
+   "fieldname": "section_items",
+   "fieldtype": "Section Break",
+   "label": "Products"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Job Order Item"
+  },
+  {
+   "fieldname": "section_logistics",
+   "fieldtype": "Section Break",
+   "label": "Logistics"
+  },
+  {
+   "fieldname": "mode_of_transport",
+   "fieldtype": "Select",
+   "label": "Mode of Transport",
+   "options": "\nSea\nAir\nRoad\nRail"
+  },
+  {
+   "fieldname": "col_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "port_of_loading",
+   "fieldtype": "Link",
+   "label": "Port/Point of Loading (POL)",
+   "mandatory_depends_on": "eval:doc.commercial_movement=='Import' && doc.mode_of_transport=='Sea'",
+   "options": "Port"
+  },
+  {
+   "fieldname": "port_of_discharge",
+   "fieldtype": "Link",
+   "label": "Port/Point of Discharge (POD)",
+   "mandatory_depends_on": "eval:doc.commercial_movement=='Import' && doc.mode_of_transport=='Sea'",
+   "options": "Port"
+  },
+  {
+   "fieldname": "terms_of_delivery",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Terms of Delivery/Incoterms",
+   "options": "\nEXW\nFCA\nFOB\nCFR\nCIF\nCPT\nCIP\nDAP\nDPU\nDDP"
+  },
+  {
+   "default": "Pending Review",
+   "fieldname": "transport_requirement_status",
+   "fieldtype": "Select",
+   "label": "Transport Requirement Status",
+   "options": "Pending Review\nTransport Not Required\nTransport Required\nCustomer Arranged\nBuyer Arranged\nPending Shipping Booking\nPending Transport Request",
+   "read_only": 1
+  },
+  {
+   "fieldname": "transport_requirement_notes",
+   "fieldtype": "Small Text",
+   "label": "Transport Requirement Notes",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_loading",
+   "fieldtype": "Section Break",
+   "label": "Loading Details"
+  },
+  {
+   "fieldname": "loading_instructions",
+   "fieldtype": "Text",
+   "label": "Loading Instructions"
+  },
+  {
+   "fieldname": "loading_remarks",
+   "fieldtype": "Text",
+   "label": "Loading Remarks"
+  },
+  {
+   "fieldname": "col_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "pallet_instructions",
+   "fieldtype": "Check",
+   "label": "Pallet Instructions"
+  },
+  {
+   "fieldname": "labelling",
+   "fieldtype": "Small Text",
+   "label": "Labelling"
+  },
+  {
+   "fieldname": "section_documents",
+   "fieldtype": "Section Break",
+   "label": "Documents"
+  },
+  {
+   "fieldname": "documents_required",
+   "fieldtype": "Text Editor",
+   "label": "Documents Required"
+  },
+  {
+   "fieldname": "job_order_number",
+   "fieldtype": "Data",
+   "label": "Job order number"
+  },
+  {
+   "fieldname": "booking_requirement",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Booking Requirement",
+   "options": "Not Required\nTransport Booking\nShip Booking\nSupplier Arranged\nTransport and Ship Booking",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "transport_required",
+   "fieldtype": "Check",
+   "label": "Transport Required",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "shipping_required",
+   "fieldtype": "Check",
+   "label": "Shipping Required",
+   "read_only": 1
+  },
+  {
+   "fieldname": "transport_schedule",
+   "fieldtype": "Link",
+   "label": "Transport Schedule",
+   "options": "Transport Schedule",
+   "read_only": 1
+  },
+  {
+   "fieldname": "shipping_booking",
+   "fieldtype": "Link",
+   "label": "Shipping Booking",
+   "options": "Shipping Booking",
+   "read_only": 1
+  },
+  {
+   "fieldname": "transport_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Transport Status",
+   "options": "Pending Review\nNot Required\nPending Booking\nScheduled\nIn Progress\nCompleted\nCancelled",
+   "read_only": 1
+  },
+  {
+   "fieldname": "shipping_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Shipping Status",
+   "options": "Pending Review\nNot Required\nPending Shipping Booking\nPending Shipping Review\nSupplier Arranged\nIn Progress\nCompleted\nCancelled",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "description": "Auto-derived from Terms of Delivery. Identifies who pays freight, who arranges transport/shipping, and where risk transfers.",
+   "fieldname": "section_responsibility",
+   "fieldtype": "Section Break",
+   "label": "Incoterm Responsibility"
+  },
+  {
+   "description": "Who pays the main carriage / freight charges.",
+   "fieldname": "freight_borne_by",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Freight Borne By",
+   "options": "\nAPC\nCustomer\nMixed",
+   "read_only": 1
+  },
+  {
+   "description": "Who arranges and pays the inland leg from APC premises to handover point.",
+   "fieldname": "transport_arranged_by",
+   "fieldtype": "Select",
+   "label": "Inland Transport Arranged By",
+   "options": "\nAPC\nCustomer",
+   "read_only": 1
+  },
+  {
+   "description": "Who books and pays the main international carriage (vessel/airline).",
+   "fieldname": "shipping_arranged_by",
+   "fieldtype": "Select",
+   "label": "Main Carriage Arranged By",
+   "options": "\nAPC\nCustomer\nNot Applicable",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col_break_resp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Who is contractually obligated to procure cargo insurance.",
+   "fieldname": "insurance_borne_by",
+   "fieldtype": "Select",
+   "label": "Insurance Borne By",
+   "options": "\nAPC\nCustomer\nNot Applicable",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "True for CIF (min cover) and CIP (all-risk). APC must procure a policy.",
+   "fieldname": "insurance_required",
+   "fieldtype": "Check",
+   "label": "Insurance Required (APC)",
+   "read_only": 1
+  },
+  {
+   "description": "Point at which risk passes from APC to the customer per Incoterms 2020.",
+   "fieldname": "risk_transfer_point",
+   "fieldtype": "Small Text",
+   "label": "Risk Transfer Point",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "eval:doc.insurance_required",
+   "fieldname": "section_insurance",
+   "fieldtype": "Section Break",
+   "label": "Cargo Insurance"
+  },
+  {
+   "depends_on": "eval:doc.insurance_required",
+   "fieldname": "insurance_policy_no",
+   "fieldtype": "Data",
+   "label": "Insurance Policy No.",
+   "mandatory_depends_on": "eval:doc.insurance_required && doc.status==='Confirmed'"
+  },
+  {
+   "depends_on": "eval:doc.insurance_required",
+   "fieldname": "insurance_value",
+   "fieldtype": "Currency",
+   "label": "Insured Value"
+  },
+  {
+   "fieldname": "col_break_ins",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.insurance_required",
+   "fieldname": "insurance_provider",
+   "fieldtype": "Data",
+   "label": "Insurance Provider"
+  },
+  {
+   "depends_on": "eval:doc.insurance_required",
+   "fieldname": "insurance_currency",
+   "fieldtype": "Link",
+   "label": "Insurance Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "bank",
+   "fieldtype": "Select",
+   "label": "BANK",
+   "options": "HABIB"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Select",
+   "label": "Currency",
+   "options": "AED\nEUR\nUSD"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "group": "Related",
+   "link_doctype": "Shipping Booking",
+   "link_fieldname": "job_order"
+  },
+  {
+   "group": "Related",
+   "link_doctype": "Transport Schedule",
+   "link_fieldname": "job_order"
+  }
+ ],
+ "modified": "2026-05-06 10:42:12.757495",
+ "modified_by": "Administrator",
+ "module": "Shipping",
+ "name": "Job Order",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Shipping Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Shipping User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "date",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "job_order_number",
+ "track_changes": 1
+}

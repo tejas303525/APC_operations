@@ -1,0 +1,730 @@
+/* ═══════════════════════════════════════════════════════════════
+   Job Order Dashboard — Styles
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Root ──────────────────────────────────────────────────────── */
+.jd-dashboard {
+	background: var(--bg-color);
+	min-height: 100vh;
+}
+
+.jd-subtitle {
+	font-size: 12px;
+	color: var(--text-muted);
+	margin: 2px 0 20px;
+	line-height: 1.5;
+}
+
+/* ── KPI Strip ─────────────────────────────────────────────────── */
+.jd-kpi-strip {
+	display: grid;
+	grid-template-columns: repeat(5, 1fr);
+	gap: 14px;
+	margin-bottom: 24px;
+}
+
+@media (max-width: 1200px) { .jd-kpi-strip { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 800px)  { .jd-kpi-strip { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px)  { .jd-kpi-strip { grid-template-columns: 1fr; } }
+
+.jd-kpi-card {
+	background: var(--card-bg);
+	border: 1px solid var(--border-color);
+	border-radius: 10px;
+	padding: 18px 16px 14px;
+	cursor: pointer;
+	transition: box-shadow 0.15s, border-color 0.15s;
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+}
+
+.jd-kpi-card:hover {
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+	border-color: var(--primary);
+}
+
+.jd-kpi-top {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 10px;
+}
+
+.jd-kpi-label {
+	font-size: 11.5px;
+	color: var(--text-muted);
+	font-weight: 500;
+	line-height: 1.3;
+}
+
+.jd-kpi-icon {
+	width: 34px;
+	height: 34px;
+	border-radius: 8px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+
+.jd-kpi-icon svg { display: block; }
+
+.jd-icon-blue   { background: #e8f1fe; color: #3d84f7; }
+.jd-icon-green  { background: #e8f7ee; color: #2a9d5c; }
+.jd-icon-amber  { background: #fef5e7; color: #d08800; }
+.jd-icon-orange { background: #fff3e8; color: #cc6e00; }
+.jd-icon-teal   { background: #e4f8f5; color: #0ca5a5; }
+
+.jd-kpi-count {
+	font-size: 32px;
+	font-weight: 700;
+	color: var(--text-color);
+	line-height: 1;
+	margin-bottom: 6px;
+}
+
+.jd-count-green  { color: #2a9d5c; }
+.jd-count-amber  { color: #d08800; }
+.jd-count-orange { color: #cc6e00; }
+.jd-count-teal   { color: #0ca5a5; }
+
+.jd-kpi-sub {
+	font-size: 11px;
+	color: var(--text-muted);
+	font-weight: 400;
+}
+
+/* ── Main grid: content + sidebar ──────────────────────────────── */
+.jd-main-grid {
+	display: grid;
+	grid-template-columns: 1fr 280px;
+	gap: 20px;
+	align-items: start;
+}
+
+@media (max-width: 1050px) { .jd-main-grid { grid-template-columns: 1fr; } }
+
+/* ── Filters bar ──────────────────────────────────────────────── */
+.jd-filters-bar {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 14px;
+	flex-wrap: wrap;
+}
+
+.jd-search-wrap {
+	position: relative;
+	flex: 0 0 220px;
+}
+
+.jd-search-icon {
+	position: absolute;
+	left: 9px;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 13px;
+	height: 13px;
+	color: var(--text-muted);
+	pointer-events: none;
+}
+
+.jd-search-input {
+	width: 100%;
+	padding: 7px 10px 7px 30px;
+	border: 1px solid var(--border-color);
+	border-radius: 6px;
+	background: var(--control-bg);
+	font-size: 12px;
+	color: var(--text-color);
+	outline: none;
+	transition: border-color 0.12s;
+}
+
+.jd-search-input:focus { border-color: var(--primary); }
+.jd-search-input::placeholder { color: var(--text-muted); }
+
+.jd-filter-group {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.jd-filter-wrap {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+}
+
+.jd-filter-select {
+	appearance: none;
+	-webkit-appearance: none;
+	padding: 7px 28px 7px 10px;
+	border: 1px solid var(--border-color);
+	border-radius: 6px;
+	background: var(--control-bg);
+	font-size: 12px;
+	color: var(--text-color);
+	cursor: pointer;
+	outline: none;
+	transition: border-color 0.12s;
+}
+
+.jd-filter-select:focus { border-color: var(--primary); }
+
+.jd-select-caret {
+	position: absolute;
+	right: 8px;
+	width: 10px;
+	height: 6px;
+	color: var(--text-muted);
+	pointer-events: none;
+}
+
+.jd-daterange-wrap {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	padding: 5px 10px;
+	border: 1px solid var(--border-color);
+	border-radius: 6px;
+	background: var(--control-bg);
+}
+
+.jd-cal-icon {
+	width: 13px;
+	height: 13px;
+	color: var(--text-muted);
+	flex-shrink: 0;
+}
+
+.jd-filter-date {
+	border: none;
+	background: transparent;
+	font-size: 12px;
+	color: var(--text-color);
+	outline: none;
+	width: 110px;
+}
+
+.jd-date-sep {
+	font-size: 11px;
+	color: var(--text-muted);
+}
+
+.jd-clear-btn {
+	padding: 7px 12px;
+	border: 1px solid var(--border-color);
+	border-radius: 6px;
+	background: var(--control-bg);
+	font-size: 12px;
+	color: var(--text-muted);
+	cursor: pointer;
+	white-space: nowrap;
+	transition: color 0.12s, border-color 0.12s;
+}
+
+.jd-clear-btn:hover {
+	color: var(--text-color);
+	border-color: var(--primary);
+}
+
+/* ── Table card ───────────────────────────────────────────────── */
+.jd-table-card {
+	background: var(--card-bg);
+	border: 1px solid var(--border-color);
+	border-radius: 10px;
+	overflow: hidden;
+}
+
+.jd-table-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 16px 18px 14px;
+	border-bottom: 1px solid var(--border-color);
+}
+
+.jd-table-title {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--text-color);
+}
+
+.jd-table-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.jd-btn-create {
+	padding: 6px 13px;
+	background: var(--primary);
+	color: #fff;
+	border: none;
+	border-radius: 6px;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: opacity 0.12s;
+}
+
+.jd-btn-create:hover { opacity: 0.88; }
+
+.jd-settings-btn {
+	width: 30px;
+	height: 30px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: 1px solid var(--border-color);
+	border-radius: 6px;
+	background: var(--control-bg);
+	cursor: pointer;
+	color: var(--text-muted);
+	transition: border-color 0.12s;
+}
+
+.jd-settings-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+/* ── Table ────────────────────────────────────────────────────── */
+.jd-table-wrap { overflow-x: auto; }
+
+.jd-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 12px;
+	min-width: 860px;
+}
+
+.jd-table th {
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--text-muted);
+	text-align: left;
+	padding: 10px 12px;
+	border-bottom: 1px solid var(--border-color);
+	background: var(--control-bg);
+	white-space: nowrap;
+	user-select: none;
+}
+
+.jd-th-check { width: 36px; }
+
+.jd-sortable { cursor: pointer; }
+.jd-sortable:hover { color: var(--text-color); }
+
+.jd-sort-icon {
+	margin-left: 4px;
+	font-size: 10px;
+	opacity: 0.5;
+}
+
+.jd-table td {
+	padding: 11px 12px;
+	border-bottom: 1px solid var(--border-color);
+	color: var(--text-color);
+	vertical-align: middle;
+}
+
+.jd-table tr:last-child td { border-bottom: none; }
+
+.jd-row {
+	cursor: pointer;
+	transition: background 0.1s;
+}
+
+.jd-row:hover { background: var(--control-bg); }
+
+.jd-td-check  { width: 36px; }
+.jd-td-customer { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jd-td-type   { color: var(--text-muted); font-size: 11.5px; }
+.jd-td-date   { white-space: nowrap; color: var(--text-muted); }
+.jd-td-user   { color: var(--text-muted); font-size: 11.5px; }
+.jd-td-actions { width: 70px; white-space: nowrap; }
+
+.jd-link {
+	color: var(--primary);
+	text-decoration: none;
+	font-weight: 600;
+}
+
+.jd-link:hover { text-decoration: underline; }
+.jd-id-link   { font-size: 12px; }
+
+.jd-muted { color: var(--text-muted); }
+
+.jd-empty-row {
+	text-align: center;
+	color: var(--text-muted);
+	padding: 36px 0;
+	font-size: 12px;
+}
+
+/* ── Status badges ────────────────────────────────────────────── */
+.jd-status-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 3px 9px 3px 7px;
+	border-radius: 12px;
+	font-size: 11px;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.jd-dot {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	flex-shrink: 0;
+	display: inline-block;
+}
+
+.jd-s-open      { background: #e8f7ee; color: #1a7a42; }
+.jd-s-open      .jd-dot { background: #2a9d5c; }
+
+.jd-s-progress  { background: #e8f1fe; color: #2263c7; }
+.jd-s-progress  .jd-dot { background: #3d84f7; }
+
+.jd-s-security  { background: #fff3e8; color: #cc6e00; }
+.jd-s-security  .jd-dot { background: #f4a224; }
+
+.jd-s-draft     { background: #f0f0f0; color: #555; }
+.jd-s-draft     .jd-dot { background: #aaa; }
+
+.jd-s-completed { background: #e8f7ee; color: #1a7a42; }
+.jd-s-completed .jd-dot { background: #2a9d5c; }
+
+.jd-s-cancelled { background: #fdeaea; color: #c02020; }
+.jd-s-cancelled .jd-dot { background: #e63535; }
+
+/* ── Priority badges ──────────────────────────────────────────── */
+.jd-priority {
+	display: inline-block;
+	padding: 2px 9px;
+	border-radius: 10px;
+	font-size: 11px;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.jd-p-high   { background: #fff3e8; color: #cc6e00; }
+.jd-p-medium { background: #e8f1fe; color: #2263c7; }
+.jd-p-low    { background: #f0f0f0; color: #666; }
+
+/* ── Action icons ─────────────────────────────────────────────── */
+.jd-act-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	border-radius: 5px;
+	border: none;
+	background: transparent;
+	color: var(--text-muted);
+	cursor: pointer;
+	text-decoration: none;
+	transition: background 0.1s, color 0.1s;
+}
+
+.jd-act-icon:hover { background: var(--border-color); color: var(--text-color); }
+
+/* ── Row context menu ─────────────────────────────────────────── */
+.jd-row-menu {
+	position: absolute;
+	z-index: 1000;
+	background: var(--card-bg);
+	border: 1px solid var(--border-color);
+	border-radius: 8px;
+	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+	padding: 4px 0;
+	min-width: 130px;
+}
+
+.jd-menu-item {
+	padding: 8px 14px;
+	font-size: 12px;
+	color: var(--text-color);
+	cursor: pointer;
+	transition: background 0.1s;
+}
+
+.jd-menu-item:hover     { background: var(--control-bg); }
+.jd-menu-danger         { color: #c02020; }
+.jd-menu-danger:hover   { background: #fdeaea; }
+
+/* ── Table footer ─────────────────────────────────────────────── */
+.jd-table-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 12px 18px;
+	border-top: 1px solid var(--border-color);
+	background: var(--control-bg);
+}
+
+.jd-row-count {
+	font-size: 11.5px;
+	color: var(--text-muted);
+}
+
+.jd-pagination {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.jd-per-page {
+	appearance: none;
+	-webkit-appearance: none;
+	border: 1px solid var(--border-color);
+	border-radius: 5px;
+	background: var(--card-bg);
+	font-size: 11.5px;
+	color: var(--text-muted);
+	padding: 4px 8px;
+	cursor: pointer;
+	outline: none;
+}
+
+.jd-page-btn {
+	width: 26px;
+	height: 26px;
+	border: 1px solid var(--border-color);
+	border-radius: 5px;
+	background: var(--card-bg);
+	font-size: 14px;
+	color: var(--text-muted);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: border-color 0.1s, color 0.1s;
+}
+
+.jd-page-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+.jd-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.jd-page-num {
+	font-size: 12px;
+	color: var(--text-color);
+	min-width: 20px;
+	text-align: center;
+}
+
+/* ── Sidebar shared card ──────────────────────────────────────── */
+.jd-card {
+	background: var(--card-bg);
+	border: 1px solid var(--border-color);
+	border-radius: 10px;
+	padding: 18px 16px;
+	margin-bottom: 16px;
+}
+
+.jd-card:last-child { margin-bottom: 0; }
+
+.jd-card-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 14px;
+}
+
+.jd-card-title {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--text-color);
+}
+
+.jd-card-link {
+	font-size: 11px;
+	color: var(--primary);
+	cursor: pointer;
+	font-weight: 500;
+	white-space: nowrap;
+}
+
+.jd-card-link:hover { text-decoration: underline; }
+
+/* ── Quick Actions ────────────────────────────────────────────── */
+.jd-qa-list {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+}
+
+.jd-qa-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 4px;
+	border-bottom: 1px solid var(--border-color);
+	cursor: pointer;
+	transition: background 0.1s;
+	border-radius: 6px;
+}
+
+.jd-qa-item:last-child { border-bottom: none; }
+
+.jd-qa-item:hover { background: var(--control-bg); }
+
+.jd-qa-icon-wrap {
+	width: 30px;
+	height: 30px;
+	border-radius: 7px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+
+.jd-qa-blue   { background: #e8f1fe; color: #3d84f7; }
+.jd-qa-teal   { background: #e4f8f5; color: #0ca5a5; }
+.jd-qa-purple { background: #f0ebfe; color: #7c5cbf; }
+.jd-qa-amber  { background: #fef5e7; color: #d08800; }
+
+.jd-qa-label {
+	flex: 1;
+	font-size: 12.5px;
+	color: var(--text-color);
+	font-weight: 500;
+}
+
+.jd-qa-badge {
+	background: var(--primary);
+	color: #fff;
+	font-size: 10px;
+	font-weight: 700;
+	padding: 2px 7px;
+	border-radius: 10px;
+	min-width: 20px;
+	text-align: center;
+}
+
+.jd-qa-arrow {
+	width: 14px;
+	height: 14px;
+	color: var(--text-muted);
+	flex-shrink: 0;
+}
+
+.jd-qa-item:hover .jd-qa-arrow { color: var(--primary); }
+
+/* ── Recent Activity ──────────────────────────────────────────── */
+.jd-activity-card { padding-bottom: 8px; }
+
+.jd-activity-list {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+}
+
+.jd-act-item {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 10px 4px;
+	border-bottom: 1px solid var(--border-color);
+	cursor: pointer;
+	transition: background 0.1s;
+	border-radius: 6px;
+}
+
+.jd-act-item:last-child { border-bottom: none; }
+.jd-act-item:hover { background: var(--control-bg); }
+
+.jd-act-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	flex-shrink: 0;
+	margin-top: 4px;
+	display: inline-block;
+}
+
+/* Re-use status dot colours via badge class */
+.jd-act-dot.jd-s-open      { background: #2a9d5c; }
+.jd-act-dot.jd-s-progress  { background: #3d84f7; }
+.jd-act-dot.jd-s-security  { background: #f4a224; }
+.jd-act-dot.jd-s-draft     { background: #aaa; }
+.jd-act-dot.jd-s-completed { background: #2a9d5c; }
+.jd-act-dot.jd-s-cancelled { background: #e63535; }
+
+.jd-act-body {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	min-width: 0;
+}
+
+.jd-act-ref {
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--primary);
+	text-decoration: none;
+}
+
+.jd-act-ref:hover { text-decoration: underline; }
+
+.jd-act-msg {
+	font-size: 11px;
+	color: var(--text-muted);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.jd-act-time {
+	font-size: 10.5px;
+	color: var(--text-muted);
+	opacity: 0.75;
+}
+
+.jd-act-arrow {
+	width: 13px;
+	height: 13px;
+	color: var(--text-muted);
+	flex-shrink: 0;
+	margin-top: 3px;
+}
+
+.jd-act-item:hover .jd-act-arrow { color: var(--primary); }
+
+.jd-activity-empty {
+	font-size: 12px;
+	color: var(--text-muted);
+	text-align: center;
+	padding: 20px 0;
+}
+
+/* ── Skeleton shimmer ─────────────────────────────────────────── */
+.jd-skeleton {
+	background: linear-gradient(
+		90deg,
+		var(--border-color) 25%,
+		var(--control-bg)   50%,
+		var(--border-color) 75%
+	);
+	background-size: 200% 100%;
+	animation: jd-shimmer 1.4s infinite;
+	border-radius: 4px;
+	display: block;
+}
+
+@keyframes jd-shimmer {
+	0%   { background-position:  200% 0; }
+	100% { background-position: -200% 0; }
+}
+
+/* ── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 768px) {
+	.jd-filters-bar      { gap: 6px; }
+	.jd-search-wrap      { flex: 0 0 180px; }
+	.jd-kpi-count        { font-size: 26px; }
+	.jd-table-footer     { flex-direction: column; gap: 10px; align-items: flex-start; }
+}

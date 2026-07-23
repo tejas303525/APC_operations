@@ -1,0 +1,21 @@
+{
+ "creation": "2026-05-12 00:00:00.000000",
+ "doctype": "Page",
+ "module": "Shipping",
+ "name": "shipping-console",
+ "page_name": "shipping-console",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Shipping Manager"
+  },
+  {
+   "role": "Shipping User"
+  }
+ ],
+ "standard": "Yes",
+ "system_page": 0,
+ "title": "Shipping Console"
+}

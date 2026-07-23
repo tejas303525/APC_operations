@@ -1,0 +1,198 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:ALLOC-{YYYY}-{#####}",
+ "creation": "2026-05-01 00:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "allocation_section",
+  "allocation_number",
+  "sales_demand",
+  "customer",
+  "customer_name",
+  "column_break_1",
+  "allocation_status",
+  "allocation_date",
+  "allocation_type",
+  "totals_section",
+  "total_required_quantity",
+  "total_allocated_quantity",
+  "total_dispatched_quantity",
+  "items_section",
+  "allocation_details",
+  "notes",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "allocation_section",
+   "fieldtype": "Section Break",
+   "label": "Allocation Details"
+  },
+  {
+   "fieldname": "allocation_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Allocation Number",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "sales_demand",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Sales Demand",
+   "options": "APC Sales Demand",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "sales_demand.customer",
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Customer",
+   "options": "Customer",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "sales_demand.customer_name",
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Customer Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "allocation_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Allocation Status",
+   "options": "Draft\nAllocated\nPartially Dispatched\nFully Dispatched\nReleased",
+   "reqd": 1
+  },
+  {
+   "fieldname": "allocation_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Allocation Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "allocation_type",
+   "fieldtype": "Select",
+   "label": "Allocation Type",
+   "options": "Automatic\nManual\nSystem"
+  },
+  {
+   "fieldname": "totals_section",
+   "fieldtype": "Section Break",
+   "label": "Totals"
+  },
+  {
+   "fieldname": "total_required_quantity",
+   "fieldtype": "Float",
+   "label": "Total Required Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_allocated_quantity",
+   "fieldtype": "Float",
+   "label": "Total Allocated Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_dispatched_quantity",
+   "fieldtype": "Float",
+   "label": "Total Dispatched Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "items_section",
+   "fieldtype": "Section Break",
+   "label": "Allocation Details"
+  },
+  {
+   "fieldname": "allocation_details",
+   "fieldtype": "Table",
+   "label": "Allocation Details",
+   "options": "APC Batch Allocation Detail"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "APC Batch Allocation",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-05-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Sales",
+ "name": "APC Batch Allocation",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Shipping Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Production Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "allocation_date",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

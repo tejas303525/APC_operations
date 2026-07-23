@@ -1,0 +1,287 @@
+<div class="qcd-page">
+
+	<!-- Hero -->
+	<div class="qcd-hero">
+		<div class="qcd-hero-left">
+			<div class="qcd-hero-icon">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2"/><path d="M6.453 15h11.094"/><path d="M8.5 2h7"/></svg>
+			</div>
+			<div>
+				<h1 class="qcd-title">QC Module</h1>
+				<p class="qcd-subtitle">Production QC, preshipment QC, batch register, FIFO COA dispatch, and NAS archiving</p>
+			</div>
+		</div>
+		<div class="qcd-hero-actions">
+			<button class="btn btn-default btn-sm qcd-btn-refresh">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="qcd-btn-icon"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+				Refresh
+			</button>
+			<button class="btn btn-primary btn-sm qcd-btn-new-request">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="qcd-btn-icon"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+				New QC Request
+			</button>
+		</div>
+	</div>
+
+	<!-- KPI Cards -->
+	<div class="qcd-kpis">
+		<div class="qcd-kpi qcd-kpi-amber">
+			<div class="qcd-kpi-body">
+				<p class="qcd-kpi-label">Pending / In Progress</p>
+				<div class="qcd-kpi-value qcd-kpi-pending">—</div>
+				<p class="qcd-kpi-note">Requires QC action</p>
+			</div>
+			<div class="qcd-kpi-icon">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+			</div>
+		</div>
+		<div class="qcd-kpi qcd-kpi-emerald">
+			<div class="qcd-kpi-body">
+				<p class="qcd-kpi-label">QC Cleared</p>
+				<div class="qcd-kpi-value qcd-kpi-cleared">—</div>
+				<p class="qcd-kpi-note">Eligible for COA / dispatch</p>
+			</div>
+			<div class="qcd-kpi-icon">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>
+			</div>
+		</div>
+		<div class="qcd-kpi qcd-kpi-red">
+			<div class="qcd-kpi-body">
+				<p class="qcd-kpi-label">Rejected / Hold</p>
+				<div class="qcd-kpi-value qcd-kpi-rejected">—</div>
+				<p class="qcd-kpi-note">Blocked from allocation</p>
+			</div>
+			<div class="qcd-kpi-icon">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+			</div>
+		</div>
+		<div class="qcd-kpi qcd-kpi-purple">
+			<div class="qcd-kpi-body">
+				<p class="qcd-kpi-label">COAs Generated</p>
+				<div class="qcd-kpi-value qcd-kpi-coas">—</div>
+				<p class="qcd-kpi-note">Batch-linked certificates</p>
+			</div>
+			<div class="qcd-kpi-icon">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m9 15 2 2 4-4"/></svg>
+			</div>
+		</div>
+	</div>
+
+	<!-- Toolbar: Tabs + Search -->
+	<div class="qcd-toolbar">
+		<div class="qcd-tabs">
+			<button class="qcd-tab qcd-tab-active" data-tab="requests">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="qcd-tab-icon"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1" ry="1"/><path d="m9 12 2 2 4-4"/></svg>
+				QC Requests
+			</button>
+			<button class="qcd-tab" data-tab="batches">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="qcd-tab-icon"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+				Batch Register
+			</button>
+			<button class="qcd-tab" data-tab="fifo">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="qcd-tab-icon"><path d="M11 21H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h5l2 3h9a2 2 0 0 1 2 2v2"/><path d="m15.69 14.5.78.79 2.55-2.55"/><rect x="13" y="12" width="8" height="7" rx="1"/></svg>
+				FIFO Dispatch
+			</button>
+			<button class="qcd-tab" data-tab="coa">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="qcd-tab-icon"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+				COA Management
+			</button>
+		</div>
+		<div class="qcd-search-row">
+			<div class="qcd-search-wrap">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="qcd-search-icon"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+				<input type="search" class="form-control qcd-search" placeholder="Search request, batch, product, customer...">
+			</div>
+			<select class="form-control qcd-status-filter">
+				<option value="">All statuses</option>
+				<option value="Pending QC">Pending QC</option>
+				<option value="In Progress">In Progress</option>
+				<option value="QC Cleared">QC Cleared</option>
+				<option value="QC Rejected">QC Rejected</option>
+			</select>
+		</div>
+	</div>
+
+	<!-- TAB: QC Requests -->
+	<div class="qcd-content qcd-content-requests">
+		<div class="qcd-requests-layout">
+			<div class="qcd-requests-left">
+				<div class="qcd-panel">
+					<div class="qcd-table-wrap">
+						<table class="qcd-table">
+							<thead>
+								<tr>
+									<th>Request</th>
+									<th>Type</th>
+									<th>Source</th>
+									<th>Job Order</th>
+									<th>Material</th>
+									<th>QC Status</th>
+									<th class="text-right">Action</th>
+								</tr>
+							</thead>
+							<tbody class="qcd-requests-tbody"></tbody>
+						</table>
+					</div>
+					<div class="qcd-requests-empty" style="display:none">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1" ry="1"/><path d="m9 12 2 2 4-4"/></svg>
+						<p>No QC requests found</p>
+						<small>Try a different search or status filter.</small>
+					</div>
+				</div>
+			</div>
+			<div class="qcd-detail-panel">
+				<div class="qcd-detail-placeholder">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+					<p>Select a QC request to inspect details</p>
+				</div>
+				<div class="qcd-detail-content" style="display:none">
+					<div class="qcd-detail-header">
+						<div>
+							<div class="qcd-detail-id"></div>
+							<div class="qcd-detail-meta"></div>
+						</div>
+						<div class="qcd-detail-status"></div>
+					</div>
+					<div class="qcd-detail-grid">
+						<div class="qcd-detail-card"><p>Job Order</p><strong class="qcd-detail-jo"></strong></div>
+						<div class="qcd-detail-card"><p>Inspection Type</p><strong class="qcd-detail-type"></strong></div>
+						<div class="qcd-detail-card"><p>Container / Vehicle</p><strong class="qcd-detail-container"></strong></div>
+						<div class="qcd-detail-card"><p>Requested On</p><strong class="qcd-detail-date"></strong></div>
+					</div>
+					<div class="qcd-detail-material">
+						<p class="qcd-detail-section-label">Material Description</p>
+						<div class="qcd-detail-material-text"></div>
+					</div>
+					<div class="qcd-detail-actions">
+						<a class="btn btn-default btn-sm qcd-detail-open-link" href="#">
+							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="qcd-btn-icon"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+							Open Full Record
+						</a>
+						<a class="btn btn-default btn-sm qcd-detail-jo-link" href="#">
+							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="qcd-btn-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+							View Job Order
+						</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- TAB: Batch Register -->
+	<div class="qcd-content qcd-content-batches" style="display:none">
+		<div class="qcd-panel">
+			<div class="qcd-panel-header">
+				<div>
+					<h4>Batch Register</h4>
+					<p>Batches remain in QC Hold until cleared. Only QC-approved batches are eligible for FIFO dispatch.</p>
+				</div>
+				<a class="btn btn-default btn-sm" href="/app/apc-batch">View All Batches</a>
+			</div>
+			<div class="qcd-table-wrap">
+				<table class="qcd-table">
+					<thead>
+						<tr>
+							<th>FIFO</th>
+							<th>Batch</th>
+							<th>Product</th>
+							<th>Warehouse</th>
+							<th>Mfg Date</th>
+							<th>Expiry</th>
+							<th class="text-right">Available</th>
+							<th>QC Status</th>
+							<th>Stock</th>
+							<th>COA</th>
+						</tr>
+					</thead>
+					<tbody class="qcd-batches-tbody"></tbody>
+				</table>
+			</div>
+			<div class="qcd-batches-empty" style="display:none">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/></svg>
+				<p>No batches found</p>
+				<small>No active or on-hold batches match your search.</small>
+			</div>
+		</div>
+	</div>
+
+	<!-- TAB: FIFO Dispatch -->
+	<div class="qcd-content qcd-content-fifo" style="display:none">
+		<div class="qcd-panel">
+			<div class="qcd-panel-header">
+				<div>
+					<h4>FIFO Dispatch Preview</h4>
+					<p>Oldest QC-cleared, COA-approved batch dispatched first. Select a product and enter required quantity.</p>
+				</div>
+				<button class="btn btn-primary btn-sm qcd-fifo-confirm" disabled>Confirm FIFO Allocation</button>
+			</div>
+			<div class="qcd-fifo-controls">
+				<div class="qcd-fifo-control-group qcd-fifo-product-wrap"></div>
+				<div class="qcd-fifo-control-group">
+					<label class="qcd-control-label">Required Quantity (MT)</label>
+					<input type="number" class="form-control qcd-fifo-qty" placeholder="e.g. 25" min="1" step="0.001">
+				</div>
+				<div class="qcd-fifo-control-group qcd-fifo-actions">
+					<label class="qcd-control-label">&nbsp;</label>
+					<button class="btn btn-default btn-sm qcd-fifo-preview">Preview Allocation</button>
+				</div>
+			</div>
+			<div class="qcd-fifo-result" style="display:none">
+				<div class="qcd-fifo-plan-wrap">
+					<div class="qcd-table-wrap">
+						<table class="qcd-table">
+							<thead>
+								<tr>
+									<th>Sequence</th>
+									<th>Batch</th>
+									<th>Mfg Date</th>
+									<th class="text-right">Available</th>
+									<th class="text-right">Allocate</th>
+									<th>COA</th>
+								</tr>
+							</thead>
+							<tbody class="qcd-fifo-tbody"></tbody>
+						</table>
+					</div>
+				</div>
+				<div class="qcd-fifo-summary"></div>
+			</div>
+		</div>
+	</div>
+
+	<!-- TAB: COA Management -->
+	<div class="qcd-content qcd-content-coa" style="display:none">
+		<div class="qcd-panel">
+			<div class="qcd-panel-header">
+				<div>
+					<h4>COA Management</h4>
+					<p>Generate, approve, attach to Loading DN, and archive COAs per batch.</p>
+				</div>
+				<a class="btn btn-default btn-sm" href="/app/apc-coa">View All COAs</a>
+			</div>
+			<div class="qcd-table-wrap">
+				<table class="qcd-table">
+					<thead>
+						<tr>
+							<th>COA</th>
+							<th>Batch</th>
+							<th>Product</th>
+							<th>Job Order</th>
+							<th>Status</th>
+							<th>Approval</th>
+							<th>Date</th>
+							<th class="text-right">Actions</th>
+						</tr>
+					</thead>
+					<tbody class="qcd-coa-tbody"></tbody>
+				</table>
+			</div>
+			<div class="qcd-coa-empty" style="display:none">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+				<p>No COAs found</p>
+				<small>No certificates of analysis match your search.</small>
+			</div>
+		</div>
+	</div>
+
+</div>

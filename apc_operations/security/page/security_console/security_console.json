@@ -1,0 +1,21 @@
+{
+ "creation": "2026-05-12 00:00:00.000000",
+ "doctype": "Page",
+ "module": "Security",
+ "name": "security-console",
+ "page_name": "security-console",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Security Manager"
+  },
+  {
+   "role": "Security User"
+  }
+ ],
+ "standard": "Yes",
+ "system_page": 0,
+ "title": "Security Console"
+}

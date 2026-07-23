@@ -1,0 +1,159 @@
+{
+ "actions": [],
+ "creation": "2026-05-05 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "batch",
+  "batch_number",
+  "product",
+  "product_name",
+  "column_break_1",
+  "uom",
+  "manufacturing_date",
+  "fifo_sequence",
+  "qty_section",
+  "allocated_qty",
+  "dispatched_qty",
+  "column_break_2",
+  "coa",
+  "coa_number",
+  "override_section",
+  "is_fifo_override",
+  "override_reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "batch",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Batch",
+   "options": "APC Batch",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "batch.batch_number",
+   "fieldname": "batch_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Batch Number",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "batch.product",
+   "fieldname": "product",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Product",
+   "options": "Item",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "batch.product.item_name",
+   "fieldname": "product_name",
+   "fieldtype": "Data",
+   "label": "Product Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "batch.uom",
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "label": "UOM",
+   "options": "UOM",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "batch.manufacturing_date",
+   "fieldname": "manufacturing_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Mfg Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fifo_sequence",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "FIFO Seq",
+   "read_only": 1
+  },
+  {
+   "fieldname": "qty_section",
+   "fieldtype": "Section Break",
+   "label": "Quantities"
+  },
+  {
+   "fieldname": "allocated_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Allocated Qty",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "dispatched_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Dispatched Qty",
+   "non_negative": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "batch.linked_coa",
+   "fieldname": "coa",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "COA",
+   "options": "APC COA",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "coa.coa_number",
+   "fieldname": "coa_number",
+   "fieldtype": "Data",
+   "label": "COA Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "override_section",
+   "fieldtype": "Section Break",
+   "label": "FIFO Override"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_fifo_override",
+   "fieldtype": "Check",
+   "label": "FIFO Override"
+  },
+  {
+   "depends_on": "is_fifo_override",
+   "fieldname": "override_reason",
+   "fieldtype": "Small Text",
+   "label": "Override Reason"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-05-05 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Shipping",
+ "name": "Loading DN Batch",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "idx",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 0
+}

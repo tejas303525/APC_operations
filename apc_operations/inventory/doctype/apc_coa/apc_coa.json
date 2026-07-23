@@ -1,0 +1,357 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:COA-{YYYY}-{#####}",
+ "creation": "2026-05-01 00:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "coa_details_section",
+  "coa_number",
+  "job_order",
+  "production_order",
+  "batch",
+  "batch_number",
+  "product",
+  "product_name",
+  "product_group",
+  "customer",
+  "quality_inspection",
+  "column_break_1",
+  "coa_template",
+  "coa_date",
+  "status",
+  "approval_status",
+  "coa_status",
+  "manufacturing_date",
+  "loading_delivery_note",
+  "test_results_section",
+  "test_results",
+  "approval_section",
+  "approved_by",
+  "approved_on",
+  "approved_date",
+  "rejected_by",
+  "rejected_date",
+  "column_break_2",
+  "qc_remarks",
+  "remarks",
+  "rejection_reason",
+  "document_section",
+  "coa_pdf",
+  "print_format_reference",
+  "nas_path",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "coa_details_section",
+   "fieldtype": "Section Break",
+   "label": "COA Details"
+  },
+  {
+   "fieldname": "coa_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "COA Number",
+   "no_copy": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "job_order",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Job Order",
+   "options": "Job Order"
+  },
+  {
+   "fieldname": "production_order",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Production Order",
+   "options": "Production Order"
+  },
+  {
+   "fieldname": "batch",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "APC Batch",
+   "options": "APC Batch",
+   "search_index": 1
+  },
+  {
+   "fieldname": "batch_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Batch Number",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "batch.product",
+   "fieldname": "product",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Product",
+   "options": "Item"
+  },
+  {
+   "fieldname": "product_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Product Name",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "product_group",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Product Group",
+   "options": "\nSolvent\nOil\nLubricant\nPlasticizer\nWhite Oil\nPetroleum Jelly\nOther"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Customer",
+   "options": "Customer",
+   "search_index": 1
+  },
+  {
+   "fieldname": "quality_inspection",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "ERPNext Quality Inspection",
+   "options": "Quality Inspection",
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "coa_template",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "COA Template",
+   "options": "COA Template"
+  },
+  {
+   "default": "Today",
+   "fieldname": "coa_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "COA Date",
+   "reqd": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nPending Testing\nPassed\nFailed\nApproved\nRejected\nCancelled",
+   "reqd": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "approval_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Approval Status",
+   "options": "Pending\nApproved\nRejected",
+   "read_only": 1
+  },
+  {
+   "fieldname": "coa_status",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Legacy COA Status",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "batch.manufacturing_date",
+   "fieldname": "manufacturing_date",
+   "fieldtype": "Date",
+   "label": "Manufacturing Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "loading_delivery_note",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Loading Delivery Note",
+   "options": "Loading Delivery Note"
+  },
+  {
+   "fieldname": "test_results_section",
+   "fieldtype": "Section Break",
+   "label": "Test Results"
+  },
+  {
+   "fieldname": "test_results",
+   "fieldtype": "Table",
+   "label": "Test Results",
+   "options": "COA Test Result"
+  },
+  {
+   "fieldname": "approval_section",
+   "fieldtype": "Section Break",
+   "label": "Approval"
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "Approved On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_date",
+   "fieldtype": "Datetime",
+   "hidden": 1,
+   "label": "Legacy Approved Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rejected_by",
+   "fieldtype": "Link",
+   "label": "Rejected By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rejected_date",
+   "fieldtype": "Datetime",
+   "label": "Rejected Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "qc_remarks",
+   "fieldtype": "Small Text",
+   "label": "QC Remarks"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "rejection_reason",
+   "fieldtype": "Text",
+   "label": "Rejection Reason"
+  },
+  {
+   "fieldname": "document_section",
+   "fieldtype": "Section Break",
+   "label": "Documents"
+  },
+  {
+   "fieldname": "coa_pdf",
+   "fieldtype": "Attach",
+   "label": "COA PDF"
+  },
+  {
+   "fieldname": "print_format_reference",
+   "fieldtype": "Data",
+   "label": "Print Format Reference"
+  },
+  {
+   "fieldname": "nas_path",
+   "fieldtype": "Data",
+   "label": "NAS Path",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "APC COA",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-05-02 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Inventory",
+ "name": "APC COA",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Quality Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Quality User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Shipping Manager",
+   "share": 1,
+   "write": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

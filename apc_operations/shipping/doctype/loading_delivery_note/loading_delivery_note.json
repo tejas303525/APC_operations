@@ -1,0 +1,455 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:LDN-{YYYY}-{#####}",
+ "creation": "2026-04-28 12:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "source_section",
+  "security_inspection",
+  "security_draft_delivery_note",
+  "job_order_number",
+  "job_order",
+  "transportation_request",
+  "column_break_1",
+  "customer",
+  "buyer",
+  "customer_name",
+  "terms_of_delivery",
+  "loading_details_section",
+  "loading_date",
+  "loading_time",
+  "column_break_2",
+  "delivery_note_status",
+  "qc_status",
+  "receivables_status",
+  "dispatch_confirmed",
+  "dispatch_confirmed_on",
+  "dispatch_confirmed_by",
+  "coa_verified",
+  "coa_verified_by",
+  "coa_verified_on",
+  "vehicle_details_section",
+  "vehicle",
+  "driver",
+  "column_break_3",
+  "container_number",
+  "seal_number",
+  "material_section",
+  "material_description",
+  "quantity",
+  "uom",
+  "batch_allocation_section",
+  "batch_allocations",
+  "qc_section",
+  "qc_cleared_by",
+  "qc_cleared_on",
+  "sent_to_qc_on",
+  "column_break_4",
+  "qc_report_request",
+  "receivables_section",
+  "reported_to_receivables_on",
+  "reported_by",
+  "column_break_5",
+  "invoice_reference",
+  "payment_status",
+  "notes_section",
+  "notes",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_section",
+   "fieldtype": "Section Break",
+   "label": "Source Documents"
+  },
+  {
+   "fieldname": "security_inspection",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Security Inspection",
+   "options": "Security Inspection",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "security_draft_delivery_note",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Security Draft DN",
+   "options": "Security Draft Delivery Note",
+   "search_index": 1
+  },
+  {
+   "fetch_from": "job_order.job_order_number",
+   "fieldname": "job_order_number",
+   "fieldtype": "Data",
+   "label": "Job Order Number",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "security_inspection.job_order",
+   "fieldname": "job_order",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Job Order",
+   "options": "Job Order",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "security_inspection.transportation_request",
+   "fieldname": "transportation_request",
+   "fieldtype": "Link",
+   "label": "Transportation Request",
+   "options": "Transport Schedule",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "security_inspection.customer",
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Customer",
+   "options": "Customer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "buyer",
+   "fieldtype": "Link",
+   "label": "Buyer",
+   "options": "Customer"
+  },
+  {
+   "fetch_from": "customer.customer_name",
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "Customer Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "job_order.terms_of_delivery",
+   "fieldname": "terms_of_delivery",
+   "fieldtype": "Data",
+   "label": "Terms of Delivery",
+   "read_only": 1
+  },
+  {
+   "fieldname": "loading_details_section",
+   "fieldtype": "Section Break",
+   "label": "Loading Details"
+  },
+  {
+   "fieldname": "loading_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Loading Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "loading_time",
+   "fieldtype": "Time",
+   "label": "Loading Time"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Pending QC",
+   "fieldname": "delivery_note_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Delivery Note Status",
+   "options": "Draft\nPending QC\nBatch Allocation Pending\nBatch Allocated\nQC Cleared\nQC Rejected\nCOA Attached\nReady for Receivables\nReported to Receivables\nLoading Completed\nDispatch Confirmed\nCompleted\nCancelled",
+   "reqd": 1
+  },
+  {
+   "default": "Pending QC",
+   "fieldname": "qc_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "QC Status",
+   "options": "Pending QC\nQC Cleared\nQC Rejected\nNot Required",
+   "search_index": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "dispatch_confirmed",
+   "fieldtype": "Check",
+   "label": "Dispatch Confirmed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dispatch_confirmed_on",
+   "fieldtype": "Datetime",
+   "label": "Dispatch Confirmed On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dispatch_confirmed_by",
+   "fieldtype": "Link",
+   "label": "Dispatch Confirmed By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "coa_verified",
+   "fieldtype": "Check",
+   "label": "COA Verified",
+   "read_only": 1
+  },
+  {
+   "fieldname": "coa_verified_by",
+   "fieldtype": "Link",
+   "label": "COA Verified By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "coa_verified_on",
+   "fieldtype": "Datetime",
+   "label": "COA Verified On",
+   "read_only": 1
+  },
+  {
+   "default": "Pending Receivables",
+   "fieldname": "receivables_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Receivables Status",
+   "options": "Not Applicable\nPending Receivables\nReported to Receivables\nReceivables Confirmed",
+   "reqd": 1
+  },
+  {
+   "fieldname": "vehicle_details_section",
+   "fieldtype": "Section Break",
+   "label": "Vehicle / Container"
+  },
+  {
+   "fetch_from": "security_inspection.vehicle",
+   "fieldname": "vehicle",
+   "fieldtype": "Link",
+   "label": "Vehicle Number Plate",
+   "options": "Vehicle",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "security_inspection.driver",
+   "fieldname": "driver",
+   "fieldtype": "Link",
+   "label": "Driver",
+   "options": "Driver",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "security_inspection.container_number",
+   "fieldname": "container_number",
+   "fieldtype": "Data",
+   "label": "Container Number"
+  },
+  {
+   "fetch_from": "security_inspection.seal_number",
+   "fieldname": "seal_number",
+   "fieldtype": "Data",
+   "label": "Seal Number"
+  },
+  {
+   "fieldname": "material_section",
+   "fieldtype": "Section Break",
+   "label": "Material / Cargo"
+  },
+  {
+   "fetch_from": "security_inspection.material_description",
+   "fieldname": "material_description",
+   "fieldtype": "Small Text",
+   "label": "Material Description"
+  },
+  {
+   "fetch_from": "security_inspection.quantity",
+   "fieldname": "quantity",
+   "fieldtype": "Float",
+   "label": "Quantity"
+  },
+  {
+   "fetch_from": "security_inspection.uom",
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "label": "UOM",
+   "options": "UOM"
+  },
+  {
+   "fieldname": "batch_allocation_section",
+   "fieldtype": "Section Break",
+   "label": "Batch Allocation (FIFO)"
+  },
+  {
+   "fieldname": "batch_allocations",
+   "fieldtype": "Table",
+   "label": "Batch Allocations",
+   "options": "Loading DN Batch"
+  },
+  {
+   "fieldname": "qc_section",
+   "fieldtype": "Section Break",
+   "label": "QC Clearance"
+  },
+  {
+   "fieldname": "qc_cleared_by",
+   "fieldtype": "Link",
+   "label": "QC Cleared By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "qc_cleared_on",
+   "fieldtype": "Datetime",
+   "label": "QC Cleared On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sent_to_qc_on",
+   "fieldtype": "Datetime",
+   "label": "Sent to QC On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "qc_report_request",
+   "fieldtype": "Link",
+   "label": "QC Report Request",
+   "options": "QC Report Request",
+   "read_only": 1
+  },
+  {
+   "fieldname": "receivables_section",
+   "fieldtype": "Section Break",
+   "label": "Receivables"
+  },
+  {
+   "fieldname": "reported_to_receivables_on",
+   "fieldtype": "Datetime",
+   "label": "Reported to Receivables On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reported_by",
+   "fieldtype": "Link",
+   "label": "Reported By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "invoice_reference",
+   "fieldtype": "Data",
+   "label": "Invoice Reference"
+  },
+  {
+   "fieldname": "payment_status",
+   "fieldtype": "Select",
+   "label": "Payment Status",
+   "options": "\nUnpaid\nPartially Paid\nPaid"
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text Editor",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Loading Delivery Note",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-04-28 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Shipping",
+ "name": "Loading Delivery Note",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Security Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Security User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Quality Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

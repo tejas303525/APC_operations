@@ -1,0 +1,260 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:PROD-{YYYY}-{#####}",
+ "creation": "2026-05-01 00:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "details_section",
+  "production_order_number",
+  "item",
+  "item_name",
+  "item_description",
+  "planned_date",
+  "column_break_1",
+  "status",
+  "required_quantity",
+  "uom",
+  "product_section",
+  "grade",
+  "specification",
+  "packaging_type",
+  "warehouse",
+  "column_break_product",
+  "production_requirement",
+  "apc_batch",
+  "capacity_section",
+  "production_capacity_category",
+  "capacity_quantity",
+  "capacity_uom",
+  "column_break_2",
+  "capacity_status",
+  "capacity_message",
+  "notes_section",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "details_section",
+   "fieldtype": "Section Break",
+   "label": "Production Order Details"
+  },
+  {
+   "fieldname": "production_order_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Production Order Number",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Product (Item)",
+   "options": "Item",
+   "search_index": 1
+  },
+  {
+   "fetch_from": "item.item_name",
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Product Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "item_description",
+   "fieldtype": "Data",
+   "label": "Description / Notes"
+  },
+  {
+   "fieldname": "planned_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Planned Date",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nPlanned\nIn Progress\nCompleted\nCancelled"
+  },
+  {
+   "fieldname": "required_quantity",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Required Quantity",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Data",
+   "label": "UOM"
+  },
+  {
+   "fieldname": "product_section",
+   "fieldtype": "Section Break",
+   "label": "Product Details"
+  },
+  {
+   "fieldname": "grade",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Grade",
+   "search_index": 1
+  },
+  {
+   "fieldname": "specification",
+   "fieldtype": "Data",
+   "label": "Specification"
+  },
+  {
+   "fieldname": "packaging_type",
+   "fieldtype": "Data",
+   "label": "Packaging Type"
+  },
+  {
+   "fieldname": "warehouse",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Target Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "column_break_product",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "production_requirement",
+   "fieldtype": "Link",
+   "label": "Production Requirement",
+   "options": "APC Production Requirement"
+  },
+  {
+   "fieldname": "apc_batch",
+   "fieldtype": "Link",
+   "label": "APC Batch",
+   "options": "APC Batch",
+   "read_only": 1
+  },
+  {
+   "fieldname": "capacity_section",
+   "fieldtype": "Section Break",
+   "label": "Capacity"
+  },
+  {
+   "fieldname": "production_capacity_category",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Production Capacity Category",
+   "options": "\nDrums\nContainers\nISO Tanks\nTankers\nFilling Orders\nLubricants\nPlasticizers\nWhite Oil & Jellies\nOther"
+  },
+  {
+   "fieldname": "capacity_quantity",
+   "fieldtype": "Float",
+   "label": "Capacity Quantity",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "capacity_uom",
+   "fieldtype": "Data",
+   "label": "Capacity UOM"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Not Checked",
+   "fieldname": "capacity_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Capacity Status",
+   "options": "Not Checked\nWithin Capacity\nOver Capacity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "capacity_message",
+   "fieldtype": "Small Text",
+   "label": "Capacity Message",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-05-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Production",
+ "name": "Production Order",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Production Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Production User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "planned_date",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
