@@ -1,0 +1,98 @@
+{
+ "actions": [],
+ "creation": "2026-05-19 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_sales_demand",
+  "require_sales_demand_on_job_order",
+  "section_zoho",
+  "zoho_dispatch_sync_enabled",
+  "zoho_dispatch_stub_only",
+  "default_import_do_customer",
+  "section_qc",
+  "qc_manager_role",
+  "loading_quantity_tolerance_pct"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_sales_demand",
+   "fieldtype": "Section Break",
+   "label": "Sales Demand"
+  },
+  {
+   "default": "0",
+   "fieldname": "require_sales_demand_on_job_order",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Require Sales Demand on Job Order",
+   "description": "When enabled, Job Orders cannot be saved without a linked APC Sales Demand. When disabled (default) Job Orders work standalone."
+  },
+  {
+   "fieldname": "section_zoho",
+   "fieldtype": "Section Break",
+   "label": "Zoho Dispatch Sync"
+  },
+  {
+   "default": "0",
+   "fieldname": "zoho_dispatch_sync_enabled",
+   "fieldtype": "Check",
+   "label": "Enable Zoho Dispatch Sync",
+   "description": "Master toggle for the push pipeline that fires when a Gate Pass is released (DN \u2192 COA \u2192 Invoice)."
+  },
+  {
+   "default": "1",
+   "depends_on": "zoho_dispatch_sync_enabled",
+   "fieldname": "zoho_dispatch_stub_only",
+   "fieldtype": "Check",
+   "label": "Stub Network Calls (Skip Real API)",
+   "description": "Leave on while real Zoho Books credentials are not provisioned. Calls are logged to Zoho Sync Log but no HTTP requests are made."
+  },
+  {
+   "fieldname": "default_import_do_customer",
+   "fieldtype": "Link",
+   "label": "Default Import DO Customer",
+   "options": "Customer",
+   "description": "Optional fallback if no Customer named APC exists. Import Delivery Orders normally use Customer APC."
+  },
+  {
+   "fieldname": "section_qc",
+   "fieldtype": "Section Break",
+   "label": "Quality & Tolerance"
+  },
+  {
+   "default": "Quality Manager",
+   "fieldname": "qc_manager_role",
+   "fieldtype": "Link",
+   "label": "QC Manager Role",
+   "options": "Role",
+   "description": "Role required to approve Loading DN \u2194 COA binding before Zoho push."
+  },
+  {
+   "default": "1.0",
+   "fieldname": "loading_quantity_tolerance_pct",
+   "fieldtype": "Float",
+   "label": "Loading Quantity Tolerance (%)",
+   "description": "Allowed discrepancy between allocated and actual loaded quantity when reconciling Loading Entries against Batch Allocations."
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-05-19 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Shipping",
+ "name": "APC Operations Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

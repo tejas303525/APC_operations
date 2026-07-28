@@ -27,6 +27,9 @@ _EXPORT_BOOKING_MANDATORY = (
 
 class ShippingBooking(Document):
     def validate(self):
+        from apc_operations.services.customer_link_service import normalize_customer_field
+
+        normalize_customer_field(self, "customer")
         self.validate_counterparty()
         self.validate_dates()
         self.calculate_total_charges()
@@ -34,14 +37,14 @@ class ShippingBooking(Document):
 
     def validate_counterparty(self):
         if self.job_order:
-            movement = frappe.db.get_value("Job Order", self.job_order, "commercial_movement") or "Outward"
+            movement = frappe.db.get_value("Job Order", self.job_order, "commercial_movement") or "Export"
             if movement == "Import":
                 if not self.supplier and not self.customer:
                     frappe.throw(
                         _("Set Supplier (or Customer) on the Shipping Booking for an Import Job Order.")
                     )
             elif not self.customer:
-                frappe.throw(_("Customer is required for Outward shipping bookings linked to a Job Order."))
+                frappe.throw(_("Customer is required for Export shipping bookings linked to a Job Order."))
         elif not self.customer and not self.supplier:
             frappe.throw(_("Set Customer or Supplier on the Shipping Booking."))
 
@@ -60,7 +63,7 @@ class ShippingBooking(Document):
             movement = frappe.db.get_value(
                 "Job Order", self.job_order, "commercial_movement"
             ) or ""
-        return movement or "Outward"
+        return movement or "Export"
 
     def _is_import_tracking_booking(self) -> bool:
         status = (self.booking_status or "Draft").strip()
@@ -174,10 +177,15 @@ class ShippingBooking(Document):
                 transport.transport_type = "Outward"
                 transport.outward_type = "Export Container"
 
-            if self.customer:
-                transport.customer = self.customer
-            elif self.job_order:
-                transport.customer = frappe.db.get_value("Job Order", self.job_order, "customer")
+            from apc_operations.services.customer_link_service import (
+                resolve_customer_from_job_order,
+                resolve_customer_docname,
+            )
+
+            transport.customer = (
+                resolve_customer_docname(self.customer)
+                or resolve_customer_from_job_order(self.job_order)
+            )
             if self.supplier:
                 transport.supplier = frappe.db.get_value("Supplier", self.supplier, "supplier_name") or self.supplier
             elif self.job_order:

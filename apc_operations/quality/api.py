@@ -19,6 +19,10 @@ from frappe import _
 from frappe.utils import get_datetime, now_datetime
 
 from apc_operations.services import console_status
+from apc_operations.services.console_queue_service import (
+	attach_delivery_due_fields,
+	enrich_and_sort_console_queue,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -103,10 +107,11 @@ def _ldn_to_card(ldn: dict[str, Any]) -> dict[str, Any]:
 		}
 	)
 	delivery_order = _delivery_order_for_ldn_row(ldn)
-	return {
+	card = {
 		"name": delivery_order or ldn.get("name"),
 		"delivery_order": delivery_order,
 		"ldn": ldn.get("name"),
+		"loading_delivery_note": ldn.get("name"),
 		"sddn": ldn.get("security_draft_delivery_note"),
 		"job_order": ldn.get("job_order"),
 		"job_order_number": ldn.get("job_order_number"),
@@ -122,7 +127,9 @@ def _ldn_to_card(ldn: dict[str, Any]) -> dict[str, Any]:
 		"qc_status_tone": console_status.qc_status_tone(qc_status),
 		"coa_status": coa_label,
 		"coa_status_tone": console_status.coa_status_tone(coa_label),
+		"modified": ldn.get("modified"),
 	}
+	return attach_delivery_due_fields(card)
 
 
 def _list_ldns_with_qc(filters: dict[str, Any], qc_filter: str | None = None) -> list[dict[str, Any]]:
@@ -263,7 +270,7 @@ def get_new_qc_items() -> list[dict[str, Any]]:
 		if r.get("qc_report_request"):
 			continue
 		out.append(_ldn_to_card(r))
-	return out
+	return enrich_and_sort_console_queue(out)
 
 
 @frappe.whitelist()
@@ -291,7 +298,7 @@ def get_pending_qc_items() -> list[dict[str, Any]]:
 			continue
 		r["qc_status"] = "Pending QC"
 		out.append(_ldn_to_card(r))
-	return out
+	return enrich_and_sort_console_queue(out)
 
 
 @frappe.whitelist()
@@ -304,15 +311,13 @@ def get_completed_qc_items() -> list[dict[str, Any]]:
 	):
 		for r in rows:
 			by_name[r["name"]] = r
-	# Preserve reverse-chronological order
-	names = sorted(by_name.keys(), key=lambda n: by_name[n].get("modified") or "", reverse=True)
-	return [_ldn_to_card(by_name[n]) for n in names]
+	return enrich_and_sort_console_queue([_ldn_to_card(by_name[n]) for n in by_name])
 
 
 @frappe.whitelist()
 def get_rejected_qc_items() -> list[dict[str, Any]]:
 	rows = _list_ldns_with_qc(filters={"qc_status": "QC Rejected"})
-	return [_ldn_to_card(r) for r in rows]
+	return enrich_and_sort_console_queue([_ldn_to_card(r) for r in rows])
 
 
 # ---------------------------------------------------------------------------
@@ -322,20 +327,26 @@ def get_rejected_qc_items() -> list[dict[str, Any]]:
 
 @frappe.whitelist()
 def get_new_dos_without_qc() -> list[dict[str, Any]]:
-	"""Alias for QC hub: LDNs awaiting first QC Report Request."""
-	return get_new_qc_items()
+	"""DOs reported to QC — awaiting QC intake (Path B console cards)."""
+	from apc_operations.services.delivery_order_service import get_qc_new_dos
+
+	return get_qc_new_dos()
 
 
 @frappe.whitelist()
 def get_pending_qc_dos() -> list[dict[str, Any]]:
-	"""Alias for QC hub: open QC Report Requests."""
-	return get_pending_qc_items()
+	"""DOs with LDN open for QC batch / COA / final approval."""
+	from apc_operations.services.delivery_order_service import get_qc_pending_dos
+
+	return get_qc_pending_dos()
 
 
 @frappe.whitelist()
 def get_completed_qc_dos() -> list[dict[str, Any]]:
-	"""Alias for QC hub: QC-cleared delivery orders."""
-	return get_completed_qc_items()
+	"""DOs with QC-cleared / dispatch-confirmed LDN."""
+	from apc_operations.services.delivery_order_service import get_qc_completed_dos
+
+	return get_qc_completed_dos()
 
 
 @frappe.whitelist()
@@ -345,12 +356,121 @@ def get_rejected_qc_dos() -> list[dict[str, Any]]:
 
 @frappe.whitelist()
 def get_qc_console_counts() -> dict[str, int]:
+	from apc_operations.services.delivery_order_service import (
+		get_qc_completed_dos,
+		get_qc_new_dos,
+		get_qc_pending_dos,
+	)
+
 	return {
-		"new": len(get_new_qc_items()),
-		"pending": len(get_pending_qc_items()),
-		"completed": len(get_completed_qc_items()),
+		"new": len(get_qc_new_dos()),
+		"pending": len(get_qc_pending_dos()),
+		"completed": len(get_qc_completed_dos()),
 		"rejected": len(get_rejected_qc_items()),
 	}
+
+
+@frappe.whitelist()
+def get_qc_do_detail(delivery_order: str) -> dict[str, Any]:
+	"""DO-centric detail for QC console (reuses Security DO aggregate + pre-check)."""
+	from apc_operations.security.api import get_security_do_detail
+	from apc_operations.shipping.doctype.delivery_order.delivery_order import DeliveryOrder
+
+	if not delivery_order:
+		frappe.throw(_("delivery_order is required"))
+
+	do = frappe.get_doc("Delivery Order", delivery_order)
+	if isinstance(do, DeliveryOrder):
+		do._ensure_pre_check_clearance()
+
+	card = get_security_do_detail(delivery_order)
+	pcc_name = card.get("pre_check_clearance") or frappe.db.get_value(
+		"Delivery Order", delivery_order, "pre_check_clearance"
+	)
+	card["pre_check_clearance"] = pcc_name
+	if pcc_name and frappe.db.exists("Pre-Check Clearance", pcc_name):
+		pcc = frappe.db.get_value(
+			"Pre-Check Clearance",
+			pcc_name,
+			[
+				"name",
+				"qc_status",
+				"qc_pre_check_status",
+				"security_status",
+				"overall_status",
+				"product_confirmed",
+				"batch_no",
+			],
+			as_dict=True,
+		)
+		if pcc:
+			card.update(
+				{
+					"pcc_qc_status": pcc.qc_status,
+					"pcc_qc_pre_check_status": pcc.qc_pre_check_status,
+					"pcc_security_status": pcc.security_status,
+					"pcc_overall_status": pcc.overall_status,
+					"pcc_batch_no": pcc.batch_no,
+				}
+			)
+			card["can_pass_precheck"] = (
+				pcc.overall_status != "Authorized" and pcc.qc_status != "Passed"
+			)
+			card["can_fail_precheck"] = pcc.overall_status != "Authorized"
+	else:
+		card["can_pass_precheck"] = False
+		card["can_fail_precheck"] = False
+
+	if pcc_name and frappe.db.exists("Pre-Check Clearance", pcc_name):
+		pcc_full = frappe.db.get_value(
+			"Pre-Check Clearance",
+			pcc_name,
+			[
+				"product_confirmed",
+				"batch_no",
+				"coa_status",
+				"tanker_cleanliness",
+				"odour_check",
+				"seal_condition_before_loading",
+				"qc_remarks",
+				"failure_reason",
+			],
+			as_dict=True,
+		)
+		if pcc_full:
+			card["pcc_form"] = pcc_full
+
+	sddn_name = card.get("sddn")
+	if sddn_name:
+		from apc_operations.security.api import get_security_delivery_draft_note_detail
+
+		sddn_detail = get_security_delivery_draft_note_detail(sddn_name)
+		card["checklist_items"] = sddn_detail.get("checklist_items") or []
+		card["verification"] = sddn_detail.get("verification") or {}
+		card["raw_sddn_status"] = sddn_detail.get("raw_security_status")
+		card["sddn_truck_number"] = sddn_detail.get("truck_number")
+		card["sddn_driver_name"] = sddn_detail.get("driver_name")
+		card["sddn_driver_contact"] = sddn_detail.get("driver_contact")
+		card["sddn_container_number"] = sddn_detail.get("container_number")
+		card["sddn_pickup_location"] = sddn_detail.get("pickup_location")
+		card["sddn_destination"] = sddn_detail.get("destination")
+		card["sddn_cro_number"] = sddn_detail.get("cro_number")
+		verifiable = {
+			"Draft",
+			"Pending Review",
+			"Pending Verification",
+			"Sent to Security",
+		}
+		card["can_verify_sddn"] = (sddn_detail.get("raw_security_status") or "") in verifiable
+		card["sddn_read_only"] = not card["can_verify_sddn"]
+	else:
+		card["checklist_items"] = []
+		card["can_verify_sddn"] = False
+		card["sddn_read_only"] = True
+
+	card["is_import"] = (card.get("commercial_movement") or "").strip() == "Import"
+
+	return card
 
 
 # ---------------------------------------------------------------------------
@@ -718,3 +838,92 @@ def _create_coa_via_helper(qcr_name: str) -> str | None:
 	from apc_operations.inventory.doctype.apc_coa.apc_coa import create_apc_coa_from_qc
 
 	return create_apc_coa_from_qc(qcr_name)
+
+
+# ---------------------------------------------------------------------------
+# Delivery Order dispatch workflow (Phase 5 — Path B)
+# ---------------------------------------------------------------------------
+
+
+def _dispatch_workflow_response(result: dict) -> dict:
+	return result
+
+
+@frappe.whitelist()
+def get_qc_precheck_queue(limit=100):
+	from apc_operations.quality.dispatch_workflow import get_qc_precheck_queue as _queue
+
+	return _dispatch_workflow_response(_queue(limit=int(limit)))
+
+
+@frappe.whitelist()
+def submit_qc_precheck(
+	pre_check_clearance,
+	result,
+	product_confirmed=None,
+	batch_no=None,
+	coa_status=None,
+	tanker_cleanliness=None,
+	odour_check=None,
+	seal_condition_before_loading=None,
+	qc_remarks=None,
+	failure_reason=None,
+):
+	from apc_operations.quality.dispatch_workflow import submit_qc_precheck as _submit
+
+	return _dispatch_workflow_response(
+		_submit(
+			pre_check_clearance,
+			result,
+			product_confirmed=product_confirmed,
+			batch_no=batch_no,
+			coa_status=coa_status,
+			tanker_cleanliness=tanker_cleanliness,
+			odour_check=odour_check,
+			seal_condition_before_loading=seal_condition_before_loading,
+			qc_remarks=qc_remarks,
+			failure_reason=failure_reason,
+		)
+	)
+
+
+@frappe.whitelist()
+def put_qc_on_hold(pre_check_clearance, hold_reason):
+	from apc_operations.quality.dispatch_workflow import put_qc_on_hold as _hold
+
+	return _dispatch_workflow_response(_hold(pre_check_clearance, hold_reason))
+
+
+@frappe.whitelist()
+def fail_qc_precheck(pre_check_clearance, failure_reason):
+	from apc_operations.quality.dispatch_workflow import fail_qc_precheck as _fail
+
+	return _dispatch_workflow_response(_fail(pre_check_clearance, failure_reason))
+
+
+@frappe.whitelist()
+def link_batch_to_precheck(pre_check_clearance, batch_no):
+	from apc_operations.quality.dispatch_workflow import link_batch_to_precheck as _link
+
+	return _dispatch_workflow_response(_link(pre_check_clearance, batch_no))
+
+
+@frappe.whitelist()
+def verify_coa_for_batch(loading_delivery_note, batch):
+	from apc_operations.quality.dispatch_workflow import verify_coa_for_batch as _verify
+
+	return _dispatch_workflow_response(_verify(loading_delivery_note, batch))
+
+
+@frappe.whitelist()
+def submit_final_qc_clearance(loading_delivery_note, qc_remarks=None):
+	from apc_operations.quality.dispatch_workflow import submit_final_qc_clearance as _submit
+
+	return _dispatch_workflow_response(_submit(loading_delivery_note, qc_remarks=qc_remarks))
+
+
+@frappe.whitelist()
+def qc_manager_approve_dispatch(loading_delivery_note):
+	from apc_operations.quality.dispatch_workflow import qc_manager_approve_dispatch as _approve
+
+	return _dispatch_workflow_response(_approve(loading_delivery_note))

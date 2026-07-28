@@ -31,6 +31,8 @@
   "vehicle_number",
   "driver_name",
   "driver_phone",
+  "driver_license_no",
+  "trailer_no",
   "container_details_section",
   "container_number",
   "container_type",
@@ -44,14 +46,24 @@
   "gate_section",
   "gate_in_time",
   "gate_out_time",
+  "gate_entry_no",
+  "truck_arrived_notified_qc",
+  "truck_arrived_notified_qc_on",
   "column_break_5",
   "weighment_slip",
+  "tare_weight_time",
+  "gross_weight_time",
+  "weighbridge_slip_no",
   "checklist_section",
   "checklist_items",
+  "loading_entries_section",
+  "loading_entries",
   "material_details_section",
   "material_description",
   "quantity",
   "uom",
+  "expected_packaging_qty",
+  "loaded_packaging_qty",
   "qc_section",
   "qc_report_request",
   "qc_checked_by",
@@ -61,11 +73,20 @@
   "loading_delivery_note",
   "loading_date",
   "loading_time",
+  "loading_bay_section",
+  "loading_bay",
+  "loading_start_time",
+  "loading_end_time",
+  "column_break_loading",
+  "loader_name",
+  "loading_supervisor",
+  "seal_applied_by",
   "dispatch_section",
   "dispatch_order",
   "column_break_dispatch",
   "batch_allocation",
   "notes_section",
+  "security_remarks",
   "special_instructions",
   "notes",
   "amended_from"
@@ -219,6 +240,17 @@
    "read_only": 1
   },
   {
+   "fieldname": "driver_license_no",
+   "fieldtype": "Data",
+   "label": "Driver License No"
+  },
+  {
+   "fieldname": "trailer_no",
+   "fieldtype": "Data",
+   "label": "Trailer No",
+   "description": "Trailer or tanker registration number if different from tractor."
+  },
+  {
    "fieldname": "container_details_section",
    "fieldtype": "Section Break",
    "label": "Container / Load Details"
@@ -286,6 +318,25 @@
    "label": "Gate Out Time"
   },
   {
+   "fieldname": "gate_entry_no",
+   "fieldtype": "Data",
+   "label": "Gate Entry No",
+   "description": "Synced from Delivery Order gate register number."
+  },
+  {
+   "default": "0",
+   "fieldname": "truck_arrived_notified_qc",
+   "fieldtype": "Check",
+   "label": "QC Notified of Truck Arrival",
+   "read_only": 1
+  },
+  {
+   "fieldname": "truck_arrived_notified_qc_on",
+   "fieldtype": "Datetime",
+   "label": "QC Notified On",
+   "read_only": 1
+  },
+  {
    "fieldname": "column_break_5",
    "fieldtype": "Column Break"
   },
@@ -297,6 +348,21 @@
    "read_only": 1
   },
   {
+   "fieldname": "tare_weight_time",
+   "fieldtype": "Datetime",
+   "label": "Tare Weight Time"
+  },
+  {
+   "fieldname": "gross_weight_time",
+   "fieldtype": "Datetime",
+   "label": "Gross Weight Time"
+  },
+  {
+   "fieldname": "weighbridge_slip_no",
+   "fieldtype": "Data",
+   "label": "Weighbridge Slip No"
+  },
+  {
    "fieldname": "checklist_section",
    "fieldtype": "Section Break",
    "label": "Security Checklist"
@@ -306,6 +372,19 @@
    "fieldtype": "Table",
    "label": "Checklist Items",
    "options": "Security Checklist"
+  },
+  {
+   "fieldname": "loading_entries_section",
+   "fieldtype": "Section Break",
+   "label": "Loading Entries",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "loading_entries",
+   "fieldtype": "Table",
+   "label": "Loading Entries",
+   "options": "Loading Entry",
+   "description": "Floor-captured per-pallet entries. Rolled into the Loading DN at finalisation."
   },
   {
    "fieldname": "material_details_section",
@@ -327,6 +406,18 @@
    "fieldtype": "Link",
    "label": "UOM",
    "options": "UOM"
+  },
+  {
+   "fieldname": "expected_packaging_qty",
+   "fieldtype": "Int",
+   "label": "Expected Packaging Qty",
+   "read_only": 1
+  },
+  {
+   "fieldname": "loaded_packaging_qty",
+   "fieldtype": "Int",
+   "label": "Loaded Packaging Qty",
+   "read_only": 1
   },
   {
    "fieldname": "qc_section",
@@ -384,6 +475,53 @@
    "label": "Loading Time"
   },
   {
+   "fieldname": "loading_bay_section",
+   "fieldtype": "Section Break",
+   "label": "Loading Bay",
+   "collapsible": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "loading_bay",
+   "fieldtype": "Data",
+   "label": "Loading Bay"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "loading_start_time",
+   "fieldtype": "Datetime",
+   "label": "Loading Start Time"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "loading_end_time",
+   "fieldtype": "Datetime",
+   "label": "Loading End Time"
+  },
+  {
+   "fieldname": "column_break_loading",
+   "fieldtype": "Column Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "loader_name",
+   "fieldtype": "Data",
+   "label": "Loader Name"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "loading_supervisor",
+   "fieldtype": "Link",
+   "label": "Loading Supervisor",
+   "options": "User"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "seal_applied_by",
+   "fieldtype": "Data",
+   "label": "Seal Applied By"
+  },
+  {
    "fieldname": "dispatch_section",
    "fieldtype": "Section Break",
    "label": "Dispatch Order"
@@ -413,6 +551,12 @@
    "label": "Notes"
   },
   {
+   "allow_on_submit": 1,
+   "fieldname": "security_remarks",
+   "fieldtype": "Small Text",
+   "label": "Security Remarks"
+  },
+  {
    "fieldname": "special_instructions",
    "fieldtype": "Text Editor",
    "label": "Special Instructions"
@@ -435,7 +579,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-06 17:13:20.019742",
+ "modified": "2026-05-21 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Security",
  "name": "Security Inspection",

@@ -394,15 +394,103 @@ def get_primary_transport_type_for_job_order(movement):
     return "Inward" if (movement or "").strip() == "Import" else "Outward"
 
 
+# Legacy Select values from Job Order.bank before Link → Bank Account migration.
+_LEGACY_BANK_ACCOUNT_MAP = {
+    "HABIB": "HABIB - HABIB",
+}
+
+
 class JobOrder(Document):
+    def normalize_bank_account(self):
+        """Map legacy bank codes to ERPNext Bank Account names before link validation."""
+        bank_account = (self.bank_account or "").strip()
+        if bank_account in _LEGACY_BANK_ACCOUNT_MAP:
+            self.bank_account = _LEGACY_BANK_ACCOUNT_MAP[bank_account]
+            return
+
+        if bank_account and frappe.db.exists("Bank Account", bank_account):
+            return
+
+        legacy = (self.get("bank") or "").strip()
+        if not legacy and self.name:
+            legacy = (frappe.db.get_value("Job Order", self.name, "bank") or "").strip()
+
+        if legacy in _LEGACY_BANK_ACCOUNT_MAP:
+            self.bank_account = _LEGACY_BANK_ACCOUNT_MAP[legacy]
+            return
+
+        if bank_account and not frappe.db.exists("Bank Account", bank_account):
+            self.bank_account = None
+
+    def insert(self, *args, **kwargs):
+        self.normalize_bank_account()
+        return super().insert(*args, **kwargs)
+
+    def save(self, *args, **kwargs):
+        self.normalize_bank_account()
+        return super().save(*args, **kwargs)
+
     def validate(self):
         self.validate_job_order_number_uniqueness()
         self.validate_commercial_counterparty()
         self.validate_import_sea_ports()
+        self.validate_sales_demand_link()
         self.fetch_customer_name()
+        self.apply_packing_matrix()
         self.determine_booking_requirement()
         self.sync_booking_flags()
         self.validate_insurance_on_confirm()
+
+    def apply_packing_matrix(self):
+        from apc_operations.shipping.services.packing_calculation_service import (
+            apply_packing_to_job_order,
+        )
+
+        apply_packing_to_job_order(self)
+
+    def validate_sales_demand_link(self):
+        """Option B: enforce the Job Order \u2194 Sales Demand cardinality.
+
+        When the feature flag is on, ``sales_demand`` is mandatory. When a
+        Sales Demand is linked the customer must match. Job Order Items that
+        carry a ``sales_demand_item`` reference must belong to the same SD.
+        """
+        from apc_operations.shipping.doctype.apc_operations_settings.apc_operations_settings import (
+            require_sales_demand_on_job_order,
+        )
+
+        flag_on = require_sales_demand_on_job_order()
+
+        if flag_on and not self.sales_demand:
+            frappe.throw(_(
+                "Sales Demand is required on Job Order (APC Operations Settings \u2192 "
+                "Require Sales Demand on Job Order is on). Link a Sales Demand or "
+                "disable the flag to allow standalone Job Orders."
+            ))
+
+        if not self.sales_demand:
+            return
+
+        sd_customer = frappe.db.get_value("APC Sales Demand", self.sales_demand, "customer")
+        if sd_customer and self.customer and sd_customer != self.customer:
+            frappe.throw(_(
+                "Sales Demand {0} belongs to customer {1}, but Job Order customer is {2}."
+            ).format(self.sales_demand, sd_customer, self.customer))
+
+        # Every Job Order Item that references a Sales Demand Item must belong
+        # to the same Sales Demand.
+        sd_items = set(
+            frappe.get_all(
+                "APC Sales Demand Item",
+                filters={"parent": self.sales_demand},
+                pluck="name",
+            )
+        )
+        for row in self.items or []:
+            if row.sales_demand_item and row.sales_demand_item not in sd_items:
+                frappe.throw(_(
+                    "Row {0}: Sales Demand Item {1} does not belong to Sales Demand {2}."
+                ).format(row.idx, row.sales_demand_item, self.sales_demand))
 
     def validate_commercial_counterparty(self):
         movement = (self.commercial_movement or "").strip() or "Outward"
@@ -445,6 +533,38 @@ class JobOrder(Document):
         # Keep confirmed records operationally complete even if status was
         # already Confirmed before this save (e.g. data imports/manual edits).
         self.ensure_operational_booking_links()
+        if self.job_order_number and (
+            self.has_value_changed("job_order_number") or self._linked_job_order_number_is_stale()
+        ):
+            self._sync_job_order_number_to_linked_documents()
+
+    def _linked_job_order_number_is_stale(self) -> bool:
+        """True when a linked doc still stores an old copied job order number."""
+        if not self.name or not self.job_order_number:
+            return False
+
+        if self.shipping_booking:
+            stored = frappe.db.get_value(
+                "Shipping Booking", self.shipping_booking, "job_order_number"
+            )
+            if stored and stored != self.job_order_number:
+                return True
+
+        if self.transport_schedule:
+            stored = frappe.db.get_value(
+                "Transport Schedule", self.transport_schedule, "job_order_number"
+            )
+            if stored and stored != self.job_order_number:
+                return True
+
+        return False
+
+    def _sync_job_order_number_to_linked_documents(self):
+        from apc_operations.shipping.services.job_order_sync_service import (
+            sync_job_order_number_to_linked,
+        )
+
+        sync_job_order_number_to_linked(self.name, self.job_order_number)
 
     def after_insert(self):
         self.ensure_operational_booking_links()
@@ -453,6 +573,9 @@ class JobOrder(Document):
         self.ensure_operational_booking_links()
 
     def fetch_customer_name(self):
+        from apc_operations.services.customer_link_service import normalize_customer_field
+
+        normalize_customer_field(self, "customer")
         if self.customer and not self.customer_name:
             self.customer_name = frappe.db.get_value("Customer", self.customer, "customer_name")
         if self.supplier and not self.supplier_name:
@@ -745,6 +868,7 @@ class JobOrder(Document):
         schedule.scheduled_delivery_date = self.date or today()
         schedule.transport_status = "Pending Assignment"
         schedule.transport_type = "Inward"
+        schedule.inward_import_leg = "Initial Import Leg"
         if self.shipping_booking:
             schedule.shipping_booking = self.shipping_booking
         schedule.material_description = self.get_material_description()
@@ -831,28 +955,6 @@ class JobOrder(Document):
         return self.loading_remarks or self.loading_instructions or ""
 
 
-@frappe.whitelist()
-def get_product_packaging_config(product):
-	"""Return packaging defaults for a Product, used to autofill Job Order Item rows."""
-	if not product:
-		return {}
-	config = frappe.db.get_value(
-		"APC Product Packaging Config",
-		product,
-		["packaging_type", "hs_code", "drum_carton_filling_kg", "ibc_filling_kg", "flexi_iso_filling_mt"],
-		as_dict=True,
-	)
-	if not config:
-		return {}
-	return {
-		"packaging": config.packaging_type,
-		"hs_code": config.hs_code,
-		"drum_carton_filling_kg": config.drum_carton_filling_kg,
-		"ibc_filling_kg": config.ibc_filling_kg,
-		"flexi_iso_filling_mt": config.flexi_iso_filling_mt,
-	}
-
-
 # Module-level handler functions for hooks.py doc_events
 
 def validate_job_order(doc, method):
@@ -861,6 +963,15 @@ def validate_job_order(doc, method):
     doc.determine_booking_requirement()
     doc.sync_booking_flags()
     doc.validate_insurance_on_confirm()
+
+
+@frappe.whitelist()
+def refresh_logistics_cost_summary_api(job_order: str):
+    from apc_operations.shipping.services.logistics_cost_service import (
+        get_logistics_cost_html_for_job_order,
+    )
+
+    return {"html": get_logistics_cost_html_for_job_order(job_order)}
 
 
 def on_submit_job_order(doc, method):

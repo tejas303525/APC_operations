@@ -38,7 +38,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Sync Type",
-   "options": "Sales Order Import\nSales Order Export\nInvoice Import\nInvoice Export\nDispatch Export\nCustomer Import\nItem Import\nStock Sync",
+   "options": "Sales Order Import\nSales Order Export\nInvoice Import\nInvoice Export\nDispatch Export\nImport Receipt\nCustomer Import\nItem Import\nStock Sync",
    "reqd": 1
   },
   {

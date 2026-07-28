@@ -1,6 +1,2 @@
 apc_operations.patches.v0_0.backfill_transport_schedule_job_order
 apc_operations.patches.v0_0.reconcile_job_order_operational_links
-apc_operations.patches.v0_2.add_production_order_item_fields
-apc_operations.patches.v0_2.backfill_apc_batch_stock_status
-apc_operations.patches.v0_2.add_loading_dn_batch_allocations
-apc_operations.patches.v0_2.add_loading_dn_qc_fields

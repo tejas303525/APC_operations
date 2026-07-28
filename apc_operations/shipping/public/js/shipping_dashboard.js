@@ -135,6 +135,12 @@ apc.shipping.Dashboard = class ShippingDashboard {
                     reqd: 1
                 },
                 {
+                    fieldname: 'container_number',
+                    label: __('Container Number'),
+                    fieldtype: 'Data',
+                    description: __('Physical container ID (e.g. MSCU1234567)')
+                },
+                {
                     fieldname: 'container_count',
                     label: __('Container Count'),
                     fieldtype: 'Int',

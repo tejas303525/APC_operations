@@ -175,9 +175,9 @@ frappe.ui.form.on('Transport Schedule', {
 
     calculate_totals(frm) {
         const total =
-            (frm.doc.transport_charges || 0) +
-            (frm.doc.fuel_cost || 0) +
-            (frm.doc.additional_charges || 0);
+            flt(frm.doc.transport_charges) +
+            flt(frm.doc.fuel_cost) +
+            flt(frm.doc.additional_charges);
         frm.set_value('total_cost', total);
     },
 

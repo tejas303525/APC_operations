@@ -8,6 +8,9 @@ from frappe.model.document import Document
 
 class SecurityDraftDeliveryNote(Document):
     def validate(self):
+        from apc_operations.services.customer_link_service import ensure_sddn_customer_links
+
+        ensure_sddn_customer_links(self)
         self.validate_unique_transport_schedule()
 
     def validate_unique_transport_schedule(self):

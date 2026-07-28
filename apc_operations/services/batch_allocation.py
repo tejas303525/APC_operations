@@ -478,6 +478,213 @@ def get_demand_summary(sales_demand):
     }
 
 
+def _resolve_sales_demand_items_for_job_order(job_order):
+    """Return (sales_demand_name, set of sales_demand_item names) for a Job Order."""
+    sales_demand = frappe.db.get_value("Job Order", job_order, "sales_demand")
+    if not sales_demand:
+        return None, set()
+
+    jo_items = frappe.get_all(
+        "Job Order Item",
+        filters={"parent": job_order},
+        fields=["item", "sales_demand_item", "grade"],
+    )
+    if not jo_items:
+        return sales_demand, set()
+
+    sd_items = set()
+    for row in jo_items:
+        if row.sales_demand_item:
+            sd_items.add(row.sales_demand_item)
+            continue
+
+        filters = {"parent": sales_demand, "item": row.item}
+        if row.grade:
+            filters["grade"] = row.grade
+        matched = frappe.db.get_value("APC Sales Demand Item", filters, "name")
+        if matched:
+            sd_items.add(matched)
+
+    if not sd_items:
+        product_items = [row.item for row in jo_items if row.item]
+        if product_items:
+            sd_items = set(
+                frappe.get_all(
+                    "APC Sales Demand Item",
+                    filters={"parent": sales_demand, "item": ["in", product_items]},
+                    pluck="name",
+                )
+            )
+
+    return sales_demand, sd_items
+
+
+def _allocation_detail_qty_for_ldn(detail):
+    """Quantity to load on the LDN from an APC Batch Allocation Detail row."""
+    remaining = flt(detail.get("remaining_quantity"))
+    if remaining > 0:
+        return remaining
+    allocated = flt(detail.get("allocated_quantity"))
+    dispatched = flt(detail.get("dispatched_quantity"))
+    return max(0.0, allocated - dispatched)
+
+
+def _get_active_allocation_details_for_sd_items(sales_demand, sd_item_names):
+    if not sales_demand or not sd_item_names:
+        return []
+
+    placeholders = ", ".join(["%s"] * len(sd_item_names))
+    return frappe.db.sql(
+        f"""
+        SELECT
+            d.name,
+            d.batch,
+            d.batch_number,
+            d.item,
+            d.coa,
+            d.manufacturing_date,
+            d.fifo_sequence,
+            d.sales_demand_item,
+            d.allocated_quantity,
+            d.dispatched_quantity,
+            d.remaining_quantity,
+            a.sales_demand
+        FROM `tabAPC Batch Allocation Detail` d
+        INNER JOIN `tabAPC Batch Allocation` a ON a.name = d.parent
+        WHERE a.sales_demand = %s
+          AND a.docstatus < 2
+          AND a.allocation_status NOT IN ('Released', 'Cancelled')
+          AND d.status NOT IN ('Released', 'Cancelled')
+          AND d.sales_demand_item IN ({placeholders})
+        ORDER BY d.fifo_sequence ASC, d.creation ASC, d.name ASC
+        """,
+        [sales_demand, *sd_item_names],
+        as_dict=True,
+    )
+
+
+@frappe.whitelist()
+def sync_loading_dn_from_job_order_allocations(loading_dn_name, force=False):
+    """Copy existing Job Order / Sales Demand batch reservations onto a Loading DN.
+
+    Uses ``APC Batch Allocation Detail`` rows already created via the Batch
+    Allocation Dashboard (or Sales Demand FIFO). Does **not** call
+    ``APC Batch.allocate_quantity`` again — stock is already reserved.
+    """
+    loading_dn = frappe.get_doc("Loading Delivery Note", loading_dn_name)
+
+    if loading_dn.dispatch_confirmed:
+        frappe.throw(_("Dispatch already confirmed — cannot reallocate batches."))
+
+    if loading_dn.batch_allocations and not force:
+        return {
+            "rows": [],
+            "skipped": True,
+            "message": _("Loading DN already has batch allocations."),
+            "loading_dn": loading_dn_name,
+        }
+
+    if not loading_dn.job_order:
+        return {
+            "rows": [],
+            "message": _("No Job Order linked on this Loading Delivery Note."),
+            "loading_dn": loading_dn_name,
+        }
+
+    sales_demand, sd_items = _resolve_sales_demand_items_for_job_order(loading_dn.job_order)
+    if not sales_demand:
+        return {
+            "rows": [],
+            "message": _("Job Order {0} has no Sales Demand linked.").format(loading_dn.job_order),
+            "loading_dn": loading_dn_name,
+        }
+
+    if not sd_items:
+        return {
+            "rows": [],
+            "message": _("Could not resolve Sales Demand Items for Job Order {0}.").format(
+                loading_dn.job_order
+            ),
+            "loading_dn": loading_dn_name,
+        }
+
+    details = _get_active_allocation_details_for_sd_items(sales_demand, sd_items)
+    if not details:
+        return {
+            "rows": [],
+            "message": _("No active batch allocations found for this Job Order."),
+            "loading_dn": loading_dn_name,
+        }
+
+    if force:
+        loading_dn.set("batch_allocations", [])
+
+    rows_created = []
+    for detail in details:
+        qty = _allocation_detail_qty_for_ldn(detail)
+        if qty <= 0:
+            continue
+
+        batch_row = frappe.db.get_value(
+            "APC Batch",
+            detail.batch,
+            ["name", "batch_number", "product", "uom", "manufacturing_date", "linked_coa"],
+            as_dict=True,
+        )
+        if not batch_row:
+            continue
+
+        coa = detail.coa or batch_row.linked_coa
+        loading_dn.append(
+            "batch_allocations",
+            {
+                "batch": detail.batch,
+                "batch_number": detail.batch_number or batch_row.batch_number or detail.batch,
+                "product": detail.item or batch_row.product,
+                "uom": batch_row.uom or loading_dn.uom or "",
+                "manufacturing_date": detail.manufacturing_date or batch_row.manufacturing_date,
+                "allocated_qty": qty,
+                "dispatched_qty": 0,
+                "coa": coa,
+                "fifo_sequence": detail.fifo_sequence or (len(rows_created) + 1),
+                "is_fifo_override": 0,
+                "sales_demand": sales_demand,
+                "sales_demand_item": detail.sales_demand_item,
+                "batch_allocation_detail": detail.name,
+            },
+        )
+        rows_created.append(
+            {
+                "batch": detail.batch,
+                "batch_number": detail.batch_number or batch_row.batch_number,
+                "allocated_qty": qty,
+                "sales_demand_item": detail.sales_demand_item,
+                "batch_allocation_detail": detail.name,
+            }
+        )
+
+    if rows_created:
+        if loading_dn.delivery_note_status in ("", "Batch Allocation Pending"):
+            loading_dn.delivery_note_status = "Batch Allocated"
+    elif not loading_dn.batch_allocations:
+        if loading_dn.delivery_note_status in ("",):
+            loading_dn.delivery_note_status = "Batch Allocation Pending"
+
+    loading_dn.save(ignore_permissions=True)
+
+    total_allocated = sum(flt(row["allocated_qty"]) for row in rows_created)
+    return {
+        "rows": rows_created,
+        "total_allocated": total_allocated,
+        "loading_dn": loading_dn_name,
+        "message": _("Copied {0} batch allocation row(s) from Job Order reservations.").format(
+            len(rows_created)
+        )
+        if rows_created
+        else _("No allocatable quantity found on existing reservations."),
+    }
+
+
 @frappe.whitelist()
 def create_loading_dn_batch_allocations(loading_dn_name, product=None, required_qty=None,
                                          grade=None, specification=None,
@@ -531,6 +738,12 @@ def create_loading_dn_batch_allocations(loading_dn_name, product=None, required_
     # Clear existing batch allocation rows
     loading_dn.set("batch_allocations", [])
 
+    # Option B: figure out which Sales Demand / SD Item drives this Loading DN
+    # so we can stamp every Loading DN Batch row with its SD coordinates.
+    sd_name, sd_item_name = _resolve_sales_demand_context_for_loading_dn(
+        loading_dn, product
+    )
+
     remaining = required_qty
     rows_created = []
     fifo_seq = 0
@@ -552,6 +765,21 @@ def create_loading_dn_batch_allocations(loading_dn_name, product=None, required_
             continue
 
         fifo_seq += 1
+
+        # Create / reuse a matching APC Batch Allocation Detail so the
+        # reservation lives on a stable record. Remaining qty after partial
+        # loading stays on this Detail (no auto-release per design D4).
+        bad_name = _ensure_batch_allocation_detail(
+            sales_demand=sd_name,
+            sales_demand_item=sd_item_name,
+            batch=batch,
+            allocated_qty=take,
+            fifo_sequence=fifo_seq,
+        )
+
+        batch_doc = frappe.get_doc("APC Batch", batch.name)
+        batch_doc.allocate_quantity(take)
+
         row = loading_dn.append("batch_allocations", {
             "batch": batch.name,
             "batch_number": batch.batch_number,
@@ -563,6 +791,9 @@ def create_loading_dn_batch_allocations(loading_dn_name, product=None, required_
             "coa": batch.linked_coa,
             "fifo_sequence": fifo_seq,
             "is_fifo_override": 0,
+            "sales_demand": sd_name,
+            "sales_demand_item": sd_item_name,
+            "batch_allocation_detail": bad_name,
         })
         remaining -= take
         rows_created.append({
@@ -570,6 +801,9 @@ def create_loading_dn_batch_allocations(loading_dn_name, product=None, required_
             "batch_number": batch.batch_number,
             "allocated_qty": take,
             "fifo_sequence": fifo_seq,
+            "sales_demand": sd_name,
+            "sales_demand_item": sd_item_name,
+            "batch_allocation_detail": bad_name,
         })
 
     shortage = max(0, remaining)
@@ -595,10 +829,123 @@ def create_loading_dn_batch_allocations(loading_dn_name, product=None, required_
     }
 
 
+def _resolve_sales_demand_context_for_loading_dn(loading_dn, product):
+    """Return (sales_demand_name, sales_demand_item_name) for a Loading DN.
+
+    Looks up the Loading DN's Job Order, then finds the matching Job Order Item
+    by product. If that Job Order Item carries a ``sales_demand_item`` reference,
+    returns both the SD parent and the SD item. Returns (None, None) when no
+    Sales Demand context exists (legacy / standalone Job Order).
+    """
+    if not loading_dn.job_order:
+        return None, None
+
+    sd_name = frappe.db.get_value("Job Order", loading_dn.job_order, "sales_demand")
+
+    sd_item_name = None
+    if product:
+        filters = {"parent": loading_dn.job_order, "item": product}
+        sd_item_name = frappe.db.get_value(
+            "Job Order Item", filters, "sales_demand_item"
+        )
+    if not sd_item_name:
+        # Fall back to the first Job Order Item with an SD reference
+        sd_item_name = frappe.db.get_value(
+            "Job Order Item",
+            {"parent": loading_dn.job_order, "sales_demand_item": ["is", "set"]},
+            "sales_demand_item",
+        )
+
+    if sd_item_name and not sd_name:
+        sd_name = frappe.db.get_value(
+            "APC Sales Demand Item", sd_item_name, "parent"
+        )
+
+    return sd_name, sd_item_name
+
+
+def _ensure_batch_allocation_detail(sales_demand, sales_demand_item, batch,
+                                     allocated_qty, fifo_sequence):
+    """Create or update an APC Batch Allocation Detail row to back a
+    Loading DN Batch reservation.
+
+    A matching detail is one tied to the same SD item and same batch.  If
+    found, its ``allocated_quantity`` is bumped; otherwise a new APC Batch
+    Allocation parent is created (one per Sales Demand) and the detail row
+    is appended. Returns the detail row name, or None when there is no SD
+    context (the caller will simply skip SD linkage).
+    """
+    if not sales_demand:
+        return None
+
+    parent_alloc = frappe.db.get_value(
+        "APC Batch Allocation",
+        {"sales_demand": sales_demand, "allocation_status": ["in", ["Allocated", "Partially Dispatched"]]},
+        "name",
+    )
+    if not parent_alloc:
+        alloc_doc = frappe.new_doc("APC Batch Allocation")
+        alloc_doc.sales_demand = sales_demand
+        alloc_doc.customer = frappe.db.get_value(
+            "APC Sales Demand", sales_demand, "customer"
+        )
+        alloc_doc.allocation_date = today()
+        alloc_doc.allocation_status = "Allocated"
+        alloc_doc.insert(ignore_permissions=True)
+        parent_alloc = alloc_doc.name
+
+    alloc_doc = frappe.get_doc("APC Batch Allocation", parent_alloc)
+
+    existing_detail = None
+    if sales_demand_item:
+        for d in alloc_doc.allocation_details:
+            if d.sales_demand_item == sales_demand_item and d.batch == batch.name:
+                existing_detail = d
+                break
+
+    if existing_detail:
+        existing_detail.allocated_quantity = flt(existing_detail.allocated_quantity) + flt(allocated_qty)
+        existing_detail.required_quantity = max(
+            flt(existing_detail.required_quantity), existing_detail.allocated_quantity
+        )
+        existing_detail.remaining_quantity = max(
+            existing_detail.allocated_quantity - flt(existing_detail.dispatched_quantity), 0
+        )
+        detail_name = existing_detail.name
+    else:
+        new_detail = alloc_doc.append("allocation_details", {
+            "sales_demand_item": sales_demand_item,
+            "item": batch.product,
+            "item_name": batch.get("product_name"),
+            "batch": batch.name,
+            "batch_number": batch.batch_number,
+            "coa": batch.get("linked_coa"),
+            "manufacturing_date": batch.manufacturing_date,
+            "fifo_sequence": fifo_sequence,
+            "required_quantity": allocated_qty,
+            "allocated_quantity": allocated_qty,
+            "dispatched_quantity": 0,
+            "remaining_quantity": allocated_qty,
+            "warehouse": batch.get("warehouse"),
+            "status": "Allocated",
+        })
+        detail_name = new_detail.name
+
+    alloc_doc.save(ignore_permissions=True)
+    return detail_name
+
+
 def _resolve_product_from_loading_dn(loading_dn, product, required_qty,
                                       grade, specification, packaging_type, warehouse):
-    """Try to resolve missing product/qty from the Loading DN's linked Job Order."""
-    if product and required_qty:
+    """Resolve missing product / qty / grade / spec / packaging / warehouse
+    from the Loading DN's linked Job Order.
+
+    Option B: if a Job Order Item carries a ``sales_demand_item`` reference,
+    inherit grade / specification / packaging_type / warehouse from that SD
+    line in preference to the caller's defaults (which are typically empty
+    for legacy callers).
+    """
+    if product and required_qty and grade and specification and packaging_type and warehouse:
         return product, required_qty, grade, specification, packaging_type, warehouse
 
     if not loading_dn.job_order:
@@ -607,28 +954,55 @@ def _resolve_product_from_loading_dn(loading_dn, product, required_qty,
     items = frappe.get_all(
         "Job Order Item",
         filters={"parent": loading_dn.job_order},
-        fields=["item_code", "item_name", "qty", "uom"],
+        fields=[
+            "item", "item_name", "quantity", "uom",
+            "sales_demand_item", "grade", "specification",
+            "packaging_type", "warehouse",
+        ],
         limit=1,
     )
-    if items:
-        return (
-            product or items[0].item_code,
-            required_qty or items[0].qty,
-            grade,
-            specification,
-            packaging_type,
-            warehouse,
-        )
+    if not items:
+        return product, required_qty, grade, specification, packaging_type, warehouse
 
-    return product, required_qty, grade, specification, packaging_type, warehouse
+    row = items[0]
+
+    sd_grade = sd_spec = sd_pack = sd_wh = None
+    if row.get("sales_demand_item"):
+        sd_row = frappe.db.get_value(
+            "APC Sales Demand Item",
+            row.sales_demand_item,
+            ["grade", "specification", "packaging_type", "warehouse"],
+            as_dict=True,
+        ) or {}
+        sd_grade = sd_row.get("grade")
+        sd_spec = sd_row.get("specification")
+        sd_pack = sd_row.get("packaging_type")
+        sd_wh = sd_row.get("warehouse")
+
+    return (
+        product or row.item,
+        required_qty or row.quantity,
+        grade or sd_grade or row.get("grade"),
+        specification or sd_spec or row.get("specification"),
+        packaging_type or sd_pack or row.get("packaging_type"),
+        warehouse or sd_wh or row.get("warehouse"),
+    )
 
 
 @frappe.whitelist()
 def confirm_dispatch_and_deduct_stock(loading_dn_name):
     """
     Confirm dispatch on a Loading DN: deduct reserved stock from APC Batch records,
-    set batch_allocations rows to dispatched, and mark the Loading DN as Dispatch Confirmed.
+    set batch_allocations rows to dispatched, mark the Loading DN as Dispatch
+    Confirmed, pull gross/tare/net weights from linked Weighment Slips,
+    reconcile actual loaded weights against allocated weights using the
+    tolerance setting, and create a side-effect ERPNext Delivery Note for
+    tax/compliance traceability.
     """
+    from apc_operations.shipping.services.dispatch_validation_service import (
+        validate_delivery_note_generation,
+    )
+
     loading_dn = frappe.get_doc("Loading Delivery Note", loading_dn_name)
 
     if loading_dn.dispatch_confirmed:
@@ -637,19 +1011,20 @@ def confirm_dispatch_and_deduct_stock(loading_dn_name):
     if not loading_dn.batch_allocations:
         frappe.throw(_("No batch allocations found. Run FIFO allocation before confirming dispatch."))
 
-    # Validate all rows have approved COAs
+    # Pull weights before validation — weighment slips may populate gross/tare/net.
+    _pull_weights_from_weighment_slips(loading_dn)
+    _reconcile_loading_entries_into_batch_allocations(loading_dn)
+
+    validate_delivery_note_generation(loading_dn_name)
+
+    loading_dn.reload()
+
+    # Guard against double-dispatch on individual batches.
     errors = []
     for row in loading_dn.batch_allocations:
-        if not row.coa:
-            errors.append(_("Batch {0} has no linked COA.").format(row.batch_number or row.batch))
-            continue
-
-        coa_approval = frappe.db.get_value("APC COA", row.coa, "approval_status")
-        if coa_approval != "Approved":
-            errors.append(_("COA {0} for batch {1} is not approved.").format(row.coa, row.batch_number or row.batch))
-
-        # Validate batch is still available/reserved
-        batch_stock = frappe.db.get_value("APC Batch", row.batch, ["stock_status", "available_quantity"], as_dict=True)
+        batch_stock = frappe.db.get_value(
+            "APC Batch", row.batch, ["stock_status", "available_quantity"], as_dict=True
+        )
         if batch_stock and batch_stock.stock_status == "Dispatched":
             errors.append(_("Batch {0} is already dispatched.").format(row.batch_number or row.batch))
 
@@ -674,11 +1049,32 @@ def confirm_dispatch_and_deduct_stock(loading_dn_name):
                     )
                 )
 
-    # Deduct stock from each batch
+    # Deduct stock from each batch (and roll dispatched qty into the
+    # linked APC Sales Demand Item when the row is wired back to Option B).
+    sd_items_to_refresh = set()
+    sd_parents_to_refresh = set()
+
     for row in loading_dn.batch_allocations:
         batch_doc = frappe.get_doc("APC Batch", row.batch)
-        batch_doc.deduct_dispatch_qty(flt(row.allocated_qty))
-        row.db_set("dispatched_qty", flt(row.allocated_qty), update_modified=False)
+        dispatched_qty = flt(row.dispatched_qty) or flt(row.allocated_qty)
+        allocated_qty = flt(row.allocated_qty)
+        uom = _batch_uom_for_ldn_row(row) or batch_doc.uom or ""
+        if allocated_qty > 0 and dispatched_qty > allocated_qty + 0.0001:
+            frappe.throw(
+                _(
+                    "Cannot dispatch {0} {3} for batch {1}: allocated quantity is {2} {3}. "
+                    "Check Security Inspection loading entries (weights are in kg)."
+                ).format(
+                    dispatched_qty,
+                    row.batch_number or row.batch,
+                    allocated_qty,
+                    uom,
+                )
+            )
+        _ensure_batch_reservation_for_dispatch(row, dispatched_qty, batch_doc)
+        batch_doc.reload()
+        batch_doc.deduct_dispatch_qty(dispatched_qty)
+        row.db_set("dispatched_qty", dispatched_qty, update_modified=False)
 
         # Link COA to Loading DN
         frappe.db.set_value(
@@ -689,12 +1085,95 @@ def confirm_dispatch_and_deduct_stock(loading_dn_name):
             update_modified=False,
         )
 
+        # Option B: bump APC Sales Demand Item.dispatched_quantity for the
+        # matching SD line, and update the linked APC Batch Allocation
+        # Detail (status + dispatched_quantity), so the remaining reserved
+        # qty stays on the Detail (we do NOT auto-release).
+        sd_item_name = row.get("sales_demand_item")
+        bad_name = row.get("batch_allocation_detail")
+        if bad_name:
+            try:
+                bad = frappe.get_doc("APC Batch Allocation Detail", bad_name)
+                bad.dispatched_quantity = flt(bad.dispatched_quantity) + dispatched_qty
+                bad.remaining_quantity = max(
+                    flt(bad.allocated_quantity) - flt(bad.dispatched_quantity), 0
+                )
+                if bad.dispatched_quantity >= bad.allocated_quantity:
+                    bad.status = "Dispatched"
+                elif bad.dispatched_quantity > 0:
+                    bad.status = "Partially Dispatched"
+                bad.db_update()
+                sd_parents_to_refresh.add(bad.parent)  # APC Batch Allocation parent
+                if not sd_item_name:
+                    sd_item_name = bad.sales_demand_item
+            except frappe.DoesNotExistError:
+                pass
+
+        if sd_item_name:
+            current = flt(
+                frappe.db.get_value(
+                    "APC Sales Demand Item", sd_item_name, "dispatched_quantity"
+                )
+            )
+            demand_qty = flt(
+                frappe.db.get_value(
+                    "APC Sales Demand Item", sd_item_name, "demand_quantity"
+                )
+            )
+            new_dispatched = current + dispatched_qty
+            frappe.db.set_value(
+                "APC Sales Demand Item",
+                sd_item_name,
+                {
+                    "dispatched_quantity": new_dispatched,
+                    "pending_dispatch_quantity": max(demand_qty - new_dispatched, 0),
+                },
+                update_modified=False,
+            )
+            sd_items_to_refresh.add(sd_item_name)
+
+    # Refresh the owning APC Sales Demand totals so the UI reflects
+    # demanded / allocated / dispatched / pending-to-customer correctly.
+    parent_demands = set()
+    for sd_item in sd_items_to_refresh:
+        parent = frappe.db.get_value("APC Sales Demand Item", sd_item, "parent")
+        if parent:
+            parent_demands.add(parent)
+    for sd_name in parent_demands:
+        try:
+            sd_doc = frappe.get_doc("APC Sales Demand", sd_name)
+            sd_doc.calculate_totals()
+            sd_doc.update_item_status()
+            sd_doc.update_status()
+            sd_doc.db_update()
+            for child in sd_doc.items:
+                child.db_update()
+        except Exception:
+            frappe.log_error(
+                frappe.get_traceback(), f"APC Sales Demand refresh failed for {sd_name}"
+            )
+
     # Update Loading DN
     from frappe.utils import now as frappe_now
     loading_dn.db_set("dispatch_confirmed", 1, update_modified=False)
     loading_dn.db_set("dispatch_confirmed_on", frappe_now(), update_modified=False)
     loading_dn.db_set("dispatch_confirmed_by", frappe.session.user, update_modified=False)
     loading_dn.db_set("delivery_note_status", "Dispatch Confirmed", update_modified=False)
+
+    # Side-effect: create the ERPNext Delivery Note for tax/compliance.
+    # Failure here must NOT block the APC Loading DN; mark sync as Failed
+    # for later retry.
+    try:
+        erpnext_dn_name = _create_erpnext_delivery_note(loading_dn)
+        if erpnext_dn_name:
+            loading_dn.db_set("erpnext_delivery_note", erpnext_dn_name, update_modified=False)
+            loading_dn.db_set("erpnext_dn_sync_status", "Synced", update_modified=False)
+    except Exception:
+        frappe.log_error(
+            frappe.get_traceback(),
+            f"Loading DN {loading_dn_name}: ERPNext DN sync failed",
+        )
+        loading_dn.db_set("erpnext_dn_sync_status", "Failed", update_modified=False)
 
     frappe.msgprint(
         _("Dispatch confirmed for {0}. Stock deducted from {1} batch(es).").format(
@@ -704,7 +1183,210 @@ def confirm_dispatch_and_deduct_stock(loading_dn_name):
         alert=True,
     )
 
+    if loading_dn.get("transport_delivery_order"):
+        from apc_operations.shipping.services.dispatch_lifecycle_service import (
+            sync_dispatch_lifecycle_status,
+        )
+
+        sync_dispatch_lifecycle_status(
+            loading_dn.transport_delivery_order, update_modified=True
+        )
+
+    try:
+        from apc_operations.shipping.services.zoho_dispatch_sync_service import (
+            trigger_dispatch_confirmed_pipeline,
+        )
+
+        trigger_dispatch_confirmed_pipeline(loading_dn_name)
+    except Exception:
+        frappe.log_error(
+            frappe.get_traceback(),
+            f"Loading DN {loading_dn_name}: Zoho DN push enqueue failed",
+        )
+
     return {"success": True, "loading_dn": loading_dn_name}
+
+
+# -----------------------------------------------------------------------
+# Phase 4 helpers: weighment pull, loading-entry reconciliation, ERPNext DN
+# -----------------------------------------------------------------------
+
+def _pull_weights_from_weighment_slips(loading_dn):
+    """Pull gross/tare/net weights onto the Loading DN from any linked
+    Weighment Slips on the source Delivery Order.
+
+    Best-effort: leaves existing values alone if no slips are linked.
+    """
+    gross = tare = None
+
+    do_name = loading_dn.get("transport_delivery_order")
+    if do_name:
+        do = frappe.db.get_value(
+            "Delivery Order", do_name,
+            ["weighment_slip_gross", "weighment_slip_tare"],
+            as_dict=True,
+        ) or {}
+        if do.get("weighment_slip_gross"):
+            gross = frappe.db.get_value(
+                "Weighment Slip", do.weighment_slip_gross, "gross_weight"
+            )
+        if do.get("weighment_slip_tare"):
+            tare = frappe.db.get_value(
+                "Weighment Slip", do.weighment_slip_tare, "tare_weight"
+            )
+
+    if gross is not None:
+        loading_dn.db_set("gross_weight", flt(gross), update_modified=False)
+    if tare is not None:
+        loading_dn.db_set("tare_weight", flt(tare), update_modified=False)
+    if gross is not None and tare is not None:
+        loading_dn.db_set("net_weight", flt(gross) - flt(tare), update_modified=False)
+
+
+def _batch_uom_for_ldn_row(row) -> str | None:
+    uom = (row.uom or "").strip() if getattr(row, "uom", None) else ""
+    if uom:
+        return uom
+    return frappe.db.get_value("APC Batch", row.batch, "uom")
+
+
+def _ensure_batch_reservation_for_dispatch(row, dispatched_qty: float, batch_doc) -> None:
+    """Reserve on APC Batch when LDN rows exist but batch.allocated_quantity was never bumped."""
+    needed = flt(dispatched_qty)
+    if needed <= 0:
+        return
+    gap = needed - flt(batch_doc.allocated_quantity)
+    if gap > 0.0001:
+        batch_doc.allocate_quantity(gap)
+
+
+def _reconcile_loading_entries_into_batch_allocations(loading_dn):
+    """Sum actual weights from the linked Security Inspection's
+    ``loading_entries`` per batch and reconcile them against the Loading
+    DN's batch_allocations rows. Any discrepancy beyond the configured
+    tolerance is flagged via msgprint and requires manual reconciliation
+    (the dispatch still proceeds; the operator can adjust afterwards).
+    """
+    from apc_operations.shipping.doctype.apc_operations_settings.apc_operations_settings import (
+        loading_quantity_tolerance_pct,
+    )
+    from apc_operations.shipping.services.uom_service import (
+        kg_to_commercial_quantity,
+        quantity_to_kg,
+    )
+
+    si_name = loading_dn.get("security_inspection")
+    if not si_name:
+        return
+
+    rows = frappe.get_all(
+        "Loading Entry",
+        filters={"parent": si_name, "parenttype": "Security Inspection"},
+        fields=["batch", "bags_count", "actual_weight_kg"],
+    )
+    if not rows:
+        return
+
+    totals_kg = {}
+    for r in rows:
+        if not r.batch:
+            continue
+        totals_kg.setdefault(r.batch, 0.0)
+        totals_kg[r.batch] += flt(r.actual_weight_kg)
+
+    tolerance_pct = loading_quantity_tolerance_pct()
+    discrepancies = []
+    for row in loading_dn.batch_allocations:
+        actual_kg = totals_kg.get(row.batch)
+        if actual_kg is None:
+            continue
+        uom = _batch_uom_for_ldn_row(row)
+        actual_qty = kg_to_commercial_quantity(actual_kg, uom)
+        allocated = flt(row.allocated_qty)
+        # Record actual in commercial UOM so batch deduction matches allocated_qty.
+        row.db_set("dispatched_qty", actual_qty, update_modified=False)
+        if allocated > 0:
+            allocated_kg = quantity_to_kg(allocated, uom)
+            if allocated_kg > 0:
+                diff_pct = abs(actual_kg - allocated_kg) / allocated_kg * 100
+            else:
+                diff_pct = 0.0
+            if diff_pct > tolerance_pct:
+                discrepancies.append(
+                    _("Batch {0}: allocated {1} {2}, loaded {3} kg ({4:.2f}% off, tolerance {5}%)").format(
+                        row.batch_number or row.batch,
+                        allocated,
+                        uom or "",
+                        actual_kg,
+                        diff_pct,
+                        tolerance_pct,
+                    )
+                )
+
+    if discrepancies:
+        frappe.msgprint(
+            _("Loading entry reconciliation flagged discrepancies. Manual review recommended:")
+            + "<br/>" + "<br/>".join(f"\u2022 {d}" for d in discrepancies),
+            indicator="orange",
+        )
+
+
+def _create_erpnext_delivery_note(loading_dn):
+    """Side-effect: create an ERPNext Delivery Note mirroring the APC
+    Loading DN at finalisation. Maps one-to-one.
+
+    Field mapping:
+        APC Loading DN                       \u2192 ERPNext Delivery Note
+        customer                             \u2192 customer
+        loading_date                         \u2192 posting_date
+        batch_allocations[].product          \u2192 items[].item_code
+        batch_allocations[].dispatched_qty   \u2192 items[].qty
+        APC Batch.warehouse                  \u2192 items[].warehouse
+        APC Batch.erpnext_batch              \u2192 items[].batch_no
+
+    Returns the new ERPNext DN name, or None on skip.
+    """
+    if not loading_dn.customer:
+        return None
+
+    # Idempotent: do not double-create
+    if loading_dn.get("erpnext_delivery_note"):
+        return loading_dn.erpnext_delivery_note
+
+    if not frappe.db.exists("DocType", "Delivery Note"):
+        return None  # ERPNext stock module not installed
+
+    dn = frappe.new_doc("Delivery Note")
+    dn.customer = loading_dn.customer
+    dn.posting_date = loading_dn.loading_date or today()
+    dn.flags.ignore_permissions = True
+    dn.flags.ignore_mandatory = True
+
+    for row in loading_dn.batch_allocations:
+        if not row.batch or not row.product:
+            continue
+        erpnext_batch = frappe.db.get_value("APC Batch", row.batch, "erpnext_batch")
+        dn.append("items", {
+            "item_code": row.product,
+            "qty": flt(row.dispatched_qty) or flt(row.allocated_qty),
+            "uom": row.uom or frappe.db.get_value("Item", row.product, "stock_uom"),
+            "warehouse": frappe.db.get_value("APC Batch", row.batch, "warehouse"),
+            "batch_no": erpnext_batch,
+        })
+
+    if not dn.items:
+        return None
+
+    try:
+        dn.insert(ignore_permissions=True)
+    except Exception:
+        frappe.log_error(
+            frappe.get_traceback(),
+            f"ERPNext DN insert failed for Loading DN {loading_dn.name}",
+        )
+        return None
+
+    return dn.name
 
 
 @frappe.whitelist()

@@ -130,8 +130,10 @@ function qcCardDocLinksHtml(item) {
 	const ldn = item.ldn || item.loading_delivery_note;
 	if (!ldn) return "";
 	const ldnHref = escAttr(qcPrintUrl("Loading Delivery Note", ldn, QC_PRINT_FORMATS.LDN));
+	const ldnFormHref = escAttr(`/app/loading-delivery-note/${encodeURIComponent(ldn)}`);
 	let html = `<div class="apc-qc-card-docs" style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border-color);font-size:12px;">`;
-	html += `<a href="${ldnHref}" target="_blank" rel="noopener">${__("Print LDN")}</a>`;
+	html += `<a href="${ldnFormHref}">${__("Open LDN")}</a>`;
+	html += ` · <a href="${ldnHref}" target="_blank" rel="noopener">${__("Print LDN")}</a>`;
 	const sddn = item.sddn;
 	if (sddn) {
 		const sddnHref = escAttr(
@@ -141,6 +143,79 @@ function qcCardDocLinksHtml(item) {
 	}
 	html += `</div>`;
 	return html;
+}
+
+function qcPromptAfterLdnCreated(ldnName, refresh, onDialogHide) {
+	frappe.confirm(
+		__("Loading Delivery Note {0} was created. Send to QC now?", [ldnName]),
+		() => {
+			APCConsoleUI.callApi(
+				"apc_operations.security.api.send_loading_delivery_note_to_qc",
+				{ ldn: ldnName }
+			)
+				.then((res) => {
+					frappe.show_alert({
+						message: __("Sent to QC: {0}", [
+							(res && res.qc_report_request) || ldnName,
+						]),
+						indicator: "green",
+					});
+					onDialogHide && onDialogHide();
+					refresh && refresh();
+				})
+				.catch((err) => frappe.msgprint(err));
+		},
+		() => {
+			APCConsoleUI.callApi(
+				"apc_operations.security.api.queue_loading_delivery_note_for_qc",
+				{ ldn: ldnName }
+			)
+				.then(() => {
+					frappe.msgprint({
+						title: __("Queued for QC"),
+						message: __(
+							"LDN {0} is in QC Console → New Delivery Orders.",
+							[ldnName]
+						),
+						indicator: "green",
+					});
+					onDialogHide && onDialogHide();
+					refresh && refresh();
+				})
+				.catch((err) => frappe.msgprint(err));
+		},
+		__("Send to QC?")
+	);
+}
+
+function qcCreateLoadingDn(sddn, refresh, onDialogHide) {
+	return new Promise((resolve, reject) => {
+		frappe.call({
+			method: "apc_operations.security.api.create_loading_delivery_note",
+			args: { sddn },
+			freeze: true,
+			freeze_message: __("Creating Loading Delivery Note..."),
+			callback: (r) => {
+				const res = r.message;
+				const ldn = res && res.loading_delivery_note;
+				frappe.show_alert({
+					message: __("LDN created: {0}", [ldn]),
+					indicator: "green",
+				});
+				if (ldn) {
+					qcPromptAfterLdnCreated(ldn, refresh, onDialogHide);
+				} else {
+					onDialogHide && onDialogHide();
+					refresh && refresh();
+				}
+				resolve(res);
+			},
+			error: (err) => {
+				APCConsoleUI.showApiError(err, __("Could not create Loading Delivery Note."));
+				reject(err);
+			},
+		});
+	});
 }
 
 function escAttr(s) {
@@ -214,9 +289,332 @@ function qcDefaultCoaFromDetail(data) {
 }
 
 function openQcModal(item, kind, refresh) {
+	const doName = item.delivery_order || item.name;
+	const ldn = item.ldn || item.loading_delivery_note;
+
+	if (doName && (!ldn || kind === "new")) {
+		APCConsoleUI.callApi("apc_operations.quality.api.get_qc_do_detail", {
+			delivery_order: doName,
+		}).then((data) => {
+			openQcDoDetailModal(data, kind, refresh);
+		});
+		return;
+	}
+
 	APCConsoleUI.callApi("apc_operations.quality.api.get_qc_item_detail", {
-		loading_delivery_note: item.ldn || item.loading_delivery_note,
+		loading_delivery_note: ldn,
 	}).then((data) => {
+		openQcLdnModal(data, item, kind, refresh);
+	});
+}
+
+function openQcDoDetailModal(data, kind, refresh) {
+	const doName = data.delivery_order || data.name;
+	const readOnly = kind === "completed" || kind === "rejected" || data.read_only;
+	const pcc = data.pcc_form || {};
+	const verification = data.verification || {};
+	const checklistItems = Array.isArray(data.checklist_items) ? data.checklist_items : [];
+	const checklistEditable = !readOnly && data.can_verify_sddn;
+
+	const kvRows = [
+		["Delivery Order", doName],
+		["Operation", data.commercial_movement || "Export"],
+		["Job Order", data.job_order_number || data.job_order],
+		["Customer", data.customer_name || data.customer],
+		["Incoterm", data.terms_of_delivery || "—"],
+		["Pipeline", data.operational_status || "—"],
+		["SDDN", data.sddn || "—"],
+		["SDDN Status", data.sddn_status || "—"],
+		["Truck", data.sddn_truck_number || data.truck_number || "—"],
+		["Driver", data.sddn_driver_name || data.driver_name || "—"],
+		["Container", data.sddn_container_number || "—"],
+		["Origin / Pickup", data.sddn_pickup_location || "—"],
+		["Destination", data.sddn_destination || "—"],
+	];
+
+	const d = new frappe.ui.Dialog({
+		title: `${__("QC & Security Review")} — ${doName}`,
+		size: "extra-large",
+		fields: [
+			{
+				fieldtype: "HTML",
+				fieldname: "summary_html",
+				options: renderKvGrid(data, kvRows),
+			},
+			{ fieldtype: "Section Break", label: __("Security checklist (SDDN)") },
+			{
+				fieldtype: "HTML",
+				fieldname: "checklist_html",
+				options: frappe.apc.renderSecurityChecklist(checklistItems, checklistEditable),
+			},
+			{ fieldtype: "Section Break", label: __("Security verification") },
+			{
+				fieldtype: "Check",
+				fieldname: "truck_verified",
+				label: __("Verify Truck"),
+				default: verification.truck_verified ? 1 : 0,
+				read_only: checklistEditable ? 0 : 1,
+			},
+			{
+				fieldtype: "Check",
+				fieldname: "driver_verified",
+				label: __("Verify Driver"),
+				default: verification.driver_verified ? 1 : 0,
+				read_only: checklistEditable ? 0 : 1,
+			},
+			{
+				fieldtype: "Check",
+				fieldname: "container_verified",
+				label: __("Verify Container"),
+				default: verification.container_verified ? 1 : 0,
+				read_only: checklistEditable ? 0 : 1,
+			},
+			{
+				fieldtype: "Small Text",
+				fieldname: "security_remarks",
+				label: __("Security Remarks"),
+				default: verification.remarks || "",
+				read_only: checklistEditable ? 0 : 1,
+			},
+			{ fieldtype: "Section Break", label: __("QC pre-check") },
+			{
+				fieldtype: "Check",
+				fieldname: "product_confirmed",
+				label: __("Product Confirmed"),
+				default: pcc.product_confirmed ? 1 : 0,
+				read_only: readOnly ? 1 : 0,
+			},
+			{
+				fieldtype: "Link",
+				fieldname: "batch_no",
+				label: __("Batch"),
+				options: "APC Batch",
+				default: pcc.batch_no || data.pcc_batch_no,
+				read_only: readOnly ? 1 : 0,
+			},
+			{
+				fieldtype: "Select",
+				fieldname: "coa_status",
+				label: __("COA Status"),
+				options: "Not Checked\nPresent\nApproved\nMissing\nRejected",
+				default: pcc.coa_status || "Not Checked",
+				read_only: readOnly ? 1 : 0,
+			},
+			{ fieldtype: "Column Break" },
+			{
+				fieldtype: "Select",
+				fieldname: "tanker_cleanliness",
+				label: __("Tanker Cleanliness"),
+				options: "Not Checked\nClean\nAcceptable\nContaminated",
+				default: pcc.tanker_cleanliness || "Not Checked",
+				read_only: readOnly ? 1 : 0,
+			},
+			{
+				fieldtype: "Select",
+				fieldname: "odour_check",
+				label: __("Odour Check"),
+				options: "Not Applicable\nPassed\nFailed",
+				default: pcc.odour_check || "Not Applicable",
+				read_only: readOnly ? 1 : 0,
+			},
+			{
+				fieldtype: "Select",
+				fieldname: "seal_condition_before_loading",
+				label: __("Seal Condition"),
+				options: "Not Applicable\nIntact\nBroken",
+				default: pcc.seal_condition_before_loading || "Not Applicable",
+				read_only: readOnly ? 1 : 0,
+			},
+			{
+				fieldtype: "Small Text",
+				fieldname: "qc_remarks",
+				label: __("QC Remarks"),
+				default: pcc.qc_remarks || "",
+				read_only: readOnly ? 1 : 0,
+			},
+		],
+		primary_action_label: __("Close"),
+		primary_action: () => d.hide(),
+	});
+
+	if (!readOnly && data.can_verify_sddn && data.sddn) {
+		d.add_custom_action(__("Save Security Review"), () => {
+			qcSaveSecurityReview(d, data, checklistItems, refresh);
+		});
+	}
+
+	const showPrecheckActions =
+		!readOnly &&
+		data.pre_check_clearance &&
+		(kind === "new" || data.can_pass_precheck || data.can_fail_precheck);
+
+	if (showPrecheckActions && (kind === "new" || data.can_pass_precheck)) {
+		d.add_custom_action(__("Pass QC Pre-Check"), () => {
+			qcMarkPrecheckFromDialog(d, data, "Passed", refresh);
+		});
+	}
+	if (showPrecheckActions && (kind === "new" || data.can_fail_precheck)) {
+		d.add_custom_action(__("Fail QC Pre-Check"), () => {
+			qcMarkPrecheckFromDialog(d, data, "Failed", refresh);
+		});
+	}
+
+	if (!readOnly && !data.read_only && data.can_create_ldn && data.sddn && !data.is_import) {
+		d.add_custom_action(__("Create Loading Delivery Note"), () => {
+			qcCreateLoadingDn(data.sddn, refresh, () => d.hide());
+		});
+	}
+	if (data.sddn) {
+		d.add_custom_action(__("Print SDDN"), () => {
+			window.open(
+				qcPrintUrl("Security Draft Delivery Note", data.sddn, QC_PRINT_FORMATS.SDDN),
+				"_blank"
+			);
+		});
+	}
+	d.add_custom_action(__("Open DO Form"), () => {
+		frappe.set_route("Form", "Delivery Order", doName);
+	});
+	d.show();
+}
+
+function qcConsoleApiErrorMessage(err) {
+	if (!err) {
+		return __("Unknown error");
+	}
+	if (typeof err === "string") {
+		return err;
+	}
+	if (err.message) {
+		return err.message;
+	}
+	if (err._server_messages) {
+		try {
+			const msgs = JSON.parse(err._server_messages);
+			return msgs.map((m) => JSON.parse(m).message).join("<br>");
+		} catch (e) {
+			return err._server_messages;
+		}
+	}
+	return String(err);
+}
+
+function qcSaveSecurityReview(dialog, data, checklistItems, refresh) {
+	const values = dialog.get_values();
+	if (!values) {
+		frappe.msgprint({
+			title: __("Cannot save"),
+			message: __("Fix the highlighted fields before saving the security review."),
+			indicator: "orange",
+		});
+		return;
+	}
+	if (!values.truck_verified || !values.driver_verified || !values.container_verified) {
+		frappe.msgprint(__("All three verification checks must be ticked."));
+		return;
+	}
+	const checklistPayload = frappe.apc.collectSecurityChecklist(dialog, checklistItems);
+	const pending = checklistPayload
+		.filter((row) => row.required && !row.completed)
+		.map((row) => row.checklist_item);
+	if (pending.length) {
+		frappe.msgprint({
+			title: __("Checklist Incomplete"),
+			message:
+				__("Tick all required checklist items before saving.") +
+				"<br><br>" +
+				pending.map((p) => `• ${frappe.utils.escape_html(p)}`).join("<br>"),
+			indicator: "orange",
+		});
+		return;
+	}
+	APCConsoleUI.callApi("apc_operations.security.api.verify_security_delivery_draft_note", {
+		name: data.sddn,
+		checks: JSON.stringify({
+			truck_verified: values.truck_verified,
+			driver_verified: values.driver_verified,
+			container_verified: values.container_verified,
+			remarks: values.security_remarks,
+		}),
+		checklist: JSON.stringify(checklistPayload),
+	})
+		.then(() => {
+			frappe.show_alert({ message: __("Security review saved"), indicator: "green" });
+			dialog.hide();
+			refresh && refresh();
+		})
+		.catch((err) =>
+			frappe.msgprint({
+				title: __("Security review failed"),
+				message: qcConsoleApiErrorMessage(err),
+				indicator: "red",
+			})
+		);
+}
+
+function qcMarkPrecheckFromDialog(dialog, data, status, refresh) {
+	if (!data.pre_check_clearance) {
+		frappe.msgprint(__("No Pre-Check Clearance linked to this Delivery Order."));
+		return;
+	}
+	const values = dialog.get_values();
+	if (!values) {
+		frappe.msgprint({
+			title: __("Cannot save"),
+			message: __("Fix the highlighted fields before passing QC pre-check."),
+			indicator: "orange",
+		});
+		return;
+	}
+	let failure_reason = null;
+	if (status === "Failed") {
+		failure_reason = values.qc_remarks || prompt(__("Failure reason?"));
+		if (failure_reason === null && !values.qc_remarks) {
+			return;
+		}
+	}
+	APCConsoleUI.callApi("apc_operations.quality.api.submit_qc_precheck", {
+		pre_check_clearance: data.pre_check_clearance,
+		result: status,
+		product_confirmed: values.product_confirmed ? 1 : 0,
+		batch_no: values.batch_no,
+		coa_status: values.coa_status,
+		tanker_cleanliness: values.tanker_cleanliness,
+		odour_check: values.odour_check,
+		seal_condition_before_loading: values.seal_condition_before_loading,
+		qc_remarks: values.qc_remarks,
+		failure_reason: failure_reason || undefined,
+	})
+		.then((res) => {
+			let message = __("QC pre-check {0}", [status]);
+			if (status === "Passed" && res) {
+				if (res.overall_status === "Authorized") {
+					message = __("QC pre-check passed. Truck cleared for loading.");
+				} else if (res.is_import) {
+					message = __(
+						"QC pre-check passed. Open Transportation → Inward Import to link or create the Export Job Order."
+					);
+				} else {
+					message = __("QC pre-check passed. Continue in Pending Delivery Orders.");
+				}
+			}
+			frappe.show_alert({
+				message,
+				indicator: status === "Passed" ? "green" : "red",
+			});
+			dialog.hide();
+			refresh && refresh();
+		})
+		.catch((err) =>
+			frappe.msgprint({
+				title: __("QC pre-check failed"),
+				message: qcConsoleApiErrorMessage(err),
+				indicator: "red",
+			})
+		);
+}
+
+function openQcLdnModal(data, item, kind, refresh) {
 		const readOnly = kind === "completed" || kind === "rejected";
 
 		const fields = [
@@ -357,6 +755,11 @@ function openQcModal(item, kind, refresh) {
 			});
 		}
 
+		if (data.loading_delivery_note) {
+			d.add_custom_action(__("Open LDN"), () => {
+				frappe.set_route("Form", "Loading Delivery Note", data.loading_delivery_note);
+			});
+		}
 		d.add_custom_action(__("Print LDN"), () => {
 			window.open(
 				qcPrintUrl("Loading Delivery Note", data.loading_delivery_note, QC_PRINT_FORMATS.LDN),
@@ -373,6 +776,11 @@ function openQcModal(item, kind, refresh) {
 					),
 					"_blank"
 				);
+			});
+		}
+		if (data.delivery_order) {
+			d.add_custom_action(__("Open DO Form"), () => {
+				frappe.set_route("Form", "Delivery Order", data.delivery_order);
 			});
 		}
 
@@ -467,7 +875,6 @@ function openQcModal(item, kind, refresh) {
 				);
 			});
 		}
-	});
 }
 
 function renderQcDocumentsAndCoaSection(data) {

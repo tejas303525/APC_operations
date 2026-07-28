@@ -178,6 +178,7 @@ def send_daily_dashboard_summary():
         <li><b>{summary_data['dg_pending']}</b> DG Shipments Pending Approval</li>
     </ul>
     {unbooked_section}
+    {_console_delivery_urgency_section()}
 
     <p><a href="{frappe.utils.get_url()}/app/shipping">Open Shipping Dashboard</a></p>
     """
@@ -339,6 +340,30 @@ def notify_users_about_pending_transport(transports):
         )
 
 
+def _console_delivery_urgency_section() -> str:
+    """HTML snippet summarising overdue / due-today console work across hubs."""
+    from apc_operations.services.daily_work_summary_service import build_daily_work_summary
+
+    all_summary = build_daily_work_summary()
+    lines = []
+    for hub, label in (
+        ("shipping", "Shipping"),
+        ("transportation", "Transportation"),
+        ("security", "Security"),
+        ("qc", "QC"),
+    ):
+        totals = (all_summary.get(hub) or {}).get("totals") or {}
+        if not totals.get("total"):
+            continue
+        lines.append(
+            f"<li><b>{label}</b>: {totals.get('overdue', 0)} overdue, "
+            f"{totals.get('today', 0)} due today, {totals.get('this_week', 0)} this week</li>"
+        )
+    if not lines:
+        return ""
+    return f"<h3>Console Delivery Deadlines:</h3><ul>{''.join(lines)}</ul>"
+
+
 def get_daily_summary():
     return {
         "pending_cros": frappe.db.count("Shipping Booking", {
@@ -398,21 +423,80 @@ def get_overdue_items():
     }
 
 
-def get_unbooked_transport_job_orders(limit=20):
+def get_unbooked_transport_job_orders(limit=20, unbooked_for_hours=None):
     """Job Orders where APC transport is required but no Transport Schedule exists yet."""
+    filters = {
+        "transport_required": 1,
+        "transport_status": ["in", ["Pending Booking", "Pending Review"]],
+        "transport_schedule": ["is", "not set"],
+        "booking_requirement": ["in", ["Transport Booking", "Transport and Ship Booking"]],
+        "status": ["not in", ["Completed", "Cancelled"]],
+    }
+    if unbooked_for_hours:
+        from frappe.utils import add_to_date, now
+
+        filters["modified"] = ["<=", add_to_date(now(), hours=-int(unbooked_for_hours))]
+
     return frappe.get_all(
         "Job Order",
-        filters={
-            "transport_required": 1,
-            "transport_status": ["in", ["Pending Booking", "Pending Review"]],
-            "transport_schedule": ["is", "not set"],
-            "booking_requirement": ["in", ["Transport Booking", "Transport and Ship Booking"]],
-            "status": ["not in", ["Completed", "Cancelled"]],
-        },
-        fields=["name", "job_order_number", "date", "customer", "customer_name", "terms_of_delivery"],
+        filters=filters,
+        fields=[
+            "name",
+            "job_order_number",
+            "date",
+            "customer",
+            "customer_name",
+            "terms_of_delivery",
+            "modified",
+            "creation",
+        ],
         order_by="date asc, modified asc",
         limit=limit,
     )
+
+
+def check_unbooked_transport_over_24h():
+    """Notify transportation team when required transport is still unbooked after 24 hours."""
+    job_orders = get_unbooked_transport_job_orders(limit=50, unbooked_for_hours=24)
+    if job_orders:
+        notify_transportation_team_about_unbooked(job_orders)
+
+
+def notify_transportation_team_about_unbooked(job_orders):
+    """Email Transportation User/Manager about Job Orders awaiting transport booking."""
+    transportation_users = _role_user_emails(["Transportation Manager", "Transportation User"])
+
+    lines = ""
+    for row in job_orders:
+        ref = row.get("job_order_number") or row.get("name")
+        lines += f"""
+        <li>
+            <b>{ref}</b> |
+            Delivery: {row.get('date') or 'N/A'} |
+            Customer: {row.get('customer_name') or row.get('customer') or 'N/A'} |
+            Incoterm: {row.get('terms_of_delivery') or 'N/A'} |
+            Waiting since: {frappe.utils.format_datetime(row.get('modified') or row.get('creation'))}
+        </li>"""
+
+    subject = f"URGENT: {len(job_orders)} Job Order(s) Unbooked for 24+ Hours"
+    message = f"""
+    <h3>Transport Booking Overdue</h3>
+    <p>The following job orders require APC transport but have <b>no Transport Schedule</b>
+    for more than <b>24 hours</b>:</p>
+    <ul>{lines}</ul>
+    <p>Please create transport schedules in the Transportation Console.</p>
+    <br>
+    <a href="{frappe.utils.get_url()}/app/transportation-console">Open Transportation Console</a>
+    """
+
+    for user in transportation_users:
+        frappe.sendmail(
+            recipients=user,
+            subject=subject,
+            message=message,
+            reference_doctype="Job Order",
+            reference_name=job_orders[0].name if job_orders else "",
+        )
 
 
 def check_unassigned_transport_reminder():
@@ -499,6 +583,7 @@ def check_transportation_daily_summary():
         <li><b>{summary['driver_pending']}</b> Driver Assignment Pending</li>
         <li><b>{summary['payables_pending']}</b> Payables Pending</li>
     </ul>
+    {_console_delivery_urgency_section()}
 
     <p><a href="{frappe.utils.get_url()}/app/transportation">Open Transportation Workspace</a></p>
     """

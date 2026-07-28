@@ -11,6 +11,44 @@ from frappe import _
 # ──────────────────────────────────────────────────────────────────────────────
 
 @frappe.whitelist()
+def get_job_order_delete_preview(job_order: str):
+	"""List operational documents that would be deleted with this Job Order."""
+	from apc_operations.shipping.services.job_order_delete_service import (
+		get_job_order_delete_preview as _preview,
+	)
+
+	return _preview(job_order)
+
+
+@frappe.whitelist()
+def sync_job_order_number_to_linked_docs(job_order: str):
+	"""Push the current Job Order number into linked operational documents."""
+	from apc_operations.shipping.services.job_order_sync_service import (
+		sync_job_order_number_to_linked,
+	)
+
+	if not job_order or not frappe.db.exists("Job Order", job_order):
+		frappe.throw(_("Job Order {0} does not exist.").format(job_order))
+
+	updated = sync_job_order_number_to_linked(job_order)
+	return {
+		"job_order": job_order,
+		"job_order_number": frappe.db.get_value("Job Order", job_order, "job_order_number"),
+		"updated": updated,
+	}
+
+
+@frappe.whitelist()
+def delete_job_order_with_linked(job_order: str):
+	"""Delete Job Order and cascade-delete linked operational documents."""
+	from apc_operations.shipping.services.job_order_delete_service import (
+		delete_job_order_with_linked as _delete,
+	)
+
+	return _delete(job_order)
+
+
+@frappe.whitelist()
 def get_job_dashboard_data():
     """Return KPIs, job order list, and recent activity for the Job Order Dashboard."""
     kpis = {
@@ -705,6 +743,7 @@ def quick_create_vessel_booking(data):
     doc = frappe.new_doc("Shipping Booking")
     doc.shipping_line = data.get("shipping_line")
     doc.container_type = data.get("container_type")
+    doc.container_number = data.get("container_number")
     doc.container_count = data.get("container_count", 1)
     doc.port_of_loading = data.get("port_of_loading")
     doc.port_of_discharge = data.get("port_of_discharge")
@@ -1035,6 +1074,10 @@ def _build_security_today_queue(draft_dns, pending_inspections, pending_qc, pend
 # ──────────────────────────────────────────────────────────────────────────────
 
 from apc_operations.services import console_status as _console_status
+from apc_operations.services.console_queue_service import (
+    attach_delivery_due_fields,
+    enrich_and_sort_console_queue,
+)
 
 
 def _booking_summary_fields():
@@ -1047,6 +1090,7 @@ def _booking_summary_fields():
         "incoterm",
         "shipping_line",
         "container_type",
+        "container_number",
         "container_count",
         "port_of_loading",
         "port_of_discharge",
@@ -1072,11 +1116,19 @@ def _booking_summary_fields():
 
 
 def _booking_card(sb: dict) -> dict:
-    return {
+    from apc_operations.shipping.services.job_order_sync_service import (
+        get_live_job_order_number,
+    )
+
+    jo = sb.get("job_order")
+    jo_number = get_live_job_order_number(jo) if jo else None
+    jo_number = jo_number or sb.get("job_order_number") or jo
+
+    card = {
         "name": sb.get("name"),
         "shipping_booking": sb.get("name"),
-        "job_order": sb.get("job_order"),
-        "job_order_number": sb.get("job_order_number") or sb.get("job_order"),
+        "job_order": jo,
+        "job_order_number": jo_number,
         "customer": sb.get("customer"),
         "customer_name": sb.get("customer_name"),
         "shipping_line": sb.get("shipping_line"),
@@ -1095,6 +1147,11 @@ def _booking_card(sb: dict) -> dict:
         "gate_cutoff": sb.get("gate_cutoff"),
         "pull_out_date": sb.get("pull_out_date"),
     }
+    return attach_delivery_due_fields(card)
+
+
+def _sorted_booking_cards(rows: list[dict]) -> list[dict]:
+    return enrich_and_sort_console_queue([_booking_card(r) for r in rows])
 
 
 @frappe.whitelist()
@@ -1108,7 +1165,7 @@ def get_pending_bookings():
         order_by="modified desc",
         limit=200,
     )
-    return [_booking_card(r) for r in rows]
+    return _sorted_booking_cards(rows)
 
 
 @frappe.whitelist()
@@ -1158,7 +1215,7 @@ def get_pending_cros():
         order_by="modified desc",
         limit=200,
     )
-    return [_booking_card(r) for r in rows]
+    return _sorted_booking_cards(rows)
 
 
 @frappe.whitelist()
@@ -1179,7 +1236,7 @@ def get_open_cro_schedule():
         order_by="vessel_date asc",
         limit=200,
     )
-    return [_booking_card(r) for r in rows]
+    return _sorted_booking_cards(rows)
 
 
 @frappe.whitelist()
@@ -1189,173 +1246,70 @@ def get_open_cro_schedule_detail(name: str):
 
 @frappe.whitelist()
 def generate_delivery_order_for_export(job_order: str):
-    """Create a Delivery Order for an export Job Order (Section 7.7).
-
-    Validates that the active Transport Schedule.transport_status is in the
-    narrow allowlist:
-        Vehicle Assigned / Driver Assigned / Scheduled / Dispatched
-    """
-    if not job_order:
-        frappe.throw(_("job_order is required"))
-
-    jo = frappe.db.get_value(
-        "Job Order",
-        job_order,
-        [
-            "name",
-            "customer",
-            "customer_name",
-            "port_of_loading",
-            "port_of_discharge",
-            "shipping_booking",
-        ],
-        as_dict=True,
-    )
-    if not jo:
-        frappe.throw(_("Job Order {0} not found").format(job_order))
-
-    ts_row = frappe.get_all(
-        "Transport Schedule",
-        filters={"job_order": job_order, "transport_status": ["!=", "Cancelled"]},
-        fields=["name", "transport_status", "shipping_booking", "container_count"],
-        order_by="modified desc",
-        limit=1,
-    )
-    if not ts_row:
-        frappe.throw(_("No active Transport Schedule for Job Order {0}").format(job_order))
-
-    ts = ts_row[0]
-
-    from apc_operations.services.delivery_order_service import (
-        find_delivery_order_for_job_order_primary,
-        link_delivery_order_to_job_order,
+    """Create a Delivery Order for an export Job Order (Section 7.7)."""
+    from apc_operations.shipping.services.delivery_order_generation_service import (
+        generate_delivery_order_for_job_order,
     )
 
-    existing_do = find_delivery_order_for_job_order_primary(job_order)
-    if existing_do:
-        link_delivery_order_to_job_order(existing_do, job_order, update_modified=False)
-        return {"delivery_order": existing_do, "job_order": job_order}
-    if not _console_status.can_generate_delivery_order(ts.get("transport_status")):
-        frappe.throw(
-            _(
-                "Cannot generate Delivery Order: Transport Schedule {0} is in status "
-                "'{1}'. Allowed: Vehicle Assigned / Driver Assigned / Scheduled / Dispatched."
-            ).format(ts.get("name"), ts.get("transport_status") or "-")
-        )
+    return generate_delivery_order_for_job_order(job_order, movement="Export")
 
-    sb_name = ts.get("shipping_booking") or jo.get("shipping_booking")
-    sb = (
-        frappe.db.get_value(
-            "Shipping Booking",
-            sb_name,
-            [
-                "name",
-                "port_of_loading",
-                "port_of_discharge",
-                "cargo_description",
-            ],
-            as_dict=True,
-        )
-        if sb_name
-        else None
+
+@frappe.whitelist()
+def generate_followup_delivery_order_for_export(
+    job_order: str, transport_schedule: str | None = None
+):
+    """Create a follow-up Delivery Order for remaining partial-dispatch quantity."""
+    from apc_operations.shipping.services.delivery_order_generation_service import (
+        generate_followup_delivery_order_for_job_order,
     )
 
-    company = frappe.defaults.get_user_default("Company") or frappe.db.get_single_value(
-        "Global Defaults", "default_company"
+    return generate_followup_delivery_order_for_job_order(
+        job_order, transport_schedule=transport_schedule
     )
-    if not company:
-        frappe.throw(_("No default Company configured."))
 
-    pol_label = _resolve_port_label(jo.get("port_of_loading") or (sb and sb.port_of_loading))
-    pod_label = _resolve_port_label(jo.get("port_of_discharge") or (sb and sb.port_of_discharge))
 
-    container_count = ts.get("container_count")
-    if not container_count and sb_name:
-        container_count = frappe.db.get_value("Shipping Booking", sb_name, "container_count")
-    if container_count is not None:
-        try:
-            container_count = int(container_count)
-        except (TypeError, ValueError):
-            container_count = None
-    if not container_count:
-        container_count = None
+@frappe.whitelist()
+def generate_delivery_order_for_import(job_order: str):
+    """Create a Delivery Order for an import Job Order (inward Path B)."""
+    from apc_operations.shipping.services.delivery_order_generation_service import (
+        generate_delivery_order_for_job_order,
+    )
 
-    do = frappe.new_doc("Delivery Order")
-    do.naming_series = "DO-.YYYY.-"
-    do.customer = jo.get("customer")
-    do.customer_name = jo.get("customer_name")
-    do.job_order = job_order
-    do.posting_date = today()
-    do.company = company
-    do.port_of_loading = pol_label
-    do.port_of_discharge = pod_label
-    do.destination = pod_label
-    do.status = "Draft"
-    do.buyer = jo.get("customer")
-    do.remarks = _("Generated from Job Order {0}").format(job_order)
+    return generate_delivery_order_for_job_order(
+        job_order, movement="Import", auto_issue_to_security=True
+    )
 
-    items = _copy_job_order_items_to_delivery_order(job_order, no_of_containers=container_count)
-    if not items:
-        # Delivery Order requires at least one item; insert a placeholder
-        # using the cargo description as fallback.
-        items = [
-            {
-                "description": (sb and sb.cargo_description) or _("Items per Job Order"),
-                "qty": 1,
-                "uom": "Nos",
-            }
-        ]
-        if container_count:
-            items[0]["no_of_containers"] = container_count
-    for item in items:
-        do.append("items", item)
 
-    do.insert(ignore_permissions=True)
+@frappe.whitelist()
+def link_import_to_export_job_order(import_job_order: str, export_job_order: str):
+    from apc_operations.shipping.services.import_handoff_service import (
+        link_import_to_export_job_order as _link,
+    )
 
-    try:
-        frappe.get_doc(
-            {
-                "doctype": "Comment",
-                "comment_type": "Comment",
-                "reference_doctype": "Job Order",
-                "reference_name": job_order,
-                "content": _("Delivery Order generated: {0}").format(do.name),
-            }
-        ).insert(ignore_permissions=True)
-    except Exception:
-        pass
+    return _link(import_job_order, export_job_order)
 
-    return {"delivery_order": do.name, "job_order": job_order}
+
+@frappe.whitelist()
+def create_export_job_order_from_import(
+    import_job_order: str, customer: str | None = None, terms_of_delivery: str | None = None
+):
+    from apc_operations.shipping.services.import_handoff_service import (
+        create_export_job_order_from_import as _create,
+    )
+
+    return _create(import_job_order, customer=customer, terms_of_delivery=terms_of_delivery)
 
 
 def _resolve_port_label(value):
     if not value:
         return None
-    # Port is a Link; show port_name / city if available, else the name.
     port_name = frappe.db.get_value("Port", value, "port_name")
     return port_name or value
 
 
 def _copy_job_order_items_to_delivery_order(job_order: str, no_of_containers=None):
-    rows = frappe.get_all(
-        "Job Order Item",
-        filters={"parent": job_order},
-        fields=["item", "item_name", "description", "quantity", "uom", "net_weight"],
-        order_by="idx asc",
+    from apc_operations.shipping.services.delivery_order_sync_service import (
+        job_order_items_for_delivery_order,
     )
-    items = []
-    for r in rows:
-        if not r.get("item"):
-            continue
-        row = {
-            "item_code": r["item"],
-            "item_name": r.get("item_name"),
-            "description": r.get("description"),
-            "qty": r.get("quantity") or 0,
-            "uom": r.get("uom") or "Nos",
-            "net_weight": r.get("net_weight") or 0,
-        }
-        if no_of_containers:
-            row["no_of_containers"] = no_of_containers
-        items.append(row)
-    return items
+
+    return job_order_items_for_delivery_order(job_order, no_of_containers=no_of_containers)

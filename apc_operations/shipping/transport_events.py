@@ -74,5 +74,10 @@ def sync_transport_to_job_order(doc):
     frappe.flags.in_sync_transport_to_job_order = True
     try:
         frappe.db.set_value("Job Order", doc.job_order, values, update_modified=False)
+        from apc_operations.shipping.services.logistics_cost_service import (
+            refresh_job_order_logistics_display,
+        )
+
+        refresh_job_order_logistics_display(doc.job_order)
     finally:
         frappe.flags.in_sync_transport_to_job_order = False

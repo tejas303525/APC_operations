@@ -52,8 +52,27 @@ class SecurityInspection(Document):
 
     def validate(self):
         self.calculate_net_weight()
+        self.sync_packing_counts()
         self.validate_checklist_completion()
         self.validate_qc_transition_integrity()
+
+    def sync_packing_counts(self):
+        from apc_operations.shipping.services.packing_calculation_service import (
+            loaded_packaging_qty_from_loading_entries,
+        )
+
+        loaded = loaded_packaging_qty_from_loading_entries(self.name)
+        if loaded > 0:
+            self.loaded_packaging_qty = loaded
+        if not flt(self.expected_packaging_qty) and self.job_order:
+            from apc_operations.shipping.services.packing_calculation_service import (
+                sum_job_order_packing_totals,
+            )
+
+            totals = sum_job_order_packing_totals(self.job_order)
+            expected = int(totals.get("packaging_qty") or 0)
+            if expected > 0:
+                self.expected_packaging_qty = expected
 
     def calculate_net_weight(self):
         if self.gross_weight and self.tare_weight:
@@ -78,15 +97,70 @@ class SecurityInspection(Document):
 
     def validate_qc_transition_integrity(self):
         """Prevent inconsistent manual status changes that bypass action methods."""
-        if self.security_status == "Reported to QC":
-            if not self.loading_delivery_note:
-                frappe.throw(
-                    _("A Loading Delivery Note must be linked before setting status to Reported to QC.")
+        if self.security_status == "Reported to QC" and not self.qc_report_request:
+            frappe.throw(
+                _(
+                    "QC Report Request is missing. Use the 'Report to QC' action to create and link it automatically."
                 )
-            if not self.qc_report_request:
-                frappe.throw(
-                    _("QC Report Request is missing. Use the 'Report to QC' action to create and link it automatically.")
+            )
+
+    def _resolve_loading_delivery_note_for_report(self) -> str | None:
+        """Link SI ↔ LDN from the Job Order / Delivery Order when reporting to QC."""
+        if self.loading_delivery_note:
+            frappe.db.set_value(
+                "Loading Delivery Note",
+                self.loading_delivery_note,
+                "security_inspection",
+                self.name,
+                update_modified=False,
+            )
+            return self.loading_delivery_note
+
+        ldn_name = None
+        if self.job_order:
+            from apc_operations.services.delivery_order_service import (
+                find_delivery_order_for_job_order_primary,
+            )
+
+            do_name = find_delivery_order_for_job_order_primary(self.job_order)
+            if do_name:
+                ldn_name = frappe.db.get_value("Delivery Order", do_name, "loading_delivery_note")
+            if not ldn_name:
+                ldn_name = frappe.db.get_value(
+                    "Loading Delivery Note",
+                    {"job_order": self.job_order, "dispatch_confirmed": 0},
+                    "name",
+                    order_by="modified desc",
                 )
+
+        if ldn_name:
+            self.loading_delivery_note = ldn_name
+            frappe.db.set_value(
+                "Loading Delivery Note",
+                ldn_name,
+                "security_inspection",
+                self.name,
+                update_modified=False,
+            )
+        return ldn_name
+
+    def _resolve_sddn_for_report(self) -> str | None:
+        if self.transportation_request:
+            draft_dn = frappe.db.get_value(
+                "Security Draft Delivery Note",
+                {"transport_schedule": self.transportation_request},
+                "name",
+            )
+            if draft_dn:
+                return draft_dn
+        if self.job_order:
+            return frappe.db.get_value(
+                "Security Draft Delivery Note",
+                {"job_order": self.job_order},
+                "name",
+                order_by="modified desc",
+            )
+        return None
 
     def before_save(self):
         self.populate_from_source()
@@ -106,6 +180,22 @@ class SecurityInspection(Document):
     def populate_from_source(self):
         if self.job_order and not self.customer:
             self.customer = frappe.db.get_value("Job Order", self.job_order, "customer")
+
+        from apc_operations.shipping.services.uom_service import apply_commercial_fields
+
+        sddn = None
+        if self.transportation_request:
+            sddn = frappe.db.get_value(
+                "Security Draft Delivery Note",
+                {"transport_schedule": self.transportation_request},
+                "name",
+            )
+        apply_commercial_fields(
+            self,
+            job_order=self.job_order,
+            sddn_name=sddn,
+            force_uom=not (self.uom or "").strip(),
+        )
 
         if self.transportation_request:
             transport = frappe.get_cached_doc("Transport Schedule", self.transportation_request)
@@ -130,12 +220,22 @@ class SecurityInspection(Document):
             qc_doc.save()
 
     def sync_to_loading_dn(self):
-        if self.loading_delivery_note:
-            ld_doc = frappe.get_doc("Loading Delivery Note", self.loading_delivery_note)
-            new_status = self.get_loading_dn_status()
-            if new_status:
-                ld_doc.delivery_note_status = new_status
-                ld_doc.save()
+        if frappe.flags.get("apc_syncing_ldn_transport"):
+            return
+        if not self.loading_delivery_note:
+            return
+        from apc_operations.security.dispatch_workflow import _sync_ldn_from_si
+
+        ld_doc = frappe.get_doc("Loading Delivery Note", self.loading_delivery_note)
+        _sync_ldn_from_si(ld_doc, self)
+        if self.driver and not ld_doc.driver:
+            ld_doc.driver = self.driver
+        if self.vehicle and not ld_doc.vehicle:
+            ld_doc.vehicle = self.vehicle
+        new_status = self.get_loading_dn_status()
+        if new_status:
+            ld_doc.delivery_note_status = new_status
+        ld_doc.save(ignore_permissions=True)
 
     def _maybe_save_checklist_to_nas(self):
         """Save checklist PDF to NAS when inspection is completed or Loading DN created."""
@@ -178,21 +278,16 @@ class SecurityInspection(Document):
                     ).format(self.security_status)
                 )
         else:
-            allowed_statuses = ("Checklist Completed", "Loading DN Created")
+            allowed_statuses = ("Checklist Completed", "Loading DN Created", "Reported to QC")
             if self.security_status not in allowed_statuses:
                 frappe.throw(
                     _(
-                        "Complete the security checklist and create a Loading Delivery Note "
-                        "before reporting to QC. Current status: {0}"
+                        "Complete the security checklist before reporting to QC. Current status: {0}"
                     ).format(self.security_status)
                 )
-            if not self.loading_delivery_note:
-                frappe.throw(
-                    _(
-                        "A Loading Delivery Note must be created before reporting to QC. "
-                        "Create the Loading DN first, then report to QC."
-                    )
-                )
+
+        # Resolve optional LDN link from DO / job order (Report to QC does not require LDN).
+        ldn_name = self._resolve_loading_delivery_note_for_report()
 
         # Resolve the batch and COA linked to this Job Order's allocation
         batch_name, coa_name = self._get_batch_and_coa_for_job_order()
@@ -200,7 +295,7 @@ class SecurityInspection(Document):
         qc_request = frappe.new_doc("QC Report Request")
         qc_request.security_inspection = self.name
         qc_request.job_order = self.job_order
-        qc_request.loading_delivery_note = self.loading_delivery_note
+        qc_request.loading_delivery_note = ldn_name
         qc_request.requested_by = frappe.session.user
         qc_request.requested_on = now()
         qc_request.qc_status = "Pending QC"
@@ -209,15 +304,9 @@ class SecurityInspection(Document):
         if coa_name:
             qc_request.coa = coa_name
 
-        # Propagate Security Draft DN reference for QC traceability
-        if self.transportation_request:
-            draft_dn = frappe.db.get_value(
-                "Security Draft Delivery Note",
-                {"transport_schedule": self.transportation_request},
-                "name",
-            )
-            if draft_dn:
-                qc_request.security_draft_delivery_note = draft_dn
+        sddn_name = self._resolve_sddn_for_report()
+        if sddn_name:
+            qc_request.security_draft_delivery_note = sddn_name
 
         # Copy material/vehicle context for QC reference
         qc_request.material_description = self.material_description
@@ -228,16 +317,35 @@ class SecurityInspection(Document):
 
         qc_request.insert()
 
-        if self.loading_delivery_note:
+        if ldn_name:
             frappe.db.set_value(
                 "Loading Delivery Note",
-                self.loading_delivery_note,
+                ldn_name,
                 {
                     "qc_report_request": qc_request.name,
                     "delivery_note_status": "Pending QC",
+                    "qc_status": "Pending QC",
                 },
                 update_modified=False,
             )
+
+        from apc_operations.services.delivery_order_service import resolve_do_for_ldn
+
+        do_name = None
+        if ldn_name:
+            do_name = resolve_do_for_ldn(ldn_name)
+        elif self.job_order:
+            from apc_operations.services.delivery_order_service import (
+                find_delivery_order_for_job_order_primary,
+            )
+
+            do_name = find_delivery_order_for_job_order_primary(self.job_order)
+        if do_name:
+            from apc_operations.shipping.services.dispatch_lifecycle_service import (
+                sync_dispatch_lifecycle_status,
+            )
+
+            sync_dispatch_lifecycle_status(do_name, update_modified=False)
 
         self.qc_report_request = qc_request.name
         self.security_status = "Reported to QC"
@@ -364,9 +472,19 @@ class SecurityInspection(Document):
         loading_dn.container_number = self.container_number
         loading_dn.seal_number = self.seal_number
         loading_dn.material_description = self.material_description
-        loading_dn.quantity = self.quantity
-        loading_dn.uom = self.uom
         loading_dn.loading_date = today()
+        from apc_operations.shipping.services.uom_service import apply_commercial_fields
+
+        apply_commercial_fields(
+            loading_dn,
+            job_order=self.job_order,
+            sddn_name=loading_dn.security_draft_delivery_note,
+            force_uom=True,
+        )
+        if not flt(loading_dn.quantity):
+            loading_dn.quantity = self.quantity
+        if not loading_dn.uom:
+            loading_dn.uom = self.uom
         # Propagate Security Draft DN reference if available
         if self.transportation_request:
             draft_dn = frappe.db.get_value(
@@ -389,19 +507,29 @@ class SecurityInspection(Document):
             loading_dn.receivables_status = "Pending Receivables"
         loading_dn.insert()
 
+        from apc_operations.shipping.services.dispatch_flow_service import ensure_ldn_do_link
+
+        ensure_ldn_do_link(ldn_name=loading_dn.name, update_modified=False)
+
         self.loading_delivery_note = loading_dn.name
         self.security_status = "Loading DN Created"
         self.save()
 
-        # Attempt FIFO batch allocation immediately (non-blocking)
+        # Copy Job Order reservations first; fall back to fresh FIFO when none exist.
         try:
-            from apc_operations.services.batch_allocation import create_loading_dn_batch_allocations
-            create_loading_dn_batch_allocations(
-                loading_dn_name=loading_dn.name,
-                required_qty=self.quantity,
+            from apc_operations.services.batch_allocation import (
+                create_loading_dn_batch_allocations,
+                sync_loading_dn_from_job_order_allocations,
             )
+
+            sync_result = sync_loading_dn_from_job_order_allocations(loading_dn.name)
+            if not sync_result.get("rows"):
+                create_loading_dn_batch_allocations(
+                    loading_dn_name=loading_dn.name,
+                    required_qty=self.quantity,
+                )
         except Exception:
-            frappe.log_error(frappe.get_traceback(), "Loading DN FIFO Allocation")
+            frappe.log_error(frappe.get_traceback(), "Loading DN Batch Allocation")
 
         frappe.msgprint(
             _("Loading Delivery Note {0} created in Pending QC status. "
@@ -484,22 +612,22 @@ class SecurityInspection(Document):
         if not self.job_order:
             frappe.throw(_("Job Order is required to create Dispatch Order"))
 
-        # Get sales demand from job order
-        sales_demand = frappe.db.get_value(
-            "APC Sales Demand",
-            {"job_order": self.job_order},
-            "name"
-        )
+        # Phase 1 (Option B): Job Order.sales_demand is the single source
+        # of truth for the originating Sales Demand. Falls back to NULL
+        # for legacy JOs (feature flag off) so downstream code must
+        # tolerate a None.
+        sales_demand = frappe.db.get_value("Job Order", self.job_order, "sales_demand")
 
-        if not sales_demand:
-            frappe.throw(_("No Sales Demand linked to Job Order {0}").format(self.job_order))
-
-        # Get batch allocation
-        allocation = frappe.db.get_value(
-            "APC Batch Allocation",
-            {"sales_demand": sales_demand, "allocation_status": ["in", ["Allocated", "Partially Dispatched"]]},
-            "name"
-        )
+        allocation = None
+        if sales_demand:
+            allocation = frappe.db.get_value(
+                "APC Batch Allocation",
+                {
+                    "sales_demand": sales_demand,
+                    "allocation_status": ["in", ["Allocated", "Partially Dispatched"]],
+                },
+                "name",
+            )
 
         # Create dispatch order
         dispatch = frappe.new_doc("APC Dispatch Order")
@@ -538,9 +666,9 @@ class SecurityInspection(Document):
             job_order = frappe.get_doc("Job Order", self.job_order)
             for item in job_order.items:
                 dispatch.append("batch_details", {
-                    "item": item.item_code,
+                    "item": item.item,
                     "item_name": item.item_name,
-                    "quantity": item.qty,
+                    "quantity": item.quantity,
                     "uom": item.uom
                 })
 
@@ -618,7 +746,15 @@ def create_security_inspection_from_draft_dn(draft_dn_name):
     inspection.shipping_booking = frappe.db.get_value(
         "Transport Schedule", draft_dn.transport_schedule, "shipping_booking"
     )
+    from apc_operations.services.customer_link_service import (
+        ensure_sddn_customer_links,
+        get_customer_display_name,
+    )
+
+    ensure_sddn_customer_links(draft_dn)
     inspection.customer = draft_dn.customer
+    if draft_dn.customer:
+        inspection.customer_name = get_customer_display_name(draft_dn.customer)
     inspection.vehicle = draft_dn.vehicle
     inspection.driver = draft_dn.driver
     inspection.transporter = draft_dn.transporter

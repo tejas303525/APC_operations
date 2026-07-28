@@ -1,0 +1,209 @@
+{% set company = frappe.db.get_default("company") or frappe.db.get_single_value("Global Defaults", "default_company") %}
+{% set company_logo = frappe.db.get_value("Company", company, "company_logo") if company else "" %}
+{% set grn_print = frappe.call("apc_operations.security.services.import_grn_print_service.get_print_context", grn_name=doc.name) %}
+{% set do_print = grn_print.do_print if grn_print else {} %}
+
+<style>
+  @page { size: A4; margin: 8mm; }
+  body { margin: 0; padding: 0; font-family: Arial, sans-serif; color: #000; }
+  .do-page { width: 100%; min-height: 277mm; box-sizing: border-box; font-size: 12px; }
+  .do-title { text-align: center; font-size: 19px; font-weight: 700; line-height: 1; margin: 0 0 3px 0; text-transform: uppercase; }
+  .do-main { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid #000; }
+  .do-main td, .do-main th { border: 1px solid #000; vertical-align: top; }
+  .company-block { padding: 6px 7px 4px 7px; height: 92px; }
+  .company-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .company-table td { border: none; vertical-align: top; }
+  .logo-cell { width: 118px; }
+  .logo-cell img { width: 85px; height: 72px; object-fit: contain; display: block; }
+  .company-name { font-size: 14px; font-weight: 700; line-height: 1.15; margin-bottom: 4px; text-transform: uppercase; }
+  .company-line { font-size: 12px; line-height: 1.25; }
+  .doc-info { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .doc-info td { border-left: none; border-right: none; border-top: none; border-bottom: 1px solid #000; padding: 3px 5px; height: 26px; font-size: 12px; }
+  .doc-info tr:last-child td { border-bottom: none; }
+  .info-value { font-weight: 700; }
+  .party-cell { height: 190px; padding: 5px 6px; }
+  .party-title { font-size: 12px; margin-bottom: 4px; }
+  .party-name { font-size: 14px; font-weight: 700; line-height: 1.25; }
+  .party-text { font-size: 12px; line-height: 1.35; }
+  .delivery-info { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .delivery-info td { border-left: none; border-right: none; border-top: none; border-bottom: 1px solid #000; padding: 4px 5px; height: 28px; font-size: 12px; }
+  .delivery-info tr:last-child td { border-bottom: none; }
+  .goods-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .goods-table th, .goods-table td { border: 1px solid #000; padding: 4px 5px; font-size: 12px; }
+  .goods-table th { text-align: center; font-weight: 400; }
+  .goods-body td { height: 280px; vertical-align: top; }
+  .center { text-align: center; }
+  .right { text-align: right; }
+  .bold { font-weight: 700; }
+  .product-name { font-size: 14px; font-weight: 700; text-transform: uppercase; }
+  .total-row td { height: 18px; padding-top: 2px; padding-bottom: 2px; }
+  .bottom-table { width: 100%; border-collapse: collapse; border-left: 1px solid #000; border-right: 1px solid #000; border-bottom: 1px solid #000; }
+  .bottom-table td { border: 1px solid #000; padding: 6px; height: 48px; vertical-align: top; font-size: 12px; }
+  .sign-cell { text-align: right; }
+  .sign-company { font-size: 12px; font-weight: 700; margin-bottom: 25px; }
+  .sign-title { font-size: 11px; }
+  .generated { text-align: center; font-size: 12px; margin-top: 8px; }
+</style>
+
+<div class="do-page">
+  <div class="do-title">Goods Received Note (GRN)</div>
+
+  <table class="do-main">
+    <tr>
+      <td style="width:50%;" class="company-block" rowspan="2">
+        <table class="company-table">
+          <tr>
+            <td class="logo-cell">
+              {% if company_logo %}
+                <img src="{{ company_logo }}" alt="Company Logo">
+              {% else %}
+                <img src="/private/files/AP_Logo.webp" alt="Company Logo" onerror="this.style.display='none'">
+              {% endif %}
+            </td>
+            <td>
+              <div class="company-name">ASIA PETROCHEMICALS LLC OPC</div>
+              <div class="company-line">Plot # A 23 B, Al Jazeera Industrial Area</div>
+              <div class="company-line">TRN : 100283348900003</div>
+              <div class="company-line">Emirate : Ras Al-Khaimah</div>
+              <div class="company-line">E-Mail : info@asia-petrochem.com</div>
+            </td>
+          </tr>
+        </table>
+      </td>
+      <td style="width:25%;">
+        <table class="doc-info">
+          <tr><td><div>GRN No.</div><div class="info-value">{{ doc.name }}</div></td></tr>
+          <tr><td><div>Delivery Order No.</div><div class="info-value">{{ grn_print.delivery_order or doc.delivery_order or "-" }}</div></td></tr>
+          <tr><td><div>Job Order No.</div><div class="info-value">{{ grn_print.job_order_number or doc.job_order or "-" }}</div></td></tr>
+          <tr><td><div>Batch No.</div><div class="info-value">{{ grn_print.batch_no or doc.batch_no or "-" }}</div></td></tr>
+          <tr><td><div>GRN Status</div><div class="info-value">{{ grn_print.grn_status or doc.grn_status or "-" }}</div></td></tr>
+          <tr><td><div>Terms of Delivery</div><div class="info-value">{{ grn_print.terms_of_delivery or "-" }}</div></td></tr>
+        </table>
+      </td>
+      <td style="width:25%;">
+        <table class="doc-info">
+          <tr><td><div>Date of Receipt</div><div class="info-value">{{ frappe.utils.formatdate(grn_print.posting_date or doc.posting_date) if (grn_print.posting_date or doc.posting_date) else "-" }}</div></td></tr>
+          <tr><td><div>Job Order Date</div><div class="info-value">{{ frappe.utils.formatdate(grn_print.job_order_date) if grn_print.job_order_date else "-" }}</div></td></tr>
+          <tr><td><div>QC Cleared On</div><div class="info-value">{{ frappe.utils.format_datetime(grn_print.qc_check_time) if grn_print.qc_check_time else "-" }}</div></td></tr>
+          <tr><td><div>Security Cleared On</div><div class="info-value">{{ frappe.utils.format_datetime(grn_print.security_check_time) if grn_print.security_check_time else "-" }}</div></td></tr>
+          <tr><td><div>Approved On</div><div class="info-value">{{ frappe.utils.format_datetime(grn_print.approved_on) if grn_print.approved_on else "-" }}</div></td></tr>
+          <tr><td><div>Zoho Receipt Ref.</div><div class="info-value">{{ grn_print.zoho_import_receipt_id or doc.zoho_import_receipt_id or "-" }}</div></td></tr>
+        </table>
+      </td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td class="party-cell">
+        <div class="party-title">Supplier</div>
+        <div class="party-name">{{ grn_print.supplier_name or doc.supplier_name or "-" }}</div>
+        <div class="party-text">{% if doc.supplier %}{{ doc.supplier }}{% endif %}</div>
+        <br>
+        <div class="party-title">Customer / Consignee (Receiver)</div>
+        <div class="party-name">{{ grn_print.customer_name or doc.customer_name or "APC" }}</div>
+        <div class="party-text">Asia Petrochemicals LLC — Import receipt at APC premises</div>
+      </td>
+      <td colspan="2">
+        <table class="delivery-info">
+          <tr><td><div>Destination</div><div class="info-value">{{ grn_print.destination or "-" }}</div></td></tr>
+          <tr><td><div>Port of Loading</div><div class="info-value">{{ grn_print.port_of_loading or "-" }}</div></td></tr>
+          <tr><td><div>Port of Discharge</div><div class="info-value">{{ grn_print.port_of_discharge or "-" }}</div></td></tr>
+          <tr><td><div>Product</div><div class="info-value">{{ grn_print.product or doc.product or "-" }}</div></td></tr>
+          <tr><td><div>Vehicle</div><div class="info-value">{{ do_print.vehicle or "-" }}</div></td></tr>
+          <tr><td><div>Driver</div><div class="info-value">{{ do_print.driver_name or "-" }}</div></td></tr>
+          <tr><td><div>Driver Phone</div><div class="info-value">{{ do_print.driver_phone or "-" }}</div></td></tr>
+          <tr><td><div>Container Number</div><div class="info-value">{{ do_print.container_number or "-" }}</div></td></tr>
+          <tr><td><div>Transporter</div><div class="info-value">{{ do_print.transporter or "-" }}</div></td></tr>
+          <tr><td><div>Pre-Check Clearance</div><div class="info-value">{{ doc.pre_check_clearance or "-" }}</div></td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <table class="goods-table">
+    <thead>
+      <tr>
+        <th style="width:5%;">Sl<br>No.</th>
+        <th style="width:15%;">Item Code</th>
+        <th style="width:55%;">Description of Goods</th>
+        <th style="width:15%;">Expected Qty</th>
+        <th style="width:15%;">Arrived Qty</th>
+        <th style="width:10%;">UOM</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set lines = grn_print.item_lines if grn_print and grn_print.item_lines else (doc.items or []) %}
+      {% if lines %}
+        {% for row in lines %}
+        <tr class="{% if loop.last and lines|length == 1 %}goods-body{% endif %}">
+          <td class="center">{{ loop.index }}</td>
+          <td class="center">{{ row.item_code or "-" }}</td>
+          <td><div class="product-name">{{ row.description or row.item_name or row.item_code or "-" }}</div></td>
+          <td class="center">{{ row.expected_qty_display if row.expected_qty_display else (row.qty ~ " " ~ (row.uom or "")) }}</td>
+          <td class="center bold">{{ row.arrived_qty_display if row.arrived_qty_display else "-" }}</td>
+          <td class="center">{{ row.uom or "-" }}</td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr class="goods-body">
+          <td class="center">-</td>
+          <td class="center">-</td>
+          <td><div class="product-name">-</div></td>
+          <td class="center bold">-</td>
+          <td class="center">-</td>
+        </tr>
+      {% endif %}
+      <tr class="total-row">
+        <td></td>
+        <td></td>
+        <td class="right">Total Expected Qty</td>
+        <td class="center bold">{{ grn_print.total_expected_qty_display if grn_print else "-" }}</td>
+        <td></td>
+      </tr>
+      <tr class="total-row">
+        <td></td>
+        <td></td>
+        <td class="right">Total Arrived Qty</td>
+        <td class="center bold">{{ grn_print.total_arrived_qty_display if grn_print else "-" }}</td>
+        <td></td>
+      </tr>
+      {% if grn_print.is_partial_receipt %}
+      <tr class="total-row">
+        <td></td>
+        <td></td>
+        <td class="right">Pending Qty (This GRN)</td>
+        <td class="center bold">{{ grn_print.pending_qty_display if grn_print else "-" }}</td>
+        <td></td>
+      </tr>
+      {% endif %}
+      <tr class="total-row">
+        <td></td>
+        <td></td>
+        <td class="right">Receipt Type</td>
+        <td class="center bold">{{ grn_print.receipt_type if grn_print else (doc.receipt_type or "-") }}</td>
+        <td></td>
+      </tr>
+      <tr class="total-row">
+        <td></td>
+        <td></td>
+        <td class="right">E. &amp; O.E</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+
+  {% if grn_print.remarks or doc.remarks %}
+  <div style="margin-top:6px;font-size:12px;"><strong>Remarks:</strong> {{ grn_print.remarks or doc.remarks }}</div>
+  {% endif %}
+
+  <table class="bottom-table">
+    <tr>
+      <td style="width:50%;">Received in Good Condition</td>
+      <td style="width:50%;" class="sign-cell">
+        <div class="sign-company">for ASIA PETROCHEMICALS LLC OPC</div>
+        <div class="sign-title">Authorised Signatory</div>
+      </td>
+    </tr>
+  </table>
+
+  <div class="generated">This is a Computer Generated Document</div>
+</div>

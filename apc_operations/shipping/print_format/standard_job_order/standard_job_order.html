@@ -1,0 +1,243 @@
+{% set company = frappe.db.get_default("company") or frappe.db.get_single_value("Global Defaults", "default_company") %}
+{% set company_logo = frappe.db.get_value("Company", company, "company_logo") if company else "" %}
+{% set logo_url = frappe.utils.get_url(company_logo) if company_logo else frappe.utils.get_url("/files/AP_Logo.webp") %}
+{% set ctx = frappe.call("apc_operations.shipping.services.job_order_print_service.get_print_context", job_order_name=doc.name) %}
+{% set jo = ctx.job_order or {} %}
+
+<style>
+  @page { size: A4; margin: 10mm; }
+  body { margin: 0; font-family: Arial, sans-serif; color: #111; font-size: 12px; }
+  .jo-page { width: 100%; }
+  .jo-title { text-align: center; font-size: 20px; font-weight: 700; text-transform: uppercase; margin: 0 0 10px; }
+  .head { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+  .head td { vertical-align: top; border: none; padding: 4px; }
+  .logo img { width: 90px; height: 64px; object-fit: contain; }
+  .company-name { font-size: 15px; font-weight: 700; text-transform: uppercase; }
+  .section-title { font-size: 13px; font-weight: 700; margin: 12px 0 6px; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 2px; }
+  .kv { width: 100%; border-collapse: collapse; }
+  .kv td { padding: 3px 4px; border: 1px solid #ccc; }
+  .kv .k { width: 32%; font-weight: 700; background: #f5f5f5; }
+  .data-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+  .data-table th, .data-table td { border: 1px solid #333; padding: 4px 5px; }
+  .data-table th { background: #eee; font-weight: 700; text-align: center; }
+  .right { text-align: right; }
+  .muted { color: #555; font-size: 11px; }
+  .sign-row { margin-top: 28px; width: 100%; border-collapse: collapse; }
+  .sign-row td { width: 33%; text-align: center; padding-top: 24px; border-top: 1px solid #333; font-size: 11px; }
+</style>
+
+<div class="jo-page">
+  <div class="jo-title">Job Order</div>
+
+  <table class="head">
+    <tr>
+      <td style="width:28%;">
+        <div class="logo"><img src="{{ logo_url }}" alt="Company Logo"></div>
+      </td>
+      <td>
+        <div class="company-name">ASIA PETROCHEMICALS LLC OPC</div>
+        <div class="muted">Operations &amp; logistics summary</div>
+      </td>
+      <td style="width:38%;">
+        <table class="kv">
+          <tr><td class="k">Job Order</td><td>{{ jo.job_order_number or jo.name }}</td></tr>
+          <tr><td class="k">Document ID</td><td>{{ jo.name }}</td></tr>
+          <tr><td class="k">Date</td><td>{{ frappe.utils.formatdate(jo.date) if jo.date else "-" }}</td></tr>
+          <tr><td class="k">Status</td><td>{{ jo.status or "-" }}</td></tr>
+          <tr><td class="k">Movement</td><td>{{ jo.commercial_movement or "-" }}</td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <div class="section-title">Commercial</div>
+  <table class="kv">
+    <tr>
+      <td class="k">{{ ctx.counterparty_label }}</td>
+      <td>{{ ctx.counterparty_name or "-" }}</td>
+      <td class="k">Payment Terms</td>
+      <td>{{ ctx.payment_terms_label or "-" }}</td>
+    </tr>
+    <tr>
+      <td class="k">P.I. Number</td>
+      <td>{{ jo.pi_number or "-" }}</td>
+      <td class="k">Currency</td>
+      <td>{{ jo.currency or "-" }}</td>
+    </tr>
+    <tr>
+      <td class="k">Incoterm</td>
+      <td>{{ jo.terms_of_delivery or "-" }}</td>
+      <td class="k">Mode</td>
+      <td>{{ jo.mode_of_transport or "-" }}</td>
+    </tr>
+    <tr>
+      <td class="k">POL</td>
+      <td>{{ jo.port_of_loading or "-" }}</td>
+      <td class="k">POD</td>
+      <td>{{ jo.port_of_discharge or "-" }}</td>
+    </tr>
+  </table>
+
+  <div class="section-title">Products</div>
+  {% if ctx.job_order_items %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Item</th>
+        <th>Description</th>
+        <th>Qty</th>
+        <th>UOM</th>
+        <th>Packaging</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in ctx.job_order_items %}
+      <tr>
+        <td class="center">{{ loop.index }}</td>
+        <td>{{ row.item or "-" }}</td>
+        <td>{{ row.item_name or "-" }}</td>
+        <td class="right">{{ row.quantity or 0 }}</td>
+        <td>{{ row.uom or "-" }}</td>
+        <td>{{ row.packaging or row.packaging_type or "-" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No line items.</p>
+  {% endif %}
+
+  <div class="section-title">Incoterm responsibility</div>
+  <table class="kv">
+    <tr>
+      <td class="k">Freight borne by</td><td>{{ jo.freight_borne_by or "-" }}</td>
+      <td class="k">Inland transport by</td><td>{{ jo.transport_arranged_by or "-" }}</td>
+    </tr>
+    <tr>
+      <td class="k">Main carriage by</td><td>{{ jo.shipping_arranged_by or "-" }}</td>
+      <td class="k">Insurance by</td><td>{{ jo.insurance_borne_by or "-" }}</td>
+    </tr>
+    <tr>
+      <td class="k" colspan="1">Risk transfer</td>
+      <td colspan="3">{{ jo.risk_transfer_point or "-" }}</td>
+    </tr>
+  </table>
+
+  <div class="section-title">Sea / shipping charges</div>
+  {% if ctx.shipping_bookings %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Shipping Booking</th>
+        <th>Line / Vessel</th>
+        <th>Containers</th>
+        <th>Freight</th>
+        <th>THC</th>
+        <th>TLUC</th>
+        <th>ED</th>
+        <th>Sea total</th>
+        <th>CCY</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for sb in ctx.shipping_bookings %}
+      <tr>
+        <td>{{ sb.name }}</td>
+        <td>{{ sb.shipping_line or sb.vessel_name or "-" }}</td>
+        <td class="right">{{ sb.container_count or 0 }} {{ sb.container_type or "" }}</td>
+        <td class="right">{{ frappe.utils.fmt_money(sb.total_freight_charges or 0, currency=(sb.currency or "USD")) }}</td>
+        <td class="right">{{ frappe.utils.fmt_money(sb.thc or 0, currency=(sb.currency or "USD")) }}</td>
+        <td class="right">{{ frappe.utils.fmt_money(sb.tluc or 0, currency=(sb.currency or "USD")) }}</td>
+        <td class="right">{{ frappe.utils.fmt_money(sb.export_declaration or 0, currency=(sb.currency or "USD")) }}</td>
+        <td class="right"><b>{{ frappe.utils.fmt_money(sb.sea_charges_total or 0, currency=(sb.currency or "USD")) }}</b></td>
+        <td>{{ sb.currency or "-" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No shipping booking linked.</p>
+  {% endif %}
+
+  <div class="section-title">Inland transport</div>
+  {% if ctx.transport_schedules %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Transport Schedule</th>
+        <th>Type</th>
+        <th>Transporter</th>
+        <th>Transport</th>
+        <th>Fuel</th>
+        <th>Additional</th>
+        <th>Total</th>
+        <th>CCY</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ts in ctx.transport_schedules %}
+      <tr>
+        <td>{{ ts.name }}</td>
+        <td>{{ ts.transport_type or "-" }}{% if ts.outward_type %} / {{ ts.outward_type }}{% endif %}</td>
+        <td>{{ ts.transporter_name or ts.transporter or "-" }}</td>
+        <td class="right">{{ frappe.utils.fmt_money(ts.transport_charges or 0, currency=(ts.currency or "AED")) }}</td>
+        <td class="right">{{ frappe.utils.fmt_money(ts.fuel_cost or 0, currency=(ts.currency or "USD")) }}</td>
+        <td class="right">{{ frappe.utils.fmt_money(ts.additional_charges or 0, currency=(ts.currency or "AED")) }}</td>
+        <td class="right"><b>{{ frappe.utils.fmt_money(ts.total_cost or 0, currency=(ts.currency or "AED")) }}</b></td>
+        <td>{{ ts.currency or "-" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No transport schedule linked.</p>
+  {% endif %}
+
+  <div class="section-title">Totals by currency</div>
+  {% if ctx.totals_by_currency %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Currency</th>
+        <th>Sea freight</th>
+        <th>THC</th>
+        <th>TLUC</th>
+        <th>ED</th>
+        <th>Transport</th>
+        <th>Fuel</th>
+        <th>Additional</th>
+        <th>Grand total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for cur, bucket in ctx.totals_by_currency.items() %}
+      <tr>
+        <td><b>{{ cur }}</b></td>
+        <td class="right">{{ frappe.utils.fmt_money(bucket.sea_freight or 0, currency=cur) }}</td>
+        <td class="right">{{ frappe.utils.fmt_money(bucket.thc or 0, currency=cur) }}</td>
+        <td class="right">{{ frappe.utils.fmt_money(bucket.tluc or 0, currency=cur) }}</td>
+        <td class="right">{{ frappe.utils.fmt_money(bucket.export_declaration or 0, currency=cur) }}</td>
+        <td class="right">{{ frappe.utils.fmt_money(bucket.transport or 0, currency=cur) }}</td>
+        <td class="right">{{ frappe.utils.fmt_money(bucket.fuel or 0, currency=cur) }}</td>
+        <td class="right">{{ frappe.utils.fmt_money(bucket.additional or 0, currency=cur) }}</td>
+        <td class="right"><b>{{ frappe.utils.fmt_money(bucket.grand_total or 0, currency=cur) }}</b></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if ctx.multi_currency %}
+  <p class="muted">Multiple currencies — totals are not converted to a single currency.</p>
+  {% endif %}
+  {% else %}
+  <p class="muted">No charge amounts recorded.</p>
+  {% endif %}
+
+  <table class="sign-row">
+    <tr>
+      <td>Prepared By</td>
+      <td>Operations</td>
+      <td>Approved By</td>
+    </tr>
+  </table>
+</div>

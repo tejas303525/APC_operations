@@ -93,6 +93,9 @@ class TransportSchedule(Document):
         return total_qty, resolved_uom
 
     def validate(self):
+        from apc_operations.services.customer_link_service import normalize_customer_field
+
+        normalize_customer_field(self, "customer")
         self.validate_dates()
         self.calculate_total_cost()
 
@@ -110,7 +113,11 @@ class TransportSchedule(Document):
                     frappe.throw(_("Scheduled pickup must be before cutoff date"))
 
     def calculate_total_cost(self):
-        self.total_cost = (self.transport_charges or 0) + (self.fuel_cost or 0) + (self.additional_charges or 0)
+        self.total_cost = (
+            flt(self.transport_charges)
+            + flt(self.fuel_cost)
+            + flt(self.additional_charges)
+        )
 
     def before_save(self):
         self.populate_source_details()
@@ -154,7 +161,23 @@ class TransportSchedule(Document):
 
         self.ensure_outward_follow_up_records()
         self.ensure_inward_follow_up_records()
+        self.sync_transport_po_request_charges()
+        if self.job_order and (
+            self.has_value_changed("transport_charges")
+            or self.has_value_changed("fuel_cost")
+            or self.has_value_changed("additional_charges")
+            or self.has_value_changed("transport_status")
+        ):
+            from apc_operations.shipping.services.logistics_cost_service import (
+                refresh_job_order_logistics_display,
+            )
+
+            refresh_job_order_logistics_display(self.job_order)
         self.sync_assignment_to_security_draft_dn()
+        if self.has_value_changed("customer"):
+            from apc_operations.services.customer_link_service import sync_sddn_customer_from_transport
+
+            sync_sddn_customer_from_transport(self.name, self.customer)
 
     def sync_assignment_to_security_draft_dn(self):
         """Keep linked Security Draft DN in sync when vehicle/driver/transporter are assigned later."""
@@ -162,16 +185,34 @@ class TransportSchedule(Document):
             return
         if not frappe.db.exists("Security Draft Delivery Note", self.security_draft_delivery_note):
             return
+        from apc_operations.services.customer_link_service import (
+            resolve_customer_docname,
+            sync_sddn_customer_from_transport,
+        )
+
+        updates = {
+            "vehicle": self.assigned_vehicle,
+            "driver": self.assigned_driver,
+            "transporter": self.transporter,
+        }
+        customer = resolve_customer_docname(self.customer)
+        if customer:
+            updates["customer"] = customer
+            current_buyer = frappe.db.get_value(
+                "Security Draft Delivery Note",
+                self.security_draft_delivery_note,
+                "buyer",
+            )
+            if not resolve_customer_docname(current_buyer):
+                updates["buyer"] = customer
         frappe.db.set_value(
             "Security Draft Delivery Note",
             self.security_draft_delivery_note,
-            {
-                "vehicle": self.assigned_vehicle,
-                "driver": self.assigned_driver,
-                "transporter": self.transporter,
-            },
+            updates,
             update_modified=False,
         )
+        if customer:
+            sync_sddn_customer_from_transport(self.name, customer)
 
     def populate_source_details(self):
         if self.shipping_booking:
@@ -179,8 +220,6 @@ class TransportSchedule(Document):
                 booking = frappe.get_cached_doc("Shipping Booking", self.shipping_booking)
                 self.source_document_type = "Shipping Booking"
                 self.job_order = self.job_order or booking.job_order
-                if not self.customer and booking.customer and frappe.db.exists("Customer", booking.customer):
-                    self.customer = booking.customer
                 self.shipping_line = self.shipping_line or booking.shipping_line
                 self.vessel_name = self.vessel_name or booking.vessel_name
                 self.vessel_date = self.vessel_date or booking.vessel_date
@@ -209,8 +248,6 @@ class TransportSchedule(Document):
         if self.job_order:
             try:
                 job_order = frappe.get_cached_doc("Job Order", self.job_order)
-                if not self.customer and job_order.customer and frappe.db.exists("Customer", job_order.customer):
-                    self.customer = job_order.customer
                 if getattr(job_order, "supplier", None) and not self.supplier:
                     self.supplier = (
                         frappe.db.get_value("Supplier", job_order.supplier, "supplier_name")
@@ -230,6 +267,10 @@ class TransportSchedule(Document):
                     _("Warning: Linked Job Order {0} not found").format(self.job_order),
                     indicator="orange"
                 )
+
+        from apc_operations.services.customer_link_service import apply_customer_from_sources
+
+        apply_customer_from_sources(self)
 
     def sync_status_to_booking(self):
         if self.shipping_booking:
@@ -436,6 +477,7 @@ class TransportSchedule(Document):
             return
 
         self.create_transport_po_request()
+        self.sync_transport_po_request_charges()
         self.create_security_draft_delivery_note()
 
     def ensure_inward_follow_up_records(self):
@@ -444,10 +486,22 @@ class TransportSchedule(Document):
             return
         if self.transport_status not in ["Scheduled", "Vehicle Assigned", "Driver Assigned"]:
             return
+
+        self.create_transport_po_request()
+        self.sync_transport_po_request_charges()
         if not self.assigned_vehicle or not self.assigned_driver:
             return
         if not self._inward_vessel_cleared_for_security():
             return
+
+        if self.job_order:
+            from apc_operations.shipping.services.delivery_order_generation_service import (
+                try_auto_issue_import_delivery_order,
+            )
+
+            try_auto_issue_import_delivery_order(
+                self.job_order, transport_schedule=self.name
+            )
 
         self.create_security_draft_delivery_note()
 
@@ -478,6 +532,7 @@ class TransportSchedule(Document):
                 self.db_set("transport_po_request", existing, update_modified=False)
             if self.payables_status in [None, "", "Not Required"]:
                 self.db_set("payables_status", "Pending Payables", update_modified=False)
+            self.sync_transport_po_request_charges(existing)
             return existing
 
         po_request = frappe.new_doc("Transport PO Request")
@@ -493,14 +548,35 @@ class TransportSchedule(Document):
         po_request.pickup_location = self.pickup_location
         po_request.delivery_location = self.delivery_location
         po_request.transport_charges = self.transport_charges
+        po_request.fuel_cost = self.fuel_cost
+        po_request.additional_charges = self.additional_charges
         po_request.currency = self.currency
         po_request.payables_status = "Pending Payables"
         po_request.insert(ignore_permissions=True)
 
         self.db_set("transport_po_request", po_request.name, update_modified=False)
         self.db_set("payables_status", "Pending Payables", update_modified=False)
+        self.sync_transport_po_request_charges(po_request.name)
         self.notify_payables_team()
         return po_request.name
+
+    def sync_transport_po_request_charges(self, po_name=None):
+        po_name = po_name or self.transport_po_request
+        if not po_name:
+            return
+        total = (self.transport_charges or 0) + (self.fuel_cost or 0) + (self.additional_charges or 0)
+        frappe.db.set_value(
+            "Transport PO Request",
+            po_name,
+            {
+                "transport_charges": self.transport_charges,
+                "fuel_cost": self.fuel_cost,
+                "additional_charges": self.additional_charges,
+                "total_transport_cost": total,
+                "currency": self.currency,
+            },
+            update_modified=False,
+        )
 
     def create_security_draft_delivery_note(self):
         existing = self.security_draft_delivery_note or frappe.db.exists(
@@ -511,11 +587,24 @@ class TransportSchedule(Document):
                 self.db_set("security_draft_delivery_note", existing, update_modified=False)
             if self.security_status in [None, "", "Not Required"]:
                 self.db_set("security_status", "Pending Review", update_modified=False)
+            from apc_operations.services.customer_link_service import (
+                apply_customer_from_sources,
+                sync_sddn_customer_from_transport,
+            )
+
+            apply_customer_from_sources(self)
+            stored_customer = frappe.db.get_value("Transport Schedule", self.name, "customer")
+            if self.customer and self.customer != stored_customer:
+                self.db_set("customer", self.customer, update_modified=False)
+            if self.customer:
+                sync_sddn_customer_from_transport(self.name, self.customer)
             return existing
 
+        from apc_operations.services.customer_link_service import apply_customer_from_sources
+
+        apply_customer_from_sources(self)
+
         draft_dn = frappe.new_doc("Security Draft Delivery Note")
-        if self.customer and not frappe.db.exists("Customer", self.customer):
-            self.customer = None
         draft_dn.transport_schedule = self.name
         draft_dn.job_order = self.job_order
         draft_dn.job_order_number = frappe.db.get_value("Job Order", self.job_order, "job_order_number") if self.job_order else None

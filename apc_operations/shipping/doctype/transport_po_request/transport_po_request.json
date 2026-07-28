@@ -24,6 +24,9 @@
   "delivery_location",
   "cost_section",
   "transport_charges",
+  "fuel_cost",
+  "additional_charges",
+  "total_transport_cost",
   "currency",
   "payables_status",
   "zoho_books_reference",
@@ -142,6 +145,26 @@
    "fieldname": "transport_charges",
    "fieldtype": "Currency",
    "label": "Transport Charges",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "transport_schedule.fuel_cost",
+   "fieldname": "fuel_cost",
+   "fieldtype": "Currency",
+   "label": "Fuel Cost",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "transport_schedule.additional_charges",
+   "fieldname": "additional_charges",
+   "fieldtype": "Currency",
+   "label": "Additional Charges",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_transport_cost",
+   "fieldtype": "Currency",
+   "label": "Total Transport Cost",
    "read_only": 1
   },
   {

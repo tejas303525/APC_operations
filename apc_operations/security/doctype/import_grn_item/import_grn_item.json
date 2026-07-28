@@ -1,0 +1,69 @@
+{
+ "actions": [],
+ "creation": "2026-05-29 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+  "field_order": [
+  "item_code",
+  "item_name",
+  "description",
+  "column_break_1",
+  "qty",
+  "arrived_qty",
+  "uom"
+ ],
+ "fields": [
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item Code",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "item_code.item_name",
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Item Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Expected Qty",
+   "reqd": 1
+  },
+  {
+   "fieldname": "arrived_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Arrived Qty"
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "UOM",
+   "options": "UOM",
+   "reqd": 1
+  }
+ ],
+ "istable": 1,
+ "module": "Security",
+ "name": "Import GRN Item",
+ "permissions": [],
+ "track_changes": 1
+}

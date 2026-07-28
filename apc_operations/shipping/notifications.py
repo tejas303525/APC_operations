@@ -3,7 +3,6 @@
 
 import frappe
 from frappe import _
-from apc_operations.services.email_recipients import role_user_emails, resolve_user_email
 
 
 def get_notification_config():
@@ -18,7 +17,15 @@ def send_payables_notification(booking_name):
     """Send notification to payables team for a Shipping Booking with CRO details."""
     booking = frappe.get_doc("Shipping Booking", booking_name)
 
-    users = role_user_emails(["Accounts Manager", "Accounts User"])
+    # Get accounts users
+    users = frappe.get_all(
+        "User",
+        filters={"enabled": 1},
+        or_filters={
+            "role": "Accounts Manager",
+            "role": "Accounts User"
+        }
+    )
 
     subject = f"Shipment Charges Tracking - CRO {booking.cro_number}"
 
@@ -43,7 +50,7 @@ def send_payables_notification(booking_name):
 
     for user in users:
         frappe.sendmail(
-            recipients=user,
+            recipients=user.name,
             subject=subject,
             message=message,
             reference_doctype="Shipping Booking",
@@ -82,8 +89,7 @@ def notify_driver(transport_name):
     # Get driver details
     driver = frappe.get_doc("Driver", transport.assigned_driver)
 
-    driver_phone = getattr(driver, "cell_number", None) or getattr(driver, "phone", None)
-    if not driver_phone:
+    if not driver.phone:
         frappe.throw(_("Driver has no mobile number"))
 
     message = f"""
@@ -101,13 +107,12 @@ def notify_driver(transport_name):
 
     # Send SMS if SMS settings configured
     if frappe.db.get_single_value("SMS Settings", "sms_sender_name"):
-        frappe.send_sms(driver_phone, message)
+        frappe.send_sms(driver.phone, message)
 
     # Also send email if available
-    driver_email = getattr(driver, "email", None)
-    if driver_email:
+    if driver.email:
         frappe.sendmail(
-            recipients=driver_email,
+            recipients=driver.email,
             subject=f"Transport Assignment: {transport.name}",
             message=message.replace('\n', '<br>')
         )
@@ -153,7 +158,7 @@ def send_cutoff_reminders():
 
         # Send to vessel owner
         frappe.sendmail(
-            recipients=resolve_user_email(vessel.modified_by) or "tejas303525@gmail.com",
+            recipients=vessel.modified_by,
             subject=subject,
             message=message,
             reference_doctype="Shipping Booking",

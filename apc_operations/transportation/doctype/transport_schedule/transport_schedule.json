@@ -56,6 +56,7 @@
   "column_break_4",
   "transport_type",
   "outward_type",
+  "inward_import_leg",
   "transport_status",
   "assignment_section",
   "vehicle_type",
@@ -360,6 +361,14 @@
    "fieldtype": "Select",
    "label": "Outward Type",
    "options": "\nExport Container\nLocal Delivery\nTanker Delivery\nTrailer Delivery"
+  },
+  {
+   "depends_on": "eval:doc.transport_type == 'Inward'",
+   "fieldname": "inward_import_leg",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Inward Import Leg",
+   "options": "\nInitial Import Leg\nPartial Import Follow-up"
   },
   {
    "allow_on_submit": 1,

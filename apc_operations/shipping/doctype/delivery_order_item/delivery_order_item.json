@@ -17,6 +17,7 @@
   "net_weight",
   "gross_weight",
   "no_of_packages",
+  "packing_unit_type",
   "no_of_containers",
   "remarks"
  ],
@@ -78,6 +79,12 @@
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "No of Packages"
+  },
+  {
+   "fieldname": "packing_unit_type",
+   "fieldtype": "Select",
+   "label": "Packing Unit Type",
+   "options": "\nDrum\nIBC\nBag\nCarton\nFlexi\nISO\nBulk"
   },
   {
    "description": "Number of containers for this line (Marks & Nos. / container no. simplified to count only).",

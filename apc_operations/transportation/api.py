@@ -20,9 +20,27 @@ from typing import Any, Iterable
 
 import frappe
 from frappe import _
-from frappe.utils import now_datetime
+from frappe.utils import cint, flt, getdate, now_datetime, today
 
 from apc_operations.services import console_status
+from apc_operations.services.delivery_order_service import (
+	find_delivery_order_for_transport_schedule,
+	find_open_delivery_order_for_transport_schedule,
+)
+from apc_operations.shipping.services.delivery_order_generation_service import (
+	get_followup_delivery_order_eligibility,
+)
+from apc_operations.shipping.services.job_order_sync_service import (
+	attach_live_job_order_numbers,
+)
+from apc_operations.shipping.services.partial_dispatch_service import (
+	get_active_outward_transport,
+	get_partial_dispatch_summary,
+	has_issued_loading_delivery_note,
+	job_order_dispatched_quantity,
+	job_order_order_quantity,
+)
+from apc_operations.services.console_queue_service import enrich_and_sort_console_queue
 
 
 # ---------------------------------------------------------------------------
@@ -39,6 +57,7 @@ _TRANSPORT_FIELDS = [
 	"transport_status",
 	"transport_type",
 	"outward_type",
+	"inward_import_leg",
 	"scheduled_pickup_date",
 	"scheduled_delivery_date",
 	"pickup_location",
@@ -150,23 +169,6 @@ def _job_order_summary(jo_name: str) -> dict[str, Any]:
 	)
 
 
-def _job_order_product_summary(jo_name: str) -> str:
-	"""Comma-separated product names for a Job Order's items."""
-	names = frappe.get_all(
-		"Job Order Item",
-		filters={"parent": jo_name},
-		fields=["item_name"],
-		order_by="idx asc",
-		pluck="item_name",
-	)
-	names = [n for n in names if n]
-	if not names:
-		return "-"
-	if len(names) > 2:
-		return f"{names[0]}, {names[1]} +{len(names) - 2} more"
-	return ", ".join(names)
-
-
 def _display_job_order(value: Any, fallback: str | None = None) -> str:
 	"""Return the human-readable job order number when available."""
 	jo_name = value if isinstance(value, str) else None
@@ -182,7 +184,7 @@ def _active_transport_for_job_order(
 	"""Latest non-cancelled Transport Schedule for a Job Order.
 
 	When ``transport_type`` is omitted, use the Job Order's ``commercial_movement``
-	to pick the primary leg (Outward for Outward, Inward for Import).
+	to pick the primary leg (Outward for Export, Inward for Import).
 	"""
 	if transport_type:
 		ttype = transport_type
@@ -191,7 +193,7 @@ def _active_transport_for_job_order(
 			get_primary_transport_type_for_job_order,
 		)
 
-		movement = frappe.db.get_value("Job Order", jo_name, "commercial_movement") or "Outward"
+		movement = frappe.db.get_value("Job Order", jo_name, "commercial_movement") or "Export"
 		ttype = get_primary_transport_type_for_job_order(movement)
 
 	rows = frappe.get_all(
@@ -208,7 +210,28 @@ def _active_transport_for_job_order(
 	return rows[0] if rows else None
 
 
+def _do_for_transport_schedule(ts_name: str | None) -> dict[str, Any] | None:
+	from apc_operations.services.delivery_order_service import (
+		find_delivery_order_for_transport_schedule,
+	)
+
+	do_name = find_delivery_order_for_transport_schedule(ts_name)
+	if not do_name:
+		return None
+	return frappe.db.get_value(
+		"Delivery Order",
+		do_name,
+		["name", "status", "docstatus", "posting_date", "customer", "operational_status"],
+		as_dict=True,
+	)
+
+
 def _do_for_job_order(jo_name: str) -> dict[str, Any] | None:
+	ts = _active_transport_for_job_order(jo_name, "Outward")
+	if ts and ts.get("name"):
+		do = _do_for_transport_schedule(ts.get("name"))
+		if do:
+			return do
 	from apc_operations.services.delivery_order_service import (
 		find_delivery_order_for_job_order_primary,
 	)
@@ -219,7 +242,7 @@ def _do_for_job_order(jo_name: str) -> dict[str, Any] | None:
 	return frappe.db.get_value(
 		"Delivery Order",
 		do_name,
-		["name", "status", "docstatus", "posting_date", "customer"],
+		["name", "status", "docstatus", "posting_date", "customer", "operational_status"],
 		as_dict=True,
 	)
 
@@ -289,7 +312,7 @@ def get_inward_import_list() -> list[dict[str, Any]]:
 	for jo in jos:
 		if (jo.get("mode_of_transport") or "") != "Sea":
 			continue
-		if (jo.get("commercial_movement") or "Outward") != "Import":
+		if (jo.get("commercial_movement") or "Export") != "Import":
 			continue
 		# Filter to inward (heuristic: incoterm in EXW/FCA/FOB from APC POV
 		# is outward; for now use the existing transport_type via TS).
@@ -313,10 +336,9 @@ def get_inward_import_list() -> list[dict[str, Any]]:
 				"vessel_status_tone": console_status.vessel_status_tone(vessel_label),
 				"transport_status": ts.get("transport_status"),
 				"container_number": ts.get("container_type"),
-				"products": _job_order_product_summary(jo["name"]),
 			}
 		)
-	return out
+	return enrich_and_sort_console_queue(out)
 
 
 @frappe.whitelist()
@@ -333,8 +355,19 @@ def get_inward_import_detail(job_order: str) -> dict[str, Any]:
 	sddn = _sddn_for_transport(ts.get("name")) or {}
 	inspection = _security_inspection_for_transport(ts.get("name"))
 	qc_status = inspection.get("qc_status") if inspection else None
+	do = _do_for_job_order(job_order) or {}
+	handoff = {}
+	try:
+		from apc_operations.shipping.services.import_handoff_service import (
+			get_import_handoff_status,
+		)
+
+		handoff = get_import_handoff_status(job_order)
+	except Exception:
+		handoff = {}
 	return {
 		"job_order": job_order,
+		"commercial_movement": jo.get("commercial_movement") or "Import",
 		"job_order_number": jo.get("job_order_number") or job_order,
 		"customer": jo.get("customer"),
 		"customer_name": jo.get("customer_name"),
@@ -347,7 +380,6 @@ def get_inward_import_detail(job_order: str) -> dict[str, Any]:
 		"transport_schedule": ts.get("name"),
 		"vessel_name": sb.get("vessel_name"),
 		"container_number": ts.get("container_type"),
-		"products": _job_order_product_summary(job_order),
 		"vehicle_number": vd["vehicle_number"],
 		"driver_name": vd["driver_name"],
 		"driver_contact": vd["driver_contact"],
@@ -368,6 +400,14 @@ def get_inward_import_detail(job_order: str) -> dict[str, Any]:
 		"qc_status": qc_status or "Not Sent",
 		"remarks": jo.get("loading_remarks"),
 		"cutoff_date": sb.get("cutoff_date") or ts.get("cutoff_date"),
+		"do_name": do.get("name"),
+		"do_status": console_status.do_display_label(do),
+		"do_status_tone": console_status.do_status_tone(console_status.do_display_label(do)),
+		"can_generate_do": console_status.can_generate_delivery_order(ts.get("transport_status")),
+		"linked_export_job_order": handoff.get("linked_export_job_order")
+		or jo.get("linked_export_job_order"),
+		"can_link_export": handoff.get("can_link_export"),
+		"can_create_export": handoff.get("can_create_export"),
 	}
 
 
@@ -387,7 +427,7 @@ def update_inward_import_tracking(
 	if not job_order:
 		frappe.throw(_("job_order is required"))
 
-	movement = frappe.db.get_value("Job Order", job_order, "commercial_movement") or "Outward"
+	movement = frappe.db.get_value("Job Order", job_order, "commercial_movement") or "Export"
 	if movement != "Import":
 		frappe.throw(_("Job Order {0} is not an Import movement.").format(job_order))
 
@@ -490,7 +530,8 @@ def get_inward_land_list() -> list[dict[str, Any]]:
 				"driver_name": vd["driver_name"],
 			}
 		)
-	return out
+	attach_live_job_order_numbers(out)
+	return enrich_and_sort_console_queue(out)
 
 
 @frappe.whitelist()
@@ -500,11 +541,29 @@ def get_inward_land_detail(job_order: str) -> dict[str, Any]:
 	jo = _job_order_summary(job_order)
 	ts = _active_transport_for_job_order(job_order, "Inward") or {}
 	vd = _resolve_vehicle_driver(ts)
+	do = _do_for_transport_schedule(ts.get("name")) or _do_for_job_order(job_order) or {}
+	sddn = _sddn_for_transport(ts.get("name")) or {}
+	inspection = _security_inspection_for_transport(ts.get("name"))
+	qc_status = inspection.get("qc_status") if inspection else None
+	movement = (jo.get("commercial_movement") or "Export").strip()
+	handoff = {}
+	if movement == "Import":
+		try:
+			from apc_operations.shipping.services.import_handoff_service import (
+				get_import_handoff_status,
+			)
+
+			handoff = get_import_handoff_status(job_order)
+		except Exception:
+			handoff = {}
 	return {
 		"job_order": job_order,
+		"commercial_movement": movement,
 		"job_order_number": jo.get("job_order_number") or job_order,
 		"customer": jo.get("customer"),
 		"customer_name": jo.get("customer_name"),
+		"supplier": jo.get("supplier"),
+		"supplier_name": jo.get("supplier_name"),
 		"transport_schedule": ts.get("name"),
 		"pull_out_date": ts.get("pull_out_date") or ts.get("scheduled_pickup_date"),
 		"origin": ts.get("pickup_location") or ts.get("pickup_address"),
@@ -517,7 +576,24 @@ def get_inward_land_detail(job_order: str) -> dict[str, Any]:
 		"driver_contact": vd["driver_contact"],
 		"transport_status": ts.get("transport_status"),
 		"transport_status_tone": console_status.transport_booking_tone(ts.get("transport_status")),
-		"remarks": ts.get("material_description"),
+		"transport_booking_label": console_status.transport_booking_label(ts.get("transport_status")),
+		"transport_booking_tone": console_status.transport_booking_tone(ts.get("transport_status")),
+		"is_transport_booked": console_status.is_transport_booked(ts.get("transport_status")),
+		"do_name": do.get("name"),
+		"do_status": console_status.do_display_label(do),
+		"do_status_tone": console_status.do_status_tone(console_status.do_display_label(do)),
+		"do_operational_status": do.get("operational_status") if do else None,
+		"can_generate_do": console_status.can_generate_delivery_order(ts.get("transport_status")),
+		"sddn": sddn.get("name"),
+		"sddn_status": console_status.sddn_display_label(sddn.get("security_status")),
+		"sddn_status_tone": console_status.sddn_status_tone(sddn.get("security_status")),
+		"security_inspection": inspection.get("name") if inspection else None,
+		"qc_status": qc_status or "Not Sent",
+		"linked_export_job_order": handoff.get("linked_export_job_order")
+		or jo.get("linked_export_job_order"),
+		"can_link_export": handoff.get("can_link_export"),
+		"can_create_export": handoff.get("can_create_export"),
+		"remarks": ts.get("material_description") or jo.get("loading_remarks"),
 	}
 
 
@@ -551,6 +627,7 @@ def get_local_delivery_list() -> list[dict[str, Any]]:
 	out = []
 	for ts in rows:
 		sddn = _sddn_for_transport(ts.get("name")) or {}
+		do = _do_for_job_order(ts.get("job_order")) if ts.get("job_order") else None
 		out.append(
 			{
 				"name": ts.get("job_order") or ts["name"],
@@ -566,9 +643,12 @@ def get_local_delivery_list() -> list[dict[str, Any]]:
 				"sddn_status": console_status.sddn_display_label(sddn.get("security_status")),
 				"sddn_status_tone": console_status.sddn_status_tone(sddn.get("security_status")),
 				"sddn": sddn.get("name"),
+				"do_status": console_status.do_display_label(do),
+				"do_status_tone": console_status.do_status_tone(console_status.do_display_label(do)),
 			}
 		)
-	return out
+	attach_live_job_order_numbers(out)
+	return enrich_and_sort_console_queue(out)
 
 
 @frappe.whitelist()
@@ -601,6 +681,9 @@ def get_local_delivery_detail(job_order: str) -> dict[str, Any]:
 		"do_status": console_status.do_display_label(do),
 		"do_status_tone": console_status.do_status_tone(console_status.do_display_label(do)),
 		"do_name": do.get("name"),
+		"do_operational_status": do.get("operational_status") if do else None,
+		"can_generate_do": console_status.can_generate_delivery_order(ts.get("transport_status"))
+		and not (do and do.get("name")),
 	}
 
 
@@ -638,7 +721,8 @@ def get_export_container_list() -> list[dict[str, Any]]:
 				"sddn": sddn.get("name"),
 			}
 		)
-	return out
+	attach_live_job_order_numbers(out)
+	return enrich_and_sort_console_queue(out)
 
 
 @frappe.whitelist()
@@ -685,7 +769,10 @@ def get_export_container_detail(job_order: str) -> dict[str, Any]:
 		"sddn_status_tone": console_status.sddn_status_tone(sddn.get("security_status")),
 		"do_status": console_status.do_display_label(do),
 		"do_status_tone": console_status.do_status_tone(console_status.do_display_label(do)),
-		"do_name": do.get("name"),
+		"do_name": do.get("name") if do else None,
+		"do_operational_status": do.get("operational_status") if do else None,
+		"can_generate_do": console_status.can_generate_delivery_order(ts.get("transport_status"))
+		and not (do and do.get("name")),
 	}
 
 
@@ -724,6 +811,643 @@ def get_transportation_pending_counts() -> dict[str, int]:
 		"transport": pending_transport,
 		"do": pending_do,
 		"sddn": pending_sddn,
+		"partial_followup": _count_partial_delivery_followups(),
+		"grn_summary": _count_grn_summary_followups(),
+	}
+
+
+# ---------------------------------------------------------------------------
+# Partial delivery follow-up (always a new transport leg)
+# ---------------------------------------------------------------------------
+
+_COMPLETED_TRANSPORT_STATUSES = frozenset({"Delivered", "Completed"})
+_ACTIVE_TRANSPORT_STATUSES = frozenset(
+	{
+		"Draft",
+		"Pending Assignment",
+		"Scheduled",
+		"Vehicle Assigned",
+		"Driver Assigned",
+		"Dispatched",
+		"Picked Up",
+		"Gate In",
+		"In Transit",
+	}
+)
+
+
+def _job_order_order_quantity(job_order: str) -> float:
+	return job_order_order_quantity(job_order)
+
+
+def _job_order_dispatched_quantity(job_order: str) -> float:
+	return job_order_dispatched_quantity(job_order)
+
+
+def _partial_dispatch_summary(job_order: str) -> dict[str, Any] | None:
+	return get_partial_dispatch_summary(job_order)
+
+
+def _latest_outward_transport(job_order: str, statuses: Iterable[str] | None = None) -> dict[str, Any] | None:
+	filters: dict[str, Any] = {
+		"job_order": job_order,
+		"transport_type": "Outward",
+		"transport_status": ["!=", "Cancelled"],
+	}
+	if statuses:
+		filters["transport_status"] = ["in", list(statuses)]
+	rows = frappe.get_all(
+		"Transport Schedule",
+		filters=filters,
+		fields=_TRANSPORT_FIELDS,
+		order_by="modified desc",
+		limit=1,
+	)
+	return rows[0] if rows else None
+
+
+def _reference_outward_transport_for_followup(job_order: str) -> dict[str, Any] | None:
+	"""Prefer a completed leg for copy defaults; fall back to the latest outward leg."""
+	return (
+		_latest_outward_transport(job_order, _COMPLETED_TRANSPORT_STATUSES)
+		or _latest_outward_transport(job_order)
+	)
+
+
+def _has_issued_loading_delivery_note(job_order: str) -> bool:
+	return has_issued_loading_delivery_note(job_order)
+
+
+def _partial_followup_row(jo: dict[str, Any]) -> dict[str, Any] | None:
+	dispatch = _partial_dispatch_summary(jo["name"])
+	if not dispatch:
+		return None
+
+	if not _has_issued_loading_delivery_note(jo["name"]):
+		return None
+
+	reference_ts = _reference_outward_transport_for_followup(jo["name"])
+	if not reference_ts:
+		return None
+
+	active_ts = _latest_outward_transport(jo["name"], _ACTIVE_TRANSPORT_STATUSES)
+	completed_ts = _latest_outward_transport(jo["name"], _COMPLETED_TRANSPORT_STATUSES)
+
+	return {
+		"name": jo["name"],
+		"job_order": jo["name"],
+		"job_order_number": jo.get("job_order_number") or jo["name"],
+		"customer": jo.get("customer"),
+		"customer_name": jo.get("customer_name"),
+		"delivery_location": reference_ts.get("delivery_location")
+		or reference_ts.get("delivery_address")
+		or jo.get("port_of_discharge"),
+		"outward_type": reference_ts.get("outward_type"),
+		"job_order_quantity": dispatch["job_order_quantity"],
+		"total_demand_quantity": dispatch["total_demand_quantity"],
+		"total_dispatched_quantity": dispatch["total_dispatched_quantity"],
+		"pending_dispatch_quantity": dispatch["pending_dispatch_quantity"],
+		"sales_demand": dispatch.get("sales_demand"),
+		"last_completed_transport": (completed_ts or reference_ts).get("name"),
+		"last_completed_transport_status": (completed_ts or reference_ts).get(
+			"transport_status"
+		),
+		"last_transport_schedule": reference_ts.get("name"),
+		"last_transport_status": reference_ts.get("transport_status"),
+		"active_transport_schedule": active_ts.get("name") if active_ts else None,
+		"active_transport_status": active_ts.get("transport_status") if active_ts else None,
+		"followup_needed": flt(dispatch["pending_dispatch_quantity"]) > 0,
+	}
+
+
+def _count_partial_delivery_followups() -> int:
+	rows = get_partial_delivery_followup_list(only_actionable=1)
+	return len(rows)
+
+
+@frappe.whitelist()
+def get_partial_delivery_followup_list(only_actionable: int | str = 0) -> list[dict[str, Any]]:
+	"""Job Orders with partial dispatch after at least one Loading DN is issued."""
+	jos = frappe.get_all(
+		"Job Order",
+		filters={
+			"docstatus": ["<", 2],
+			"status": ["!=", "Cancelled"],
+			"transport_required": 1,
+			"commercial_movement": "Export",
+		},
+		fields=[
+			"name",
+			"job_order_number",
+			"customer",
+			"customer_name",
+			"mode_of_transport",
+			"port_of_discharge",
+			"status",
+		],
+		order_by="modified desc",
+		limit=300,
+	)
+	out: list[dict[str, Any]] = []
+	for jo in jos:
+		row = _partial_followup_row(jo)
+		if not row:
+			continue
+		if cint(only_actionable) and not row.get("followup_needed"):
+			continue
+		out.append(row)
+	attach_live_job_order_numbers(out)
+	return enrich_and_sort_console_queue(out)
+
+
+def _insert_follow_up_transport_schedule(
+	jo: frappe.Document,
+	*,
+	outward_type: str | None = None,
+	scheduled_pickup_date: str | None = None,
+	scheduled_delivery_date: str | None = None,
+	pickup_location: str | None = None,
+	delivery_location: str | None = None,
+) -> str:
+	"""Insert a new Outward Transport Schedule — never reuse an existing leg."""
+	reference = _reference_outward_transport_for_followup(jo.name) or {}
+
+	schedule = frappe.new_doc("Transport Schedule")
+	schedule.source_document_type = "Job Order"
+	schedule.job_order = jo.name
+	schedule.customer = jo.customer
+	schedule.incoterm = jo.terms_of_delivery
+	schedule.port_of_loading = jo.port_of_loading
+	schedule.port_of_discharge = jo.port_of_discharge
+	schedule.pickup_location = pickup_location or reference.get("pickup_location") or jo.port_of_loading or ""
+	schedule.delivery_location = (
+		delivery_location or reference.get("delivery_location") or jo.port_of_discharge or ""
+	)
+	schedule.scheduled_pickup_date = scheduled_pickup_date or jo.date or today()
+	schedule.scheduled_delivery_date = scheduled_delivery_date or jo.date or today()
+	schedule.transport_status = "Pending Assignment"
+	schedule.transport_type = "Outward"
+	schedule.outward_type = outward_type or reference.get("outward_type") or jo.get_transport_outward_type()
+	if jo.shipping_booking:
+		schedule.shipping_booking = jo.shipping_booking
+	schedule.material_description = jo.get_material_description()
+	schedule.special_instructions = jo.loading_instructions
+	schedule.notes = jo.loading_remarks
+	schedule.insert(ignore_permissions=True)
+	return schedule.name
+
+
+@frappe.whitelist()
+def get_partial_delivery_followup_detail(job_order: str) -> dict[str, Any]:
+	if not job_order:
+		frappe.throw(_("job_order is required"))
+
+	jo = _job_order_summary(job_order)
+	row = _partial_followup_row(jo)
+	if not row:
+		frappe.throw(
+			_("Job Order {0} is not eligible for partial delivery follow-up transport.").format(
+				job_order
+			)
+		)
+
+	completed_ts = _latest_outward_transport(job_order, _COMPLETED_TRANSPORT_STATUSES)
+	reference_ts = _reference_outward_transport_for_followup(job_order) or {}
+	vd = _resolve_vehicle_driver(completed_ts or reference_ts)
+
+	active_ts = get_active_outward_transport(job_order) or {}
+	ts_vd = _resolve_vehicle_driver(active_ts) if active_ts else {}
+	sddn = _sddn_for_transport(active_ts.get("name")) or {}
+
+	leg_do_name = find_delivery_order_for_transport_schedule(active_ts.get("name"))
+	open_do_name = find_open_delivery_order_for_transport_schedule(active_ts.get("name"))
+	do = None
+	if leg_do_name:
+		do = frappe.db.get_value(
+			"Delivery Order",
+			leg_do_name,
+			["name", "status", "docstatus", "posting_date", "customer", "operational_status"],
+			as_dict=True,
+		)
+
+	eligibility = get_followup_delivery_order_eligibility(
+		job_order, transport_schedule=active_ts.get("name")
+	)
+	do_label = console_status.do_display_label(do)
+	transport_booked = console_status.can_generate_delivery_order(active_ts.get("transport_status"))
+	can_issue_standard_do = bool(
+		active_ts.get("name") and transport_booked and not leg_do_name
+	)
+	can_issue_followup = bool(eligibility.get("can_issue_followup_do"))
+	pending_qty = flt(row.get("pending_dispatch_quantity"))
+	is_partial_remaining = pending_qty > 0 and pending_qty < flt(
+		row.get("job_order_quantity") or row.get("total_demand_quantity")
+	)
+
+	return {
+		**row,
+		"terms_of_delivery": jo.get("terms_of_delivery"),
+		"commercial_movement": jo.get("commercial_movement") or "Export",
+		"scheduled_pickup_date": (completed_ts or reference_ts).get("scheduled_pickup_date"),
+		"scheduled_delivery_date": (completed_ts or reference_ts).get("scheduled_delivery_date"),
+		"last_vehicle_number": vd.get("vehicle_number"),
+		"last_driver_name": vd.get("driver_name"),
+		"transport_schedule": active_ts.get("name"),
+		"transport_status": active_ts.get("transport_status"),
+		"transport_booking_label": console_status.transport_booking_label(
+			active_ts.get("transport_status")
+		),
+		"transport_booking_tone": console_status.transport_booking_tone(
+			active_ts.get("transport_status")
+		),
+		"is_transport_booked": console_status.is_transport_booked(active_ts.get("transport_status")),
+		"vehicle_number": ts_vd.get("vehicle_number"),
+		"driver_name": ts_vd.get("driver_name"),
+		"driver_contact": ts_vd.get("driver_contact"),
+		"sddn": sddn.get("name"),
+		"sddn_status": console_status.sddn_display_label(sddn.get("security_status")),
+		"sddn_status_tone": console_status.sddn_status_tone(sddn.get("security_status")),
+		"do_name": do.get("name") if do else None,
+		"do_operational_status": (do.get("operational_status") if do else None),
+		"do_status": do_label,
+		"do_status_tone": console_status.do_status_tone(do_label),
+		"can_issue_followup_do": can_issue_followup,
+		"can_generate_do": can_issue_standard_do or can_issue_followup,
+		"use_followup_do_issue": is_partial_remaining and can_issue_followup,
+		"followup_do_reason": eligibility.get("reason"),
+		"needs_followup_transport": bool(eligibility.get("needs_followup_transport")),
+		"needs_transport_booking": bool(eligibility.get("needs_transport_booking")),
+	}
+
+
+@frappe.whitelist()
+def create_partial_delivery_followup_transport(
+	job_order: str,
+	outward_type: str | None = None,
+	scheduled_pickup_date: str | None = None,
+	scheduled_delivery_date: str | None = None,
+	pickup_location: str | None = None,
+	delivery_location: str | None = None,
+	transporter: str | None = None,
+	assigned_vehicle: str | None = None,
+	assigned_driver: str | None = None,
+	driver_phone: str | None = None,
+) -> dict[str, Any]:
+	"""Create a new transport leg for partial delivery follow-up (never reuses completed schedule)."""
+	if not job_order:
+		frappe.throw(_("job_order is required"))
+
+	jo = frappe.get_doc("Job Order", job_order)
+	jo.check_permission("write")
+
+	if not _partial_dispatch_summary(job_order):
+		frappe.throw(_("This Job Order has no remaining partial-dispatch quantity."))
+
+	if not _has_issued_loading_delivery_note(job_order):
+		frappe.throw(
+			_("At least one Loading Delivery Note must be issued before scheduling partial follow-up.")
+		)
+
+	reference_ts = _reference_outward_transport_for_followup(job_order)
+	if not reference_ts:
+		frappe.throw(_("At least one outward transport schedule is required before scheduling follow-up."))
+
+	from apc_operations.shipping.transport_events import TRANSPORT_TO_JOB_ORDER_STATUS
+
+	ts_name = _insert_follow_up_transport_schedule(
+		jo,
+		outward_type=outward_type,
+		scheduled_pickup_date=scheduled_pickup_date,
+		scheduled_delivery_date=scheduled_delivery_date,
+		pickup_location=pickup_location,
+		delivery_location=delivery_location,
+	)
+
+	jo.db_set("transport_schedule", ts_name, update_modified=False)
+	ts_status = frappe.db.get_value("Transport Schedule", ts_name, "transport_status")
+	mapped = TRANSPORT_TO_JOB_ORDER_STATUS.get(ts_status, "Pending Booking")
+	jo.db_set("transport_status", mapped, update_modified=False)
+	if jo.status != "Cancelled":
+		jo.db_set("status", "In Progress", update_modified=False)
+
+	if transporter or assigned_vehicle or assigned_driver or driver_phone:
+		book_transport_schedule(
+			ts_name,
+			transporter=transporter,
+			assigned_vehicle=assigned_vehicle,
+			assigned_driver=assigned_driver,
+			driver_phone=driver_phone,
+		)
+		ts_status = frappe.db.get_value("Transport Schedule", ts_name, "transport_status")
+
+	vd = _resolve_vehicle_driver(
+		frappe.db.get_value(
+			"Transport Schedule",
+			ts_name,
+			["assigned_vehicle", "assigned_driver", "driver_phone"],
+			as_dict=True,
+		)
+		or {}
+	)
+	return {
+		"job_order": job_order,
+		"job_order_number": jo.job_order_number or job_order,
+		"transport_schedule": ts_name,
+		"transport_status": ts_status,
+		"transport_booking_label": console_status.transport_booking_label(ts_status),
+		"driver_name": vd.get("driver_name"),
+		"vehicle_number": vd.get("vehicle_number"),
+		"is_follow_up_leg": True,
+	}
+
+
+# ---------------------------------------------------------------------------
+# Import GRN Summary — partial import receipt follow-up (new inward leg)
+# ---------------------------------------------------------------------------
+
+
+def _latest_inward_transport(
+	job_order: str, statuses: Iterable[str] | None = None
+) -> dict[str, Any] | None:
+	filters: dict[str, Any] = {
+		"job_order": job_order,
+		"transport_type": "Inward",
+		"transport_status": ["!=", "Cancelled"],
+	}
+	if statuses:
+		filters["transport_status"] = ["in", list(statuses)]
+	rows = frappe.get_all(
+		"Transport Schedule",
+		filters=filters,
+		fields=_TRANSPORT_FIELDS,
+		order_by="modified desc",
+		limit=1,
+	)
+	return rows[0] if rows else None
+
+
+def _reference_inward_transport_for_followup(job_order: str) -> dict[str, Any] | None:
+	"""Prefer a completed inward leg for copy defaults; fall back to the latest inward leg."""
+	return (
+		_latest_inward_transport(job_order, _COMPLETED_TRANSPORT_STATUSES)
+		or _latest_inward_transport(job_order)
+	)
+
+
+def _grn_summary_row(jo: dict[str, Any]) -> dict[str, Any] | None:
+	from apc_operations.shipping.services.import_grn_receipt_summary_service import (
+		import_grn_rows_for_job_order,
+		latest_posted_import_grn,
+		partial_import_receipt_summary,
+	)
+
+	receipt = partial_import_receipt_summary(jo["name"])
+	if not receipt:
+		return None
+
+	reference_ts = _reference_inward_transport_for_followup(jo["name"])
+	if not reference_ts:
+		return None
+
+	active_ts = _latest_inward_transport(jo["name"], _ACTIVE_TRANSPORT_STATUSES)
+	completed_ts = _latest_inward_transport(jo["name"], _COMPLETED_TRANSPORT_STATUSES)
+	last_grn = latest_posted_import_grn(jo["name"]) or {}
+
+	return {
+		"name": jo["name"],
+		"job_order": jo["name"],
+		"job_order_number": jo.get("job_order_number") or jo["name"],
+		"supplier": jo.get("supplier"),
+		"supplier_name": jo.get("supplier_name"),
+		"port_of_discharge": jo.get("port_of_discharge"),
+		"job_order_quantity": receipt["job_order_quantity"],
+		"total_expected_quantity": receipt["total_expected_quantity"],
+		"total_received_quantity": receipt["total_received_quantity"],
+		"pending_receipt_quantity": receipt["pending_receipt_quantity"],
+		"last_posted_grn": last_grn.get("name"),
+		"last_grn_receipt_type": last_grn.get("receipt_type"),
+		"last_completed_transport": (completed_ts or reference_ts).get("name"),
+		"last_completed_transport_status": (completed_ts or reference_ts).get(
+			"transport_status"
+		),
+		"last_transport_schedule": reference_ts.get("name"),
+		"last_transport_status": reference_ts.get("transport_status"),
+		"last_inward_import_leg": reference_ts.get("inward_import_leg") or "Initial Import Leg",
+		"active_transport_schedule": active_ts.get("name") if active_ts else None,
+		"active_transport_status": active_ts.get("transport_status") if active_ts else None,
+		"active_inward_import_leg": active_ts.get("inward_import_leg") if active_ts else None,
+		"followup_needed": flt(receipt["pending_receipt_quantity"]) > 0,
+		"grn_count": len(import_grn_rows_for_job_order(jo["name"])),
+	}
+
+
+def _count_grn_summary_followups() -> int:
+	rows = get_grn_summary_list(only_actionable=1)
+	return len(rows)
+
+
+@frappe.whitelist()
+def get_grn_summary_list(only_actionable: int | str = 0) -> list[dict[str, Any]]:
+	"""Import Job Orders with partial posted GRN receipt and balance pending."""
+	jos = frappe.get_all(
+		"Job Order",
+		filters={
+			"docstatus": ["<", 2],
+			"status": ["!=", "Cancelled"],
+			"commercial_movement": "Import",
+		},
+		fields=[
+			"name",
+			"job_order_number",
+			"supplier",
+			"supplier_name",
+			"mode_of_transport",
+			"port_of_discharge",
+			"status",
+		],
+		order_by="modified desc",
+		limit=300,
+	)
+	out: list[dict[str, Any]] = []
+	for jo in jos:
+		row = _grn_summary_row(jo)
+		if not row:
+			continue
+		if cint(only_actionable) and not row.get("followup_needed"):
+			continue
+		out.append(row)
+	attach_live_job_order_numbers(out)
+	return enrich_and_sort_console_queue(out)
+
+
+def _insert_import_partial_receipt_followup_transport(
+	jo: frappe.Document,
+	*,
+	scheduled_pickup_date: str | None = None,
+	scheduled_delivery_date: str | None = None,
+	pickup_location: str | None = None,
+	delivery_location: str | None = None,
+	pending_quantity: float | None = None,
+) -> str:
+	"""Insert a new Inward Import follow-up Transport Schedule leg."""
+	from apc_operations.shipping.services.import_grn_receipt_summary_service import (
+		partial_import_receipt_summary,
+	)
+
+	receipt = partial_import_receipt_summary(jo.name) or {}
+	pending_qty = pending_quantity if pending_quantity is not None else receipt.get(
+		"pending_receipt_quantity"
+	)
+	reference = _reference_inward_transport_for_followup(jo.name) or {}
+
+	schedule = frappe.new_doc("Transport Schedule")
+	schedule.source_document_type = "Job Order"
+	schedule.job_order = jo.name
+	schedule.customer = jo.customer
+	if jo.supplier:
+		schedule.supplier = (
+			frappe.db.get_value("Supplier", jo.supplier, "supplier_name") or jo.supplier
+		)
+	schedule.incoterm = jo.terms_of_delivery
+	schedule.port_of_loading = jo.port_of_loading
+	schedule.port_of_discharge = jo.port_of_discharge
+	schedule.pickup_location = pickup_location or reference.get("pickup_location") or jo.port_of_loading or ""
+	schedule.delivery_location = (
+		delivery_location or reference.get("delivery_location") or jo.port_of_discharge or ""
+	)
+	schedule.scheduled_pickup_date = scheduled_pickup_date or jo.date or today()
+	schedule.scheduled_delivery_date = scheduled_delivery_date or jo.date or today()
+	schedule.transport_status = "Pending Assignment"
+	schedule.transport_type = "Inward"
+	schedule.inward_import_leg = "Partial Import Follow-up"
+	schedule.material_description = jo.get_material_description()
+	schedule.special_instructions = _(
+		"[Import Partial Receipt Follow-up] Schedule inward import transport for remaining {0} units."
+	).format(pending_qty or "?")
+	schedule.notes = _(
+		"Import GRN Summary follow-up — distinct partial import inward leg for Job Order {0}."
+	).format(jo.job_order_number or jo.name)
+	if pending_qty:
+		schedule.cargo_weight = flt(pending_qty)
+	if jo.shipping_booking:
+		schedule.shipping_booking = jo.shipping_booking
+	schedule.insert(ignore_permissions=True)
+	return schedule.name
+
+
+@frappe.whitelist()
+def get_grn_summary_detail(job_order: str) -> dict[str, Any]:
+	if not job_order:
+		frappe.throw(_("job_order is required"))
+
+	jo = _job_order_summary(job_order)
+	row = _grn_summary_row(jo)
+	if not row:
+		frappe.throw(
+			_("Job Order {0} is not eligible for Import GRN Summary follow-up.").format(job_order)
+		)
+
+	from apc_operations.shipping.services.import_grn_receipt_summary_service import (
+		import_grn_rows_for_job_order,
+	)
+
+	completed_ts = _latest_inward_transport(job_order, _COMPLETED_TRANSPORT_STATUSES)
+	reference_ts = _reference_inward_transport_for_followup(job_order) or {}
+	vd = _resolve_vehicle_driver(completed_ts or reference_ts)
+	return {
+		**row,
+		"commercial_movement": jo.get("commercial_movement") or "Import",
+		"terms_of_delivery": jo.get("terms_of_delivery"),
+		"scheduled_pickup_date": (completed_ts or reference_ts).get("scheduled_pickup_date"),
+		"scheduled_delivery_date": (completed_ts or reference_ts).get("scheduled_delivery_date"),
+		"last_vehicle_number": vd.get("vehicle_number"),
+		"last_driver_name": vd.get("driver_name"),
+		"import_grns": import_grn_rows_for_job_order(job_order),
+	}
+
+
+@frappe.whitelist()
+def create_import_partial_receipt_followup_transport(
+	job_order: str,
+	scheduled_pickup_date: str | None = None,
+	scheduled_delivery_date: str | None = None,
+	pickup_location: str | None = None,
+	delivery_location: str | None = None,
+	transporter: str | None = None,
+	assigned_vehicle: str | None = None,
+	assigned_driver: str | None = None,
+	driver_phone: str | None = None,
+) -> dict[str, Any]:
+	"""Create a new inward import transport leg for partial GRN receipt follow-up."""
+	if not job_order:
+		frappe.throw(_("job_order is required"))
+
+	jo = frappe.get_doc("Job Order", job_order)
+	jo.check_permission("write")
+
+	if (jo.commercial_movement or "").strip() != "Import":
+		frappe.throw(_("Import GRN Summary follow-up applies only to Import Job Orders."))
+
+	from apc_operations.shipping.services.import_grn_receipt_summary_service import (
+		partial_import_receipt_summary,
+	)
+
+	if not partial_import_receipt_summary(job_order):
+		frappe.throw(_("This Job Order has no remaining partial-import receipt quantity."))
+
+	if not _reference_inward_transport_for_followup(job_order):
+		frappe.throw(_("At least one inward import transport schedule is required before scheduling follow-up."))
+
+	from apc_operations.shipping.transport_events import TRANSPORT_TO_JOB_ORDER_STATUS
+
+	receipt = partial_import_receipt_summary(job_order) or {}
+	ts_name = _insert_import_partial_receipt_followup_transport(
+		jo,
+		scheduled_pickup_date=scheduled_pickup_date,
+		scheduled_delivery_date=scheduled_delivery_date,
+		pickup_location=pickup_location,
+		delivery_location=delivery_location,
+		pending_quantity=receipt.get("pending_receipt_quantity"),
+	)
+
+	jo.db_set("transport_schedule", ts_name, update_modified=False)
+	ts_status = frappe.db.get_value("Transport Schedule", ts_name, "transport_status")
+	mapped = TRANSPORT_TO_JOB_ORDER_STATUS.get(ts_status, "Pending Booking")
+	jo.db_set("transport_status", mapped, update_modified=False)
+	if jo.status != "Cancelled":
+		jo.db_set("status", "In Progress", update_modified=False)
+
+	if transporter or assigned_vehicle or assigned_driver or driver_phone:
+		book_transport_schedule(
+			ts_name,
+			transporter=transporter,
+			assigned_vehicle=assigned_vehicle,
+			assigned_driver=assigned_driver,
+			driver_phone=driver_phone,
+		)
+		ts_status = frappe.db.get_value("Transport Schedule", ts_name, "transport_status")
+
+	vd = _resolve_vehicle_driver(
+		frappe.db.get_value(
+			"Transport Schedule",
+			ts_name,
+			["assigned_vehicle", "assigned_driver", "driver_phone"],
+			as_dict=True,
+		)
+		or {}
+	)
+	return {
+		"job_order": job_order,
+		"job_order_number": jo.job_order_number or job_order,
+		"transport_schedule": ts_name,
+		"transport_status": ts_status,
+		"transport_booking_label": console_status.transport_booking_label(ts_status),
+		"inward_import_leg": "Partial Import Follow-up",
+		"commercial_movement": "Import",
+		"driver_name": vd.get("driver_name"),
+		"vehicle_number": vd.get("vehicle_number"),
+		"pending_receipt_quantity": receipt.get("pending_receipt_quantity"),
+		"is_import_partial_follow_up": True,
 	}
 
 
@@ -961,7 +1685,7 @@ def create_security_delivery_draft_note(job_order: str) -> dict[str, Any]:
 	if not job_order:
 		frappe.throw(_("job_order is required"))
 
-	movement = frappe.db.get_value("Job Order", job_order, "commercial_movement") or "Outward"
+	movement = frappe.db.get_value("Job Order", job_order, "commercial_movement") or "Export"
 	transport_type = "Inward" if movement == "Import" else "Outward"
 	ts_row = _active_transport_for_job_order(job_order, transport_type)
 	if not ts_row:
@@ -1028,6 +1752,13 @@ def send_security_delivery_draft_note_to_security(sddn: str) -> dict[str, Any]:
 		},
 		update_modified=True,
 	)
+	from apc_operations.services.delivery_order_service import resolve_do_for_sddn
+	from apc_operations.shipping.services.dispatch_lifecycle_service import (
+		mark_do_sent_to_security,
+	)
+	do_name = resolve_do_for_sddn(sddn)
+	if do_name:
+		mark_do_sent_to_security(do_name)
 
 	try:
 		frappe.get_doc(

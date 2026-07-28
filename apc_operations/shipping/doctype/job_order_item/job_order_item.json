@@ -5,16 +5,39 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "sales_demand_item",
   "item",
   "item_name",
+  "grade",
+  "specification",
+  "packaging_type",
+  "packing_unit_type",
+  "warehouse",
   "packaging",
   "quantity",
-  "net_weight",
   "uom",
+  "packing_section",
+  "packing_profile",
+  "product_fill_kg",
+  "empty_packaging_kg",
+  "unit_gross_kg",
+  "column_break_packing",
+  "packaging_qty",
+  "packaging_qty_override",
+  "planned_product_kg",
+  "planned_gross_kg",
+  "net_weight",
   "hs_code",
   "description"
  ],
  "fields": [
+  {
+   "fieldname": "sales_demand_item",
+   "fieldtype": "Link",
+   "label": "Sales Demand Item",
+   "options": "APC Sales Demand Item",
+   "description": "Optional link to the originating APC Sales Demand Item. When set, grade / specification / packaging type / warehouse below are inherited and locked."
+  },
   {
    "fieldname": "item",
    "fieldtype": "Link",
@@ -31,6 +54,43 @@
    "in_list_view": 1,
    "label": "Product Name",
    "read_only": 1
+  },
+  {
+   "fetch_from": "sales_demand_item.grade",
+   "fieldname": "grade",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Grade",
+   "read_only_depends_on": "eval:!!doc.sales_demand_item"
+  },
+  {
+   "fetch_from": "sales_demand_item.specification",
+   "fieldname": "specification",
+   "fieldtype": "Data",
+   "label": "Specification",
+   "read_only_depends_on": "eval:!!doc.sales_demand_item"
+  },
+  {
+   "fetch_from": "sales_demand_item.packaging_type",
+   "fieldname": "packaging_type",
+   "fieldtype": "Data",
+   "label": "Packing Material",
+   "read_only_depends_on": "eval:!!doc.sales_demand_item"
+  },
+  {
+   "fieldname": "packing_unit_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Packing Unit Type",
+   "options": "\nDrum\nIBC\nBag\nCarton\nFlexi\nISO\nBulk"
+  },
+  {
+   "fetch_from": "sales_demand_item.warehouse",
+   "fieldname": "warehouse",
+   "fieldtype": "Link",
+   "label": "Warehouse",
+   "options": "Warehouse",
+   "read_only_depends_on": "eval:!!doc.sales_demand_item"
   },
   {
    "fieldname": "description",
@@ -53,15 +113,81 @@
    "options": "UOM"
   },
   {
-   "fieldname": "net_weight",
+   "collapsible": 1,
+   "fieldname": "packing_section",
+   "fieldtype": "Section Break",
+   "label": "Packing (Matrix)"
+  },
+  {
+   "fieldname": "packing_profile",
+   "fieldtype": "Link",
+   "label": "Packing Profile",
+   "options": "APC Product Packing Profile",
+   "read_only": 1
+  },
+  {
+   "description": "Product net weight per packing unit from matrix.",
+   "fieldname": "product_fill_kg",
+   "fieldtype": "Float",
+   "label": "Product Fill (KG)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "empty_packaging_kg",
+   "fieldtype": "Float",
+   "label": "Empty Packaging (KG)",
+   "read_only": 1
+  },
+  {
+   "description": "Product + empty packaging per unit (weighbridge basis).",
+   "fieldname": "unit_gross_kg",
+   "fieldtype": "Float",
+   "label": "Unit Gross (KG)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_packing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Autofill from commercial qty ÷ product fill; override when needed.",
+   "fieldname": "packaging_qty",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Packaging Qty",
+   "non_negative": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "packaging_qty_override",
+   "fieldtype": "Check",
+   "label": "Manual Packaging Qty"
+  },
+  {
+   "fieldname": "planned_product_kg",
+   "fieldtype": "Float",
+   "label": "Planned Product (KG)",
+   "read_only": 1
+  },
+  {
+   "description": "Expected loaded weight including packaging (for weighbridge).",
+   "fieldname": "planned_gross_kg",
    "fieldtype": "Float",
    "in_list_view": 1,
-   "label": "Net Weight (KG)"
+   "label": "Planned Gross (KG)",
+   "read_only": 1
+  },
+  {
+   "description": "Same as planned product kg (legacy field).",
+   "fieldname": "net_weight",
+   "fieldtype": "Float",
+   "label": "Net Weight (KG)",
+   "read_only": 1
   },
   {
    "fieldname": "packaging",
    "fieldtype": "Data",
-   "label": "Packaging"
+   "label": "Packaging (legacy)"
   },
   {
    "fieldname": "hs_code",

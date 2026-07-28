@@ -36,8 +36,8 @@ class APCBatchAllocation(Document):
                 if batch.batch_status in ["Blocked", "Expired", "Cancelled", "Depleted"]:
                     frappe.throw(_("Cannot allocate from batch with status: {0}").format(batch.batch_status))
 
-                if batch.quality_status != "Approved":
-                    frappe.throw(_("Cannot allocate from batch without approved COA"))
+                if batch.quality_status not in ("Approved", "QC Cleared"):
+                    frappe.throw(_("Cannot allocate from batch without approved quality clearance"))
 
     def calculate_totals(self):
         """Calculate totals from allocation details."""

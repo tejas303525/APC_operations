@@ -55,6 +55,26 @@ frappe.ui.form.on('Loading Delivery Note', {
 		const canAllocate = !frm.doc.dispatch_confirmed && !isRejectedOrCancelled && !isCompleted;
 
 		if (canAllocate) {
+			if (frm.doc.job_order) {
+				frm.add_custom_button(__('Sync from Job Order Allocation'), () => {
+					frappe.call({
+						doc: frm.doc,
+						method: 'sync_batches_from_job_order',
+						args: { force: 1 },
+						freeze: true,
+						freeze_message: __('Copying batch allocations from Job Order...'),
+						callback(r) {
+							const res = r.message || {};
+							frm.reload_doc();
+							frappe.show_alert({
+								message: res.message || __('Batch allocations synced.'),
+								indicator: res.rows && res.rows.length ? 'green' : 'orange',
+							});
+						},
+					});
+				}, __('Batch Allocation'));
+			}
+
 			frm.add_custom_button(__('Preview FIFO Allocation'), () => {
 				frm.trigger('preview_fifo');
 			}, __('Batch Allocation'));
@@ -211,6 +231,15 @@ frappe.ui.form.on('Loading Delivery Note', {
 	},
 });
 
+frappe.ui.form.on('Loading Delivery Note', {
+	tare_weight(frm) {
+		_recalc_net_weight(frm);
+	},
+	gross_weight(frm) {
+		_recalc_net_weight(frm);
+	},
+});
+
 // ── Child table: FIFO override validation ───────────────────────────────────
 frappe.ui.form.on('Loading DN Batch', {
 	is_fifo_override(frm, cdt, cdn) {
@@ -239,6 +268,14 @@ frappe.ui.form.on('Loading DN Batch', {
 });
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+function _recalc_net_weight(frm) {
+	const gross = flt(frm.doc.gross_weight);
+	const tare = flt(frm.doc.tare_weight);
+	if (gross > 0 && tare > 0 && gross >= tare) {
+		frm.set_value('net_weight', gross - tare);
+	}
+}
+
 function _set_status_indicator(frm) {
 	const statusColors = {
 		'Draft': 'gray',

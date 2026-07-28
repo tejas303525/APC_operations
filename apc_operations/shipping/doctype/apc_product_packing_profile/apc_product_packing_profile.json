@@ -1,0 +1,204 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:PP-{item}-{packing_unit_type}-{#####}",
+ "creation": "2026-06-03 00:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "product_section",
+  "item",
+  "item_name",
+  "product_name_alias",
+  "hs_code",
+  "origin",
+  "column_break_product",
+  "packing_material",
+  "packing_unit_type",
+  "active",
+  "fill_section",
+  "product_fill_kg",
+  "ibc_fill_kg",
+  "flexi_fill_mt",
+  "column_break_fill",
+  "empty_packaging_kg",
+  "unit_gross_kg",
+  "capacity_section",
+  "container_capacities",
+  "notes_section",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "product_section",
+   "fieldtype": "Section Break",
+   "label": "Product"
+  },
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Item",
+   "options": "Item",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "item.item_name",
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Item Name",
+   "read_only": 1
+  },
+  {
+   "description": "Spreadsheet / commercial product name for matching imports.",
+   "fieldname": "product_name_alias",
+   "fieldtype": "Data",
+   "label": "Product Name Alias"
+  },
+  {
+   "fieldname": "hs_code",
+   "fieldtype": "Data",
+   "label": "HS Code"
+  },
+  {
+   "fieldname": "origin",
+   "fieldtype": "Data",
+   "label": "Origin"
+  },
+  {
+   "fieldname": "column_break_product",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "packing_material",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Packing Material",
+   "options": "Steel\nHDPE\nCartons\nBags\nFlexi\nISO\nOther",
+   "reqd": 1
+  },
+  {
+   "fieldname": "packing_unit_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Packing Unit Type",
+   "options": "Drum\nIBC\nBag\nCarton\nFlexi\nISO\nBulk",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  },
+  {
+   "fieldname": "fill_section",
+   "fieldtype": "Section Break",
+   "label": "Fill Weights"
+  },
+  {
+   "description": "Product net weight per drum, bag, or carton.",
+   "fieldname": "product_fill_kg",
+   "fieldtype": "Float",
+   "label": "Product Fill (KG)",
+   "non_negative": 1
+  },
+  {
+   "description": "Product net weight per IBC when unit type is IBC.",
+   "fieldname": "ibc_fill_kg",
+   "fieldtype": "Float",
+   "label": "IBC Fill (KG)",
+   "non_negative": 1
+  },
+  {
+   "description": "Product net weight for flexi / ISO tank shipments (metric tons).",
+   "fieldname": "flexi_fill_mt",
+   "fieldtype": "Float",
+   "label": "Flexi Fill (MT)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "column_break_fill",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Empty packaging weight (from APC Packaging Tare or manual).",
+   "fieldname": "empty_packaging_kg",
+   "fieldtype": "Float",
+   "label": "Empty Packaging (KG)",
+   "non_negative": 1
+  },
+  {
+   "description": "Product fill + empty packaging per unit (kg).",
+   "fieldname": "unit_gross_kg",
+   "fieldtype": "Float",
+   "label": "Unit Gross (KG)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "capacity_section",
+   "fieldtype": "Section Break",
+   "label": "Container Capacity (Reference)"
+  },
+  {
+   "fieldname": "container_capacities",
+   "fieldtype": "Table",
+   "label": "Container Capacities",
+   "options": "APC Container Load Capacity"
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-03 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Shipping",
+ "name": "APC Product Packing Profile",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Operations Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

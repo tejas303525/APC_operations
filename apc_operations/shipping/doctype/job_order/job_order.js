@@ -13,9 +13,47 @@ function toggle_counterparty_visibility(frm) {
 	frm.set_df_property("supplier_name", "hidden", imp ? 0 : 1);
 }
 
+const LEGACY_BANK_ACCOUNT_MAP = {
+	HABIB: "HABIB - HABIB",
+};
+
+function renderJobOrderLogisticsCostSummary(frm) {
+	if (frm.is_new() || !frm.fields_dict.logistics_cost_html) {
+		return;
+	}
+	frappe
+		.call({
+			method:
+				"apc_operations.shipping.doctype.job_order.job_order.refresh_logistics_cost_summary_api",
+			args: { job_order: frm.doc.name },
+		})
+		.then((r) => {
+			const html = (r.message && r.message.html) || "<p class='text-muted'>No logistics cost data.</p>";
+			frm.get_field("logistics_cost_html").$wrapper.html(html);
+		});
+}
+
 frappe.ui.form.on("Job Order", {
+	setup(frm) {
+		frm.set_query("bank_account", () => ({
+			filters: { disabled: 0, is_company_account: 1 },
+		}));
+	},
+
+	before_save(frm) {
+		const bank_account = (frm.doc.bank_account || "").trim();
+		if (LEGACY_BANK_ACCOUNT_MAP[bank_account]) {
+			frm.set_value("bank_account", LEGACY_BANK_ACCOUNT_MAP[bank_account]);
+		}
+	},
+
 	refresh(frm) {
 		toggle_counterparty_visibility(frm);
+
+		const bank_account = (frm.doc.bank_account || "").trim();
+		if (LEGACY_BANK_ACCOUNT_MAP[bank_account]) {
+			frm.set_value("bank_account", LEGACY_BANK_ACCOUNT_MAP[bank_account]);
+		}
 
 		if (
 			!frm.is_new() &&
@@ -41,8 +79,30 @@ frappe.ui.form.on("Job Order", {
 			}, __("Transport"));
 		}
 
-		if (!frm.doc.terms_of_delivery) {
-			return;
+		if (!frm.is_new()) {
+			frm.add_custom_button(
+				__("Print Job Order"),
+				() => {
+					const printUrl = `/printview?doctype=${encodeURIComponent("Job Order")}&name=${encodeURIComponent(
+						frm.doc.name
+					)}&format=${encodeURIComponent("Standard Job Order")}&no_letterhead=0`;
+					window.open(printUrl, "_blank", "noopener,noreferrer");
+				},
+				__("Print")
+			);
+
+			renderJobOrderLogisticsCostSummary(frm);
+
+			frm.add_custom_button(__("Batch Allocation Dashboard"), () => {
+				frappe.route_options = { job_order: frm.doc.name };
+				frappe.set_route("batch-allocation-dashboard");
+			}, __("View"));
+
+			if (frm.doc.sales_demand) {
+				frm.add_custom_button(__("Sales Demand"), () => {
+					frappe.set_route("Form", "APC Sales Demand", frm.doc.sales_demand);
+				}, __("Linked Documents"));
+			}
 		}
 
 		if (frm.doc.transport_schedule) {
@@ -56,6 +116,14 @@ frappe.ui.form.on("Job Order", {
 				frappe.set_route("Form", "Shipping Booking", frm.doc.shipping_booking);
 			}, __("Linked Documents"));
 		}
+
+		if (!frm.is_new() && frappe.model.can_delete("Job Order")) {
+			frm.add_custom_button(__("Delete"), () => {
+				apcConfirmDeleteJobOrder(frm.doc.name, () => {
+					frappe.set_route("List", "Job Order");
+				});
+			}, __("Actions"));
+		}
 	},
 
 	commercial_movement(frm) {
@@ -64,28 +132,6 @@ frappe.ui.form.on("Job Order", {
 		frm.set_value("customer_name", null);
 		frm.set_value("supplier", null);
 		frm.set_value("supplier_name", null);
-	},
-});
-
-frappe.ui.form.on("Job Order Item", {
-	item(frm, cdt, cdn) {
-		const row = locals[cdt][cdn];
-		if (!row.item) {
-			return;
-		}
-		frappe.call({
-			method: "apc_operations.shipping.doctype.job_order.job_order.get_product_packaging_config",
-			args: { product: row.item },
-			callback(r) {
-				const config = r.message || {};
-				if (config.packaging) {
-					frappe.model.set_value(cdt, cdn, "packaging", config.packaging);
-				}
-				if (config.hs_code) {
-					frappe.model.set_value(cdt, cdn, "hs_code", config.hs_code);
-				}
-			},
-		});
 	},
 });
 

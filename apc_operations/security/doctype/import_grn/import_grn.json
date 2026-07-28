@@ -1,0 +1,331 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:GRN-{YYYY}-{#####}",
+ "creation": "2026-05-29 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "source_section",
+  "delivery_order",
+  "job_order",
+  "pre_check_clearance",
+  "column_break_source",
+  "grn_status",
+  "posting_date",
+  "commercial_movement",
+  "party_section",
+  "customer",
+  "customer_name",
+  "supplier",
+  "supplier_name",
+  "column_break_party",
+  "batch_no",
+  "product",
+  "clearance_section",
+  "qc_checked_by",
+  "qc_check_time",
+  "security_checked_by",
+  "security_check_time",
+  "column_break_clearance",
+  "approved_by",
+  "approved_on",
+  "zoho_import_receipt_id",
+  "receipt_totals_section",
+  "total_expected_qty",
+  "total_arrived_qty",
+  "pending_qty",
+  "column_break_receipt",
+  "receipt_type",
+  "is_partial_receipt",
+  "items_section",
+  "items",
+  "remarks_section",
+  "remarks"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_section",
+   "fieldtype": "Section Break",
+   "label": "Source"
+  },
+  {
+   "fieldname": "delivery_order",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Delivery Order",
+   "options": "Delivery Order",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fetch_from": "delivery_order.job_order",
+   "fieldname": "job_order",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Job Order",
+   "options": "Job Order",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pre_check_clearance",
+   "fieldtype": "Link",
+   "label": "Pre-Check Clearance",
+   "options": "Pre-Check Clearance",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_source",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "grn_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "GRN Status",
+   "options": "Draft\nPending Approval\nApproved\nPosted\nCancelled",
+   "reqd": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "label": "Posting Date"
+  },
+  {
+   "default": "Import",
+   "fieldname": "commercial_movement",
+   "fieldtype": "Select",
+   "label": "Operation",
+   "options": "Import",
+   "read_only": 1
+  },
+  {
+   "fieldname": "party_section",
+   "fieldtype": "Section Break",
+   "label": "Parties"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "Customer Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "label": "Supplier",
+   "options": "Supplier",
+   "read_only": 1
+  },
+  {
+   "fieldname": "supplier_name",
+   "fieldtype": "Data",
+   "label": "Supplier Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_party",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "batch_no",
+   "fieldtype": "Link",
+   "label": "Batch",
+   "options": "APC Batch",
+   "read_only": 1
+  },
+  {
+   "fieldname": "product",
+   "fieldtype": "Data",
+   "label": "Product",
+   "read_only": 1
+  },
+  {
+   "fieldname": "clearance_section",
+   "fieldtype": "Section Break",
+   "label": "QC & Security Clearance"
+  },
+  {
+   "fieldname": "qc_checked_by",
+   "fieldtype": "Link",
+   "label": "QC Checked By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "qc_check_time",
+   "fieldtype": "Datetime",
+   "label": "QC Check Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "security_checked_by",
+   "fieldtype": "Link",
+   "label": "Security Checked By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "security_check_time",
+   "fieldtype": "Datetime",
+   "label": "Security Check Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_clearance",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "Approved On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "zoho_import_receipt_id",
+   "fieldtype": "Data",
+   "label": "Zoho Import Receipt ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "receipt_totals_section",
+   "fieldtype": "Section Break",
+   "label": "Receipt Totals"
+  },
+  {
+   "fieldname": "total_expected_qty",
+   "fieldtype": "Float",
+   "label": "Total Expected Qty",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_arrived_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Total Arrived Qty"
+  },
+  {
+   "fieldname": "pending_qty",
+   "fieldtype": "Float",
+   "label": "Pending Qty (This GRN)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_receipt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "receipt_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Receipt Type",
+   "options": "Pending\nFull\nPartial",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_partial_receipt",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Partial Receipt",
+   "read_only": 1
+  },
+  {
+   "fieldname": "items_section",
+   "fieldtype": "Section Break",
+   "label": "Items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Import GRN Item"
+  },
+  {
+   "fieldname": "remarks_section",
+   "fieldtype": "Section Break",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  }
+ ],
+ "links": [],
+ "modified": "2026-05-29 00:00:00.000000",
+ "module": "Security",
+ "name": "Import GRN",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Security Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Security User",
+   "write": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Quality Manager"
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Quality User"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "default_print_format": "Standard Import GRN"
+}

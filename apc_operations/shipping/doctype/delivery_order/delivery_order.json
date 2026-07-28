@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "naming_series:",
- "creation": "2026-04-26 19:20:00.000000",
+ "creation": "2026-04-26 19:20:00",
  "default_view": "List",
  "doctype": "DocType",
  "document_type": "Document",
@@ -11,7 +11,12 @@
  "field_order": [
   "source_section",
   "job_order",
+  "transport_schedule",
   "job_order_number",
+  "commercial_movement",
+  "supplier",
+  "supplier_name",
+  "transport_delivery_order_number",
   "column_break_source",
   "customer",
   "customer_name",
@@ -22,6 +27,21 @@
   "posting_date",
   "company",
   "status",
+  "do_status",
+  "issued_by",
+  "issued_on",
+  "auto_allocation_run",
+  "operational_status",
+  "dispatch_section",
+  "expected_dispatch_date",
+  "planned_quantity",
+  "planned_product_kg",
+  "planned_gross_kg",
+  "expected_packaging_qty",
+  "column_break_dispatch_plan",
+  "packaging_type",
+  "vehicle_type",
+  "transporter",
   "routing_section",
   "shipping_address",
   "shipping_address_name",
@@ -29,6 +49,17 @@
   "destination",
   "port_of_loading",
   "port_of_discharge",
+  "operational_section",
+  "gate_pass",
+  "weighment_slip_tare",
+  "weighment_slip_gross",
+  "column_break_operational",
+  "pre_check_clearance",
+  "import_grn",
+  "loading_delivery_note",
+  "sent_to_security_on",
+  "truck_arrived_on",
+  "gate_entry_no",
   "items_section",
   "items",
   "totals_section",
@@ -56,12 +87,53 @@
    "search_index": 1
   },
   {
+   "fieldname": "transport_schedule",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Transport Schedule",
+   "options": "Transport Schedule",
+   "search_index": 1
+  },
+  {
    "fetch_from": "job_order.job_order_number",
    "fieldname": "job_order_number",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Job Order Number",
    "read_only": 1
+  },
+  {
+   "default": "Export",
+   "fetch_from": "job_order.commercial_movement",
+   "fieldname": "commercial_movement",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Operation",
+   "options": "Export\nImport",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.commercial_movement=='Import'",
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "label": "Supplier",
+   "options": "Supplier"
+  },
+  {
+   "fetch_from": "supplier.supplier_name",
+   "fieldname": "supplier_name",
+   "fieldtype": "Data",
+   "label": "Supplier Name",
+   "read_only": 1
+  },
+  {
+   "description": "Internal transport-team DO reference, distinct from the autoname series.",
+   "fieldname": "transport_delivery_order_number",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Transport DO Number",
+   "search_index": 1
   },
   {
    "fieldname": "column_break_source",
@@ -111,7 +183,7 @@
    "fieldname": "posting_date",
    "fieldtype": "Date",
    "in_list_view": 1,
-   "label": "Posting Date",
+   "label": "Date of Delivery",
    "reqd": 1
   },
   {
@@ -130,6 +202,104 @@
    "label": "Status",
    "options": "Draft\nSubmitted\nIn Transit\nDelivered\nCancelled",
    "reqd": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "do_status",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "DO Status",
+   "options": "Draft\nIssued\nPre-Check Pending\nPre-Check Cleared\nLoading\nDN Issued\nCompleted\nCancelled"
+  },
+  {
+   "fieldname": "issued_by",
+   "fieldtype": "Link",
+   "label": "Issued By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "issued_on",
+   "fieldtype": "Datetime",
+   "label": "Issued On",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Set by the DO submit hook once FIFO allocation has been attempted.",
+   "fieldname": "auto_allocation_run",
+   "fieldtype": "Check",
+   "label": "Auto-Allocation Run",
+   "read_only": 1
+  },
+  {
+   "default": "Draft",
+   "description": "Full dispatch lifecycle status. do_status retained for backward compatibility.",
+   "fieldname": "operational_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Operational Status",
+   "options": "Draft\nIssued\nSent to Security\nTruck Arrived\nQC Pre-check Pending\nQC Pre-check Passed\nQC Pre-check Failed\nLoading Allowed\nLoading Started\nLoading Completed\nWeighment Completed\nWeight Variance Approval Pending\nQC Final Pending\nDelivery Note Generated\nReady for Gate Out\nGate Out Completed\nOn Hold\nCancelled"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "dispatch_section",
+   "fieldtype": "Section Break",
+   "label": "Dispatch Planning"
+  },
+  {
+   "fieldname": "expected_dispatch_date",
+   "fieldtype": "Date",
+   "label": "Expected Dispatch Date"
+  },
+  {
+   "description": "Commercial dispatch quantity (Job Order UOM).",
+   "fieldname": "planned_quantity",
+   "fieldtype": "Float",
+   "label": "Planned Quantity"
+  },
+  {
+   "description": "Sum of product net kg from packing matrix.",
+   "fieldname": "planned_product_kg",
+   "fieldtype": "Float",
+   "label": "Planned Product (KG)",
+   "read_only": 1
+  },
+  {
+   "description": "Expected weighbridge load: product + packaging (kg).",
+   "fieldname": "planned_gross_kg",
+   "fieldtype": "Float",
+   "label": "Planned Gross (KG)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "expected_packaging_qty",
+   "fieldtype": "Int",
+   "label": "Expected Packaging Qty",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_dispatch_plan",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "e.g. ISO Tank, Bulk Tanker, Flexi Bag, Container",
+   "fieldname": "packaging_type",
+   "fieldtype": "Data",
+   "label": "Packaging Type"
+  },
+  {
+   "fieldname": "vehicle_type",
+   "fieldtype": "Select",
+   "label": "Vehicle Type",
+   "options": "\nRoad Tanker\nISO Tank\nFlexi Bag\nContainer\nOther"
+  },
+  {
+   "fieldname": "transporter",
+   "fieldtype": "Link",
+   "label": "Transporter",
+   "options": "Supplier"
   },
   {
    "fieldname": "routing_section",
@@ -169,6 +339,74 @@
    "label": "Port of Discharge"
   },
   {
+   "collapsible": 1,
+   "fieldname": "operational_section",
+   "fieldtype": "Section Break",
+   "label": "Operational Linkage"
+  },
+  {
+   "fieldname": "gate_pass",
+   "fieldtype": "Link",
+   "label": "Gate Pass",
+   "options": "Gate Pass",
+   "read_only": 1
+  },
+  {
+   "fieldname": "weighment_slip_tare",
+   "fieldtype": "Link",
+   "label": "Weighment Slip (Tare)",
+   "options": "Weighment Slip"
+  },
+  {
+   "fieldname": "weighment_slip_gross",
+   "fieldtype": "Link",
+   "label": "Weighment Slip (Gross)",
+   "options": "Weighment Slip"
+  },
+  {
+   "fieldname": "column_break_operational",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pre_check_clearance",
+   "fieldtype": "Link",
+   "label": "Pre-Check Clearance",
+   "options": "Pre-Check Clearance",
+   "read_only": 1
+  },
+  {
+   "fieldname": "import_grn",
+   "fieldtype": "Link",
+   "label": "Import GRN",
+   "options": "Import GRN",
+   "read_only": 1
+  },
+  {
+   "fieldname": "loading_delivery_note",
+   "fieldtype": "Link",
+   "label": "Loading Delivery Note",
+   "options": "Loading Delivery Note",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sent_to_security_on",
+   "fieldtype": "Datetime",
+   "label": "Sent to Security On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "truck_arrived_on",
+   "fieldtype": "Datetime",
+   "label": "Truck Arrived On",
+   "read_only": 1
+  },
+  {
+   "description": "Security gate register entry number.",
+   "fieldname": "gate_entry_no",
+   "fieldtype": "Data",
+   "label": "Gate Entry No"
+  },
+  {
    "fieldname": "items_section",
    "fieldtype": "Section Break",
    "label": "Items"
@@ -194,8 +432,7 @@
   {
    "fieldname": "total_net_weight",
    "fieldtype": "Float",
-   "label": "Total Net Weight (kg)",
-   "read_only": 1
+   "label": "Total Net Weight (kg)"
   },
   {
    "fieldname": "column_break_totals",
@@ -204,8 +441,7 @@
   {
    "fieldname": "total_gross_weight",
    "fieldtype": "Float",
-   "label": "Total Gross Weight (kg)",
-   "read_only": 1
+   "label": "Total Gross Weight (kg)"
   },
   {
    "fieldname": "notes_section",
@@ -230,7 +466,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-15 12:00:00.000000",
+ "modified": "2026-05-30 00:36:04.103660",
  "modified_by": "Administrator",
  "module": "Shipping",
  "name": "Delivery Order",
@@ -268,6 +504,7 @@
    "role": "All"
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

@@ -1,0 +1,119 @@
+{% set company = frappe.db.get_default("company") or frappe.db.get_single_value("Global Defaults", "default_company") %}
+{% set company_logo = frappe.db.get_value("Company", company, "company_logo") if company else "" %}
+{% set logo_url = frappe.utils.get_url(company_logo) if company_logo else frappe.utils.get_url("/files/AP_Logo.webp") %}
+{% set company_name = frappe.db.get_value("Company", company, "company_name") if company else "ASIA PETROCHEMICALS LLC OPC" %}
+{% set po = frappe.call("apc_operations.shipping.services.transport_po_print_service.get_print_context", transport_po_name=doc.name) %}
+{% set ccy = po.currency or doc.currency or "AED" %}
+
+<style>
+  .po-page { border: 1px solid #2f2f2f; padding: 14px; font-family: Arial, sans-serif; color: #222; margin: 8px; }
+  .po-title { text-align: center; font-size: 22px; font-weight: 700; margin: 4px 0 10px; }
+  .po-grid { width: 100%; border-collapse: collapse; }
+  .po-grid td { border: 1px solid #2f2f2f; vertical-align: top; }
+  .pad { padding: 6px 8px; font-size: 12px; }
+  .head-box { width: 100%; border-collapse: collapse; }
+  .head-box td { border: none; }
+  .logo { width: 95px; }
+  .logo img { width: 86px; height: 58px; object-fit: contain; }
+  .company { font-size: 15px; font-weight: 700; }
+  .small { font-size: 11px; color: #444; }
+  .kv { width: 100%; border-collapse: collapse; }
+  .kv td { border: none; padding: 2px 0; font-size: 12px; }
+  .kv .k { width: 45%; font-weight: 700; }
+  .kv .c { width: 4%; text-align: center; }
+  .money-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  .money-table td, .money-table th { border: 1px solid #2f2f2f; padding: 5px 8px; font-size: 12px; }
+  .money-table th { background: #f0f0f0; text-align: left; }
+  .money-total { font-size: 16px; font-weight: 700; }
+  .signature-row { margin-top: 20px; width: 100%; border-collapse: collapse; }
+  .signature-row td { width: 33.33%; text-align: center; font-size: 11px; padding-top: 28px; }
+  .sig-line { border-top: 1px solid #2f2f2f; margin: 0 10px 6px; }
+</style>
+
+<div class="po-page">
+  <div class="po-title">TRANSPORT PURCHASE ORDER</div>
+
+  <table class="po-grid">
+    <tr>
+      <td style="width:50%;" class="pad">
+        <table class="head-box">
+          <tr>
+            <td class="logo">
+              <img src="{{ logo_url }}" alt="Company Logo">
+            </td>
+            <td>
+              <div class="company">{{ company_name }}</div>
+              <div class="small">Internal Transport Payables Document</div>
+            </td>
+          </tr>
+        </table>
+      </td>
+      <td style="width:50%;" class="pad">
+        <table class="kv">
+          <tr><td class="k">PO Number</td><td class="c">:</td><td>{{ doc.name }}</td></tr>
+          <tr><td class="k">Date</td><td class="c">:</td><td>{{ frappe.utils.formatdate(doc.modified or doc.creation) }}</td></tr>
+          <tr><td class="k">Job Order</td><td class="c">:</td><td>{{ po.job_order_number or doc.job_order or "-" }}</td></tr>
+          <tr><td class="k">Payables Status</td><td class="c">:</td><td>{{ doc.payables_status or "Draft" }}</td></tr>
+          <tr><td class="k">Zoho Books Ref</td><td class="c">:</td><td>{{ doc.zoho_books_reference or "-" }}</td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="pad">
+        <b>Source References</b>
+        <table class="kv" style="margin-top: 4px;">
+          <tr><td class="k">Transport Schedule</td><td class="c">:</td><td>{{ doc.transport_schedule or "-" }}</td></tr>
+          <tr><td class="k">Shipping Booking</td><td class="c">:</td><td>{{ doc.shipping_booking or "-" }}</td></tr>
+        </table>
+      </td>
+      <td class="pad">
+        <b>Transport Details</b>
+        <table class="kv" style="margin-top: 4px;">
+          <tr><td class="k">Transport Type</td><td class="c">:</td><td>{{ doc.transport_type or "-" }}</td></tr>
+          <tr><td class="k">Outward Type</td><td class="c">:</td><td>{{ doc.outward_type or "-" }}</td></tr>
+          <tr><td class="k">Transporter</td><td class="c">:</td><td>{{ po.transporter_name or doc.transporter or "-" }}</td></tr>
+          <tr><td class="k">Vehicle</td><td class="c">:</td><td>{{ po.vehicle_display or doc.vehicle or "-" }}</td></tr>
+          <tr><td class="k">Driver</td><td class="c">:</td><td>{{ po.driver_display or doc.driver or "-" }}</td></tr>
+          <tr><td class="k">Driver Contact</td><td class="c">:</td><td>{{ po.driver_phone or "-" }}</td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="pad">
+        <b>Schedule</b>
+        <table class="kv" style="margin-top: 4px;">
+          <tr><td class="k">Scheduled Date</td><td class="c">:</td><td>{{ frappe.utils.formatdate(doc.scheduled_date) if doc.scheduled_date else "-" }}</td></tr>
+          <tr><td class="k">Pickup Location</td><td class="c">:</td><td>{{ doc.pickup_location or "-" }}</td></tr>
+          <tr><td class="k">Delivery Location</td><td class="c">:</td><td>{{ doc.delivery_location or "-" }}</td></tr>
+        </table>
+      </td>
+      <td class="pad">
+        <b>Commercials ({{ ccy }})</b>
+        <table class="money-table">
+          <tr><th>Charge</th><th style="text-align:right;">Amount</th></tr>
+          <tr><td>Transport Charges</td><td style="text-align:right;">{{ frappe.utils.fmt_money(po.transport_charges or 0, currency=ccy) }}</td></tr>
+          <tr><td>Fuel Cost</td><td style="text-align:right;">{{ frappe.utils.fmt_money(po.fuel_cost or 0, currency=ccy) }}</td></tr>
+          <tr><td>Additional Charges</td><td style="text-align:right;">{{ frappe.utils.fmt_money(po.additional_charges or 0, currency=ccy) }}</td></tr>
+          <tr><td class="money-total">Total</td><td style="text-align:right;" class="money-total">{{ frappe.utils.fmt_money(po.total_cost or 0, currency=ccy) }}</td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
+      <td colspan="2" class="pad">
+        <b>Notes</b><br>
+        {{ doc.notes or "No notes." }}
+      </td>
+    </tr>
+  </table>
+
+  <table class="signature-row">
+    <tr>
+      <td><div class="sig-line"></div>Prepared By</td>
+      <td><div class="sig-line"></div>Reviewed By</td>
+      <td><div class="sig-line"></div>Approved By</td>
+    </tr>
+  </table>
+</div>

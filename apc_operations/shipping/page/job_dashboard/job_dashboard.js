@@ -1,7 +1,7 @@
 frappe.pages['job-dashboard'].on_page_load = function (wrapper) {
 	const page = frappe.ui.make_app_page({
 		parent: wrapper,
-		title: __('Job Order Dashboard'),
+		title: __('Order fullfiment Dashboard'),
 		single_column: true,
 	});
 
@@ -22,6 +22,7 @@ class JobDashboard {
 		this._all_rows      = [];
 		this._current_page  = 1;
 		this._per_page      = 20;
+		this._selected_names = new Set();
 		this._setup_page_actions();
 		this._build_layout();
 		this.refresh();
@@ -299,6 +300,9 @@ class JobDashboard {
 			<div class="jd-table-header">
 				<span class="jd-table-title">${__('Job Orders')}</span>
 				<div class="jd-table-actions">
+					<button class="jd-btn-delete-selected" style="display:none;">
+						${__('Delete Selected')}
+					</button>
 					<button class="jd-btn-create">${__('Create Job Order')}</button>
 					<button class="jd-settings-btn" title="${__('Columns')}">
 						<svg viewBox="0 0 16 16" fill="none" width="14" height="14">
@@ -345,8 +349,19 @@ class JobDashboard {
 		`);
 
 		this.$table_card.find('.jd-btn-create').on('click', () => frappe.new_doc('Job Order'));
-		this.$table_card.find('.jd-select-all').on('change', function () {
-			$(this).closest('table').find('tbody .jd-row-check').prop('checked', this.checked);
+		this.$table_card.find('.jd-btn-delete-selected').on('click', () => {
+			this._confirm_delete_selected();
+		});
+		this.$table_card.find('.jd-select-all').on('change', (e) => {
+			const checked = e.currentTarget.checked;
+			this._get_visible_page_rows().forEach((row) => {
+				if (checked) {
+					this._selected_names.add(row.name);
+				} else {
+					this._selected_names.delete(row.name);
+				}
+			});
+			this._render_rows();
 		});
 		this.$table_card.find('.jd-sortable').on('click', (e) => {
 			const field = $(e.currentTarget).data('field');
@@ -354,6 +369,7 @@ class JobDashboard {
 		});
 
 		this._all_rows     = rows;
+		this._selected_names.clear();
 		this._sort_field   = 'date';
 		this._sort_dir     = 'desc';
 		this._current_page = 1;
@@ -454,9 +470,10 @@ class JobDashboard {
 				const shipping_status = r.shipping_status || '—';
 				const job_order_number = r.job_order_number || '—';
 
+				const checked = this._selected_names.has(r.name) ? ' checked' : '';
 				$tbody.append(`
 					<tr class="jd-row" data-name="${r.name}">
-						<td class="jd-td-check"><input type="checkbox" class="jd-row-check"></td>
+						<td class="jd-td-check"><input type="checkbox" class="jd-row-check"${checked}></td>
 						<td><a href="/app/job-order/${r.name}" class="jd-link jd-id-link">${job_order_number}</a></td>
 						<td class="jd-td-customer">${r.customer_name || r.customer || '—'}</td>
 						<td class="jd-td-type">${incoterm}</td>
@@ -506,6 +523,16 @@ class JobDashboard {
 			this._current_page = 1;
 			this._render_rows();
 		});
+		this.$table_card.find('.jd-row-check').on('change', (e) => {
+			const name = $(e.currentTarget).closest('.jd-row').data('name');
+			if (e.currentTarget.checked) {
+				this._selected_names.add(name);
+			} else {
+				this._selected_names.delete(name);
+			}
+			this._update_selection_ui();
+		});
+		this._update_selection_ui();
 
 		// Row actions menu
 		this.$table_card.find('.jd-more-btn').on('click', (e) => {
@@ -519,6 +546,89 @@ class JobDashboard {
 			if ($(e.target).is('a, button, input, .jd-more-btn')) return;
 			const name = $(e.currentTarget).data('name');
 			frappe.set_route('Form', 'Job Order', name);
+		});
+	}
+
+	_confirm_delete_job_order(name) {
+		apcConfirmDeleteJobOrder(name, () => this.refresh());
+	}
+
+	_get_visible_page_rows() {
+		const rows = this._filtered_rows || [];
+		const per = parseInt(this.$table_card.find('.jd-per-page').val()) || 20;
+		const start = (this._current_page - 1) * per;
+		return rows.slice(start, start + per);
+	}
+
+	_update_selection_ui() {
+		const count = this._selected_names.size;
+		const $button = this.$table_card.find('.jd-btn-delete-selected');
+		$button.toggle(count > 0);
+		$button.text(count ? __('Delete Selected ({0})', [count]) : __('Delete Selected'));
+
+		const visibleNames = this._get_visible_page_rows().map((row) => row.name);
+		const selectedVisible = visibleNames.filter((name) => this._selected_names.has(name)).length;
+		const $selectAll = this.$table_card.find('.jd-select-all');
+		$selectAll.prop('checked', visibleNames.length > 0 && selectedVisible === visibleNames.length);
+		$selectAll.prop('indeterminate', selectedVisible > 0 && selectedVisible < visibleNames.length);
+	}
+
+	_confirm_delete_selected() {
+		const jobOrders = [...this._selected_names];
+		if (!jobOrders.length) return;
+
+		frappe.call({
+			method: 'apc_operations.shipping.api.get_job_orders_delete_preview',
+			args: { job_orders: jobOrders },
+			freeze: true,
+			freeze_message: __('Checking linked documents...'),
+			callback: (r) => {
+				if (!r.message) return;
+				const preview = r.message;
+				const labels = preview.job_orders
+					.map((row) => frappe.utils.escape_html(row.job_order_number || row.job_order))
+					.join(', ');
+				let message = __('This will permanently delete {0} selected Job Order(s):', [
+					preview.job_order_count,
+				]);
+				message += `<br><br><strong>${labels}</strong>`;
+				if (preview.linked_count) {
+					message += '<br><br>' + __(
+						'{0} linked operational record(s) will also be deleted.',
+						[preview.linked_count]
+					);
+				}
+				message += '<br><br>' + __('This action cannot be undone.');
+
+				frappe.warn(
+					__('Delete Selected Job Orders?'),
+					message,
+					() => this._delete_selected(jobOrders),
+					__('Delete'),
+					true
+				);
+			},
+		});
+	}
+
+	_delete_selected(jobOrders) {
+		frappe.call({
+			method: 'apc_operations.shipping.api.delete_job_orders_with_linked',
+			args: { job_orders: jobOrders },
+			freeze: true,
+			freeze_message: __('Deleting selected Job Orders...'),
+			callback: (r) => {
+				if (!r.message) return;
+				this._selected_names.clear();
+				frappe.show_alert({
+					message: __('Deleted {0} Job Order(s) and {1} total record(s)', [
+						r.message.job_order_count,
+						r.message.deleted_count,
+					]),
+					indicator: 'green',
+				});
+				this.refresh();
+			},
 		});
 	}
 
@@ -544,16 +654,7 @@ class JobDashboard {
 			if (action === 'view' || action === 'edit') {
 				frappe.set_route('Form', 'Job Order', name);
 			} else if (action === 'delete') {
-				frappe.confirm(__('Delete this Job Order?'), () => {
-					frappe.call({
-						method:   'frappe.client.delete',
-						args:     { doctype: 'Job Order', name },
-						callback: () => {
-							frappe.show_alert({ message: __('Deleted'), indicator: 'green' });
-							this.refresh();
-						},
-					});
-				});
+				this._confirm_delete_job_order(name);
 			}
 		});
 

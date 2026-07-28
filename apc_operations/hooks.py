@@ -18,36 +18,29 @@ APC_LEGACY_DASHBOARDS_ENABLED = False
 app_include_js = [
 	"/assets/apc_operations/js/qc_spec.js",
 	"/assets/apc_operations/js/console_router.js",
+	"/assets/apc_operations/js/console_delivery_helpers.js?v=20260530",
+	"/assets/apc_operations/js/job_order_delete.js",
+	"/assets/apc_operations/js/apc_security_checklist.js",
 ]
 
 app_include_css = [
 	"/assets/apc_operations/css/console.css",
 ]
 
-# Scheduled Jobs for Reminder Automation
-scheduler_events = {
-    "hourly": [
-        "apc_operations.shipping.reminders.check_upcoming_cutoffs",
-        "apc_operations.shipping.reminders.check_pending_pull_outs",
-        "apc_operations.shipping.reminders.check_pending_cros",
-        "apc_operations.shipping.reminders.check_pending_transport",
-    ],
-    "daily": [
-        "apc_operations.shipping.reminders.send_daily_dashboard_summary",
-        "apc_operations.shipping.reminders.check_transportation_daily_summary",
-    ],
-    "cron": {
-        "0 8 * * *": [
-            "apc_operations.shipping.reminders.send_morning_reminders",
-        ],
-        "0 16 * * *": [
-            "apc_operations.shipping.reminders.send_evening_reminders",
-        ],
-        "0 */6 * * *": [
-            "apc_operations.shipping.reminders.check_unassigned_transport_reminder",
-        ],
-    }
+# Inject delivery-date badge helpers into console page scripts (runs on each getpage).
+page_js = {
+	"security-console": "public/js/console_delivery_helpers.js",
+	"qc-console": "public/js/console_delivery_helpers.js",
+	"transportation-console": "public/js/console_delivery_helpers.js",
+	"shipping-console": "public/js/console_delivery_helpers.js",
+	"my-work-today": "public/js/console_delivery_helpers.js",
 }
+
+# Note: a single ``scheduler_events`` dict definition wins in Python; the
+# previous file had two separate assignments which silently dropped the
+# first one's reminder jobs. P5 collapses them into one dict and adds
+# the Zoho invoice-status pull job.
+
 
 # Doc Events
 doc_events = {
@@ -66,6 +59,9 @@ doc_events = {
     "Gate Pass": {
         "on_update": "apc_operations.shipping.gate_pass_events.on_gate_pass_update",
     },
+    "Delivery Order": {
+        "on_update": "apc_operations.shipping.delivery_order_events.on_delivery_order_update",
+    },
     "Security Draft Delivery Note": {
         "on_update": [
             "apc_operations.shipping.security_events.on_security_draft_dn_update",
@@ -82,10 +78,14 @@ doc_events = {
         ],
     },
     "Loading Delivery Note": {
+        "after_insert": "apc_operations.shipping.delivery_order_events.on_loading_delivery_note_after_insert",
         "on_update": [
             "apc_operations.shipping.security_events.on_loading_delivery_note_update",
             "apc_operations.shipping.delivery_order_events.on_loading_delivery_note_update_hook",
         ],
+    },
+    "Pre-Check Clearance": {
+        "on_update": "apc_operations.shipping.delivery_order_events.on_pre_check_clearance_update",
     },
     "Production Order": {
         "validate": "apc_operations.production.production_order_events.on_validate",
@@ -118,11 +118,35 @@ doc_events = {
     },
 }
 
-# Scheduled Jobs
+# Scheduled Jobs (merged from previous two scheduler_events definitions
+# in this file). Reminder + NAS retry + Zoho invoice-status pull.
 scheduler_events = {
+    "hourly": [
+        "apc_operations.shipping.reminders.check_upcoming_cutoffs",
+        "apc_operations.shipping.reminders.check_pending_pull_outs",
+        "apc_operations.shipping.reminders.check_pending_cros",
+        "apc_operations.shipping.reminders.check_pending_transport",
+    ],
     "daily": [
+        "apc_operations.shipping.reminders.send_daily_dashboard_summary",
+        "apc_operations.shipping.reminders.check_transportation_daily_summary",
         "apc_operations.services.nas_service.retry_failed_nas_saves",
     ],
+    "cron": {
+        "0 8 * * *": [
+            "apc_operations.shipping.reminders.send_morning_reminders",
+        ],
+        "0 16 * * *": [
+            "apc_operations.shipping.reminders.send_evening_reminders",
+        ],
+        "0 */6 * * *": [
+            "apc_operations.shipping.reminders.check_unassigned_transport_reminder",
+            "apc_operations.shipping.reminders.check_unbooked_transport_over_24h",
+        ],
+        "*/15 * * * *": [
+            "apc_operations.shipping.services.zoho_dispatch_sync_service.pull_zoho_invoice_status",
+        ],
+    },
 }
 
 # Notifications

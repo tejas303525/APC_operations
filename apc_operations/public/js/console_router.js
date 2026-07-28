@@ -350,6 +350,25 @@
 				});
 			});
 		},
+
+		showApiError(err, fallback) {
+			let message = fallback || __("Request failed");
+			if (typeof err === "string") {
+				message = err;
+			} else if (err && err.message) {
+				message = err.message;
+			} else if (err && err._server_messages) {
+				try {
+					message = JSON.parse(JSON.parse(err._server_messages)[0]).message || message;
+				} catch (e) {
+					/* keep fallback */
+				}
+			} else if (err && err.exc) {
+				const lines = String(err.exc).trim().split("\n");
+				message = lines[lines.length - 1] || message;
+			}
+			frappe.msgprint({ title: __("Error"), message, indicator: "red" });
+		},
 	};
 
 	window.APCConsoleRouter = APCConsoleRouter;

@@ -23,8 +23,10 @@ frappe.ui.form.on('APC Sales Demand', {
 			}, __('Actions'));
 
 			frm.add_custom_button(__('Batch Allocation Dashboard'), () => {
-				frappe.route_options = { sales_demand: frm.doc.name };
-				frappe.set_route('batch-allocation-dashboard');
+				frappe.db.get_value('Job Order', { sales_demand: frm.doc.name }, 'name').then((r) => {
+					frappe.route_options = r.message ? { job_order: r.message } : {};
+					frappe.set_route('batch-allocation-dashboard');
+				});
 			}, __('View'));
 
 			frm.add_custom_button(__('View Batch Allocations'), () => {

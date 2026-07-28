@@ -1,0 +1,57 @@
+{
+ "actions": [],
+ "creation": "2026-06-03 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "container_size",
+  "load_mode",
+  "max_units",
+  "max_product_net_mt"
+ ],
+ "fields": [
+  {
+   "fieldname": "container_size",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Container Size",
+   "options": "20FT\n40FT\nTruck",
+   "reqd": 1
+  },
+  {
+   "fieldname": "load_mode",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Load Mode",
+   "options": "Palletised Drums\nNon-Pallet Drums\nIBC\nFlexi\nBags",
+   "reqd": 1
+  },
+  {
+   "fieldname": "max_units",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Max Units",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "max_product_net_mt",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Max Product Net (MT)",
+   "non_negative": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-06-03 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Shipping",
+ "name": "APC Container Load Capacity",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "idx",
+ "sort_order": "ASC",
+ "states": []
+}

@@ -1,0 +1,109 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"my_work_today_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"My Work Today\",\"col\":4}},{\"id\":\"qc_console_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"QC Console\",\"col\":4}},{\"id\":\"qc_precheck_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"QC Pre-check Console\",\"col\":4}},{\"id\":\"spacer_1\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"links_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\">QUICK LINKS</span>\",\"col\":12}},{\"id\":\"card_qc_docs\",\"type\":\"card\",\"data\":{\"card_name\":\"Quality Documents\",\"col\":6}}]",
+ "creation": "2026-05-30 00:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "quality",
+ "idx": 0,
+ "indicator_color": "orange",
+ "is_hidden": 0,
+ "label": "Quality",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Quality Documents",
+   "link_count": 4,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Pre Check Clearance",
+   "link_count": 0,
+   "link_to": "Pre Check Clearance",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "QC Report Request",
+   "link_count": 0,
+   "link_to": "QC Report Request",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Loading Delivery Note",
+   "link_count": 0,
+   "link_to": "Loading Delivery Note",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Delivery Order",
+   "link_count": 0,
+   "link_to": "Delivery Order",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-05-30 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Quality",
+ "name": "Quality",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [
+  {
+   "role": "Quality Manager"
+  },
+  {
+   "role": "Quality User"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
+ "sequence_id": 4.0,
+ "shortcuts": [
+  {
+   "color": "Red",
+   "label": "My Work Today",
+   "link_to": "my-work-today",
+   "type": "Page"
+  },
+  {
+   "color": "Orange",
+   "label": "QC Console",
+   "link_to": "qc-console",
+   "type": "Page"
+  },
+  {
+   "color": "Yellow",
+   "label": "QC Pre-check Console",
+   "link_to": "qc-precheck-console",
+   "type": "Page"
+  }
+ ],
+ "title": "Quality"
+}

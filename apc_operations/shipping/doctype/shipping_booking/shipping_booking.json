@@ -19,6 +19,7 @@
   "incoterm",
   "shipping_line",
   "container_type",
+  "container_number",
   "container_count",
   "column_break_1",
   "port_of_loading",
@@ -121,6 +122,12 @@
    "fieldtype": "Select",
    "label": "Container Type",
    "options": "20FT Standard\n40FT Standard\n40FT High Cube\n20FT Reefer\n40FT Reefer\n20FT Open Top\n40FT Open Top\n20FT Flat Rack\n40FT Flat Rack"
+  },
+  {
+   "description": "Physical container ID (e.g. MSCU1234567). Shown on Delivery Order and security documents — not the container size/type.",
+   "fieldname": "container_number",
+   "fieldtype": "Data",
+   "label": "Container Number"
   },
   {
    "default": "1",

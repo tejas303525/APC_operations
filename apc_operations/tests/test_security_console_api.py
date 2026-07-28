@@ -8,6 +8,7 @@ the SDDN status mapping helpers, and the verify/hold/reject path with
 the Security Inspection compatibility layer.
 """
 
+import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from apc_operations.services import console_status
@@ -52,6 +53,29 @@ class TestSecurityConsoleApi(FrappeTestCase):
 			security_api.get_verified_security_delivery_draft_notes,
 			security_api.get_gate_pass_queue,
 			security_api.get_loading_dn_queue,
+			security_api.get_completed_delivery_notes,
 		]
 		for fn in endpoints:
 			self.assertIsInstance(fn(), list, fn.__name__)
+
+	def test_queue_loading_delivery_note_for_qc_whitelisted(self):
+		self.assertTrue(callable(security_api.queue_loading_delivery_note_for_qc))
+
+	def test_ensure_ldn_queued_for_qc_sets_pending_status(self):
+		ldn = frappe.db.get_value(
+			"Loading Delivery Note",
+			{
+				"security_draft_delivery_note": ["is", "set"],
+				"delivery_note_status": "Draft",
+			},
+			"name",
+		)
+		if not ldn:
+			self.skipTest("No Draft security LDN available for queue test")
+		security_api._ensure_ldn_queued_for_qc(ldn)
+		status = frappe.db.get_value("Loading Delivery Note", ldn, "delivery_note_status")
+		self.assertEqual(status, "Pending QC")
+
+	def test_sddn_ready_for_ldn_allows_sent_to_qc(self):
+		sddn = frappe._dict({"security_status": "Sent to QC", "name": "TEST-SDDN"})
+		self.assertTrue(security_api._sddn_ready_for_ldn_creation(sddn))

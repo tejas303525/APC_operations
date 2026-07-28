@@ -41,15 +41,6 @@ def get_transport_permission(user):
     if _has_role(user, "Shipping Manager"):
         return "(`tabTransport Schedule`.transport_status != 'Cancelled')"
 
-    if _has_role(user, "Security Manager", "Security User"):
-        return (
-            "`tabTransport Schedule`.name IN ("
-            "SELECT DISTINCT `tabSecurity Inspection`.transportation_request "
-            "FROM `tabSecurity Inspection` "
-            "WHERE IFNULL(`tabSecurity Inspection`.transportation_request, '') != '' "
-            "AND IFNULL(`tabSecurity Inspection`.docstatus, 0) != 2)"
-        )
-
     return "1=0"
 
 
@@ -68,13 +59,5 @@ def has_transport_permission(doc, user):
     """Check if user has permission on Transport Schedule"""
     if _has_role(user, "System Manager", "Transportation Manager", "Transportation User", "Shipping Manager"):
         return True
-
-    if _has_role(user, "Security Manager", "Security User") and doc and getattr(doc, "name", None):
-        return bool(
-            frappe.db.exists(
-                "Security Inspection",
-                {"transportation_request": doc.name, "docstatus": ["!=", 2]},
-            )
-        )
 
     return False

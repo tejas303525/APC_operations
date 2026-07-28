@@ -9,9 +9,39 @@ from apc_operations.services.email_recipients import role_user_emails
 
 
 class LoadingDeliveryNote(Document):
+    def before_save(self):
+        self.compute_net_and_weight_variance()
+
     def validate(self):
         self.validate_dispatch_not_already_confirmed()
+        self.validate_dispatch_confirmation()
         self.validate_fifo_override_rows()
+
+    def compute_net_and_weight_variance(self):
+        from apc_operations.shipping.services.dispatch_validation_service import (
+            apply_weight_variance_to_ldn,
+        )
+        from apc_operations.shipping.services.uom_service import sync_commercial_fields_to_ldn
+
+        sync_commercial_fields_to_ldn(
+            self,
+            do_name=self.transport_delivery_order,
+            force_uom=True,
+        )
+        apply_weight_variance_to_ldn(self)
+
+    def validate_dispatch_confirmation(self):
+        if not self.dispatch_confirmed:
+            return
+        if self.is_new():
+            return
+        if not self.has_value_changed("dispatch_confirmed"):
+            return
+        from apc_operations.shipping.services.dispatch_validation_service import (
+            validate_delivery_note_generation,
+        )
+
+        validate_delivery_note_generation(self.name, throw=True)
 
     def validate_dispatch_not_already_confirmed(self):
         if self.dispatch_confirmed and not self.is_new():
@@ -42,11 +72,26 @@ class LoadingDeliveryNote(Document):
         return confirm_dispatch_and_deduct_stock(self.name)
 
     @frappe.whitelist()
+    def sync_batches_from_job_order(self, force=False):
+        """Copy APC Batch Allocation Detail rows from the linked Job Order."""
+        from apc_operations.services.batch_allocation import sync_loading_dn_from_job_order_allocations
+
+        return sync_loading_dn_from_job_order_allocations(self.name, force=force)
+
+    @frappe.whitelist()
     def allocate_batches_fifo(self, product=None, required_qty=None,
                                grade=None, specification=None,
                                packaging_type=None, warehouse=None):
         """Trigger FIFO batch allocation for this Loading DN."""
-        from apc_operations.services.batch_allocation import create_loading_dn_batch_allocations
+        from apc_operations.services.batch_allocation import (
+            create_loading_dn_batch_allocations,
+            sync_loading_dn_from_job_order_allocations,
+        )
+
+        sync_result = sync_loading_dn_from_job_order_allocations(self.name, force=bool(force))
+        if sync_result.get("rows"):
+            return sync_result
+
         return create_loading_dn_batch_allocations(
             loading_dn_name=self.name,
             product=product,
@@ -83,6 +128,96 @@ class LoadingDeliveryNote(Document):
         self.db_set("delivery_note_status", "COA Verified", update_modified=False)
 
         frappe.msgprint(_("All COAs verified for {0}.").format(self.name), indicator="green", alert=True)
+        return {"success": True}
+
+    @frappe.whitelist()
+    def approve_weight_variance(self):
+        """Supervisor approval when loaded net weight exceeds tolerance."""
+        allowed_roles = {"Operations Manager", "Quality Manager", "System Manager"}
+        roles = set(frappe.get_roles(frappe.session.user))
+        if not allowed_roles.intersection(roles):
+            frappe.throw(
+                _("Role Operations Manager, Quality Manager, or System Manager is required to approve weight variance."),
+                frappe.PermissionError,
+            )
+
+        if (self.weight_variance_status or "").strip() != "Requires Approval":
+            frappe.throw(_("Weight variance is within tolerance or already approved."))
+
+        self.weight_variance_status = "Approved"
+        self.weight_variance_approved_by = frappe.session.user
+        self.weight_variance_approved_on = now()
+        self.save(ignore_permissions=True)
+
+        status = None
+        if self.transport_delivery_order:
+            from apc_operations.shipping.services.dispatch_lifecycle_service import (
+                sync_dispatch_lifecycle_status,
+            )
+
+            status = sync_dispatch_lifecycle_status(
+                self.transport_delivery_order, update_modified=True
+            )
+
+        frappe.msgprint(
+            _("Weight variance approved for {0}.").format(self.name),
+            indicator="green",
+            alert=True,
+        )
+        return {"success": True, "operational_status": status}
+
+    @frappe.whitelist()
+    def qc_manager_approve(self):
+        """QC Manager approval of the DN \u2194 COA binding.
+
+        Required before the Zoho push pipeline can fire and before
+        the gate is allowed to release this truck. Role-gated by the
+        ``qc_manager_role`` setting (default: ``Quality Manager``).
+        """
+        from apc_operations.shipping.doctype.apc_operations_settings.apc_operations_settings import (
+            qc_manager_role,
+        )
+
+        if self.qc_manager_approved:
+            frappe.throw(_("Loading DN {0} is already QC-manager-approved.").format(self.name))
+
+        required_role = qc_manager_role()
+        roles = set(frappe.get_roles(frappe.session.user))
+        if required_role not in roles and "System Manager" not in roles:
+            frappe.throw(
+                _("Role {0} (or System Manager) is required to approve DN \u2194 COA binding.")
+                .format(required_role),
+                frappe.PermissionError,
+            )
+
+        if not self.final_qc_clearance:
+            frappe.throw(_("Final QC clearance must be completed before QC-manager approval."))
+
+        coa_errors = []
+        for row in (self.batch_allocations or []):
+            if not row.coa:
+                coa_errors.append(_("Row {0}: missing COA.").format(row.idx))
+                continue
+            approval = frappe.db.get_value("APC COA", row.coa, "approval_status")
+            if approval != "Approved":
+                coa_errors.append(
+                    _("Row {0}: COA {1} is not Approved (status: {2}).").format(
+                        row.idx, row.coa, approval or "Unknown"
+                    )
+                )
+        if coa_errors:
+            frappe.throw(_("DN \u2194 COA binding cannot be approved:\n") +
+                         "\n".join(f"\u2022 {e}" for e in coa_errors))
+
+        self.db_set("qc_manager_approved", 1, update_modified=False)
+        self.db_set("qc_manager_approved_by", frappe.session.user, update_modified=False)
+        self.db_set("qc_manager_approved_on", now(), update_modified=False)
+
+        frappe.msgprint(
+            _("DN \u2194 COA binding approved by QC Manager for {0}.").format(self.name),
+            indicator="green",
+            alert=True,
+        )
         return {"success": True}
 
     def sync_to_security_inspection(self):

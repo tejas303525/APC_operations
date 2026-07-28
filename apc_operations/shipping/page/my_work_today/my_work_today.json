@@ -1,0 +1,39 @@
+{
+ "creation": "2026-05-30 00:00:00.000000",
+ "doctype": "Page",
+ "module": "Shipping",
+ "name": "my-work-today",
+ "page_name": "my-work-today",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Shipping Manager"
+  },
+  {
+   "role": "Shipping User"
+  },
+  {
+   "role": "Transportation Manager"
+  },
+  {
+   "role": "Transportation User"
+  },
+  {
+   "role": "Security Manager"
+  },
+  {
+   "role": "Security User"
+  },
+  {
+   "role": "Quality Manager"
+  },
+  {
+   "role": "Quality User"
+  }
+ ],
+ "standard": "Yes",
+ "system_page": 0,
+ "title": "My Work Today"
+}

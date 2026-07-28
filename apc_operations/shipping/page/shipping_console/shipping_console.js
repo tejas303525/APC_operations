@@ -17,20 +17,23 @@ frappe.pages["shipping-console"].on_page_load = function (wrapper) {
 	router.reset({
 		title: __("Shipping"),
 		render($root) {
-			APCConsoleUI.hubButtons($root, [
+			APCConsoleUI.hubButtonsWithDailyWork($root, "shipping", [
 				{
+					queueKey: "pending_bookings",
 					label: __("Pending Bookings"),
-					subtitle: __("Vessel not assigned yet"),
+					fallback: __("Vessel not assigned yet"),
 					onClick: () => router.push(buildPendingBookingsScreen()),
 				},
 				{
+					queueKey: "pending_cros",
 					label: __("Pending CRO"),
-					subtitle: __("Vessel assigned, CRO awaited"),
+					fallback: __("Vessel assigned, CRO awaited"),
 					onClick: () => router.push(buildPendingCroScreen()),
 				},
 				{
+					queueKey: "open_cro_schedule",
 					label: __("Open CRO Schedule"),
-					subtitle: __("CRO issued — schedule + cutoffs"),
+					fallback: __("CRO issued — schedule + cutoffs"),
 					onClick: () => router.push(buildOpenCroScheduleScreen()),
 				},
 			]);
@@ -53,6 +56,7 @@ function buildPendingBookingsScreen() {
 					title: sb.job_order_number || sb.shipping_booking,
 					subtitle: sb.customer_name || sb.customer || "-",
 					body_html: `
+						${APCConsoleUI.deliveryDueKvHtml(sb)}
 						<div class="apc-kv-label">${__("POL")}</div>
 						<div>${frappe.utils.escape_html(sb.pol || "-")}</div>
 						<div class="apc-kv-label">${__("POD")}</div>
@@ -60,10 +64,10 @@ function buildPendingBookingsScreen() {
 						<div class="apc-kv-label">${__("Line")}</div>
 						<div>${frappe.utils.escape_html(sb.shipping_line || "-")}</div>
 					`,
-					badges: [
+					badges: APCConsoleUI.consoleDeliveryBadges(sb, [
 						APCConsoleUI.statusBadge(sb.booking_status, sb.booking_status === "Confirmed" ? "success" : "warn"),
 						APCConsoleUI.statusBadge(__("Vessel Missing"), "danger"),
-					],
+					]),
 					raw: sb,
 				}),
 				onCardClick: (item) =>
@@ -91,6 +95,7 @@ function buildPendingCroScreen() {
 					title: sb.job_order_number || sb.shipping_booking,
 					subtitle: sb.customer_name || sb.customer || "-",
 					body_html: `
+						${APCConsoleUI.deliveryDueKvHtml(sb)}
 						<div class="apc-kv-label">${__("Line")}</div>
 						<div>${frappe.utils.escape_html(sb.shipping_line || "-")}</div>
 						<div class="apc-kv-label">${__("Vessel")}</div>
@@ -98,12 +103,12 @@ function buildPendingCroScreen() {
 						<div class="apc-kv-label">${__("ETD")}</div>
 						<div>${APCConsoleUI.formatDate(sb.etd)}</div>
 					`,
-					badges: [
+					badges: APCConsoleUI.consoleDeliveryBadges(sb, [
 						APCConsoleUI.statusBadge(
 							sb.cro_status || "Pending",
 							sb.cro_status === "Generated" || sb.cro_status === "Issued" ? "success" : "warn"
 						),
-					],
+					]),
 					raw: sb,
 				}),
 				onCardClick: (item) =>
@@ -131,6 +136,7 @@ function buildOpenCroScheduleScreen() {
 					title: `${sb.shipping_line || "-"} • ${sb.vessel || "-"}`,
 					subtitle: `${sb.job_order_number || sb.shipping_booking}`,
 					body_html: `
+						${APCConsoleUI.deliveryDueKvHtml(sb)}
 						<div class="apc-kv-label">${__("ETD")}</div>
 						<div>${APCConsoleUI.formatDate(sb.etd)}</div>
 						<div class="apc-kv-label">${__("SI Cutoff")}</div>
@@ -142,7 +148,9 @@ function buildOpenCroScheduleScreen() {
 						<div class="apc-kv-label">${__("Containers")}</div>
 						<div>${frappe.utils.escape_html(String(sb.container_count || "-"))}</div>
 					`,
-					badges: [APCConsoleUI.statusBadge(sb.cro_status, "success")],
+					badges: APCConsoleUI.consoleDeliveryBadges(sb, [
+						APCConsoleUI.statusBadge(sb.cro_status, "success"),
+					]),
 					raw: sb,
 				}),
 				onCardClick: (item) =>
@@ -171,6 +179,7 @@ function buildOpenCroScheduleScreen() {
 const BOOKING_EDITOR_FIELDS = [
 	"shipping_line",
 	"container_type",
+	"container_number",
 	"container_count",
 	"port_of_loading",
 	"port_of_discharge",
@@ -239,6 +248,14 @@ function openBookingEditorModal(sb, refresh, opts) {
 					default: data.container_type,
 					options:
 						"\n20FT Standard\n40FT Standard\n40FT High Cube\n20FT Reefer\n40FT Reefer\n20FT Open Top\n40FT Open Top\n20FT Flat Rack\n40FT Flat Rack",
+				},
+				{ fieldtype: "Column Break" },
+				{
+					fieldtype: "Data",
+					fieldname: "container_number",
+					label: __("Container Number"),
+					description: __("Physical container ID (e.g. MSCU1234567), not the size/type."),
+					default: data.container_number,
 				},
 				{
 					fieldtype: "Int",
@@ -473,6 +490,13 @@ function openBookingEditorModal(sb, refresh, opts) {
 					});
 			},
 		});
+		if (data.job_order) {
+			apcAddJobOrderDeleteAction(d, data.job_order, () => {
+				d.hide();
+				refresh && refresh();
+			});
+		}
+
 		d.show();
 	});
 }
@@ -482,34 +506,7 @@ function openBookingEditorModal(sb, refresh, opts) {
 // ---------------------------------------------------------------------------
 
 function renderCardScreen($root, options) {
-	const { $input } = APCConsoleUI.searchRow($root, {
-		placeholder: options.searchPlaceholder,
-		onChange: () => render(),
-	});
-	const $cards = $(`<div class="apc-console-screen-cards"></div>`).appendTo($root);
-
-	let rows = [];
-
-	APCConsoleUI.loading($cards);
-	APCConsoleUI.callApi(options.listApi, options.listArgs || {})
-		.then((data) => {
-			rows = data || [];
-			render();
-		})
-		.catch((err) => APCConsoleUI.errorBlock($cards, err));
-
-	function render() {
-		const term = ($input.val() || "").trim().toLowerCase();
-		let visible = rows;
-		if (term) {
-			visible = rows.filter((r) => JSON.stringify(r).toLowerCase().indexOf(term) !== -1);
-		}
-		const items = (visible || []).map(options.toCard);
-		$cards.empty();
-		APCConsoleUI.cardList($cards, items, (item) =>
-			options.onCardClick && options.onCardClick(item)
-		);
-	}
+	return APCConsoleUI.renderCardScreen($root, options);
 }
 
 function renderKvGrid(data, pairs) {

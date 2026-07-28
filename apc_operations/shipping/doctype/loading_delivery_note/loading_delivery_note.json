@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "format:LDN-{YYYY}-{#####}",
- "creation": "2026-04-28 12:00:00.000000",
+ "creation": "2026-04-28 12:00:00",
  "default_view": "List",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -35,21 +35,66 @@
   "vehicle_details_section",
   "vehicle",
   "driver",
+  "driver_name",
+  "driver_phone",
   "column_break_3",
   "container_number",
   "seal_number",
   "material_section",
   "material_description",
-  "quantity",
-  "uom",
   "batch_allocation_section",
   "batch_allocations",
+  "transport_section",
+  "transport_delivery_order",
+  "planned_quantity",
+  "calculated_gross_kg",
+  "expected_packaging_qty",
+  "loaded_packaging_qty",
+  "quantity",
+  "uom",
+  "loading_start_time",
+  "loading_end_time",
+  "loading_bay",
+  "column_break_ldn_transport",
+  "tare_weight",
+  "tare_weight_time",
+  "gross_weight",
+  "gross_weight_time",
+  "net_weight",
+  "weighbridge_slip_no",
+  "seal_applied_by",
+  "weight_variance_section",
+  "weight_variance_qty",
+  "weight_variance_pct",
+  "weight_variance_status",
+  "package_variance_qty",
+  "package_variance_status",
+  "column_break_variance",
+  "weight_variance_approved_by",
+  "weight_variance_approved_on",
   "qc_section",
   "qc_cleared_by",
   "qc_cleared_on",
   "sent_to_qc_on",
+  "qc_manager_approved",
+  "qc_manager_approved_by",
+  "qc_manager_approved_on",
   "column_break_4",
   "qc_report_request",
+  "final_qc_clearance",
+  "final_qc_clearance_by",
+  "final_qc_clearance_on",
+  "security_final_check",
+  "security_final_check_by",
+  "security_final_check_on",
+  "erpnext_section",
+  "erpnext_delivery_note",
+  "erpnext_dn_sync_status",
+  "zoho_section",
+  "zoho_dn_id",
+  "zoho_invoice_id",
+  "zoho_invoice_url",
+  "zoho_invoice_sent_to_customer",
   "receivables_section",
   "reported_to_receivables_on",
   "reported_by",
@@ -204,8 +249,7 @@
    "default": "0",
    "fieldname": "coa_verified",
    "fieldtype": "Check",
-   "label": "COA Verified",
-   "read_only": 1
+   "label": "COA Verified"
   },
   {
    "fieldname": "coa_verified_by",
@@ -251,6 +295,18 @@
    "read_only": 1
   },
   {
+   "fieldname": "driver_name",
+   "fieldtype": "Data",
+   "label": "Driver Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "driver_phone",
+   "fieldtype": "Data",
+   "label": "Driver Phone",
+   "read_only": 1
+  },
+  {
    "fieldname": "column_break_3",
    "fieldtype": "Column Break"
   },
@@ -278,13 +334,14 @@
    "label": "Material Description"
   },
   {
-   "fetch_from": "security_inspection.quantity",
+   "allow_in_quick_entry": 1,
+   "description": "Commercial loaded quantity (same UOM as Job Order). Weighbridge net weight is stored separately in Net Weight (kg).",
    "fieldname": "quantity",
    "fieldtype": "Float",
-   "label": "Quantity"
+   "label": "Loaded Quantity"
   },
   {
-   "fetch_from": "security_inspection.uom",
+   "description": "Commercial UOM from Job Order (not weighbridge kg).",
    "fieldname": "uom",
    "fieldtype": "Link",
    "label": "UOM",
@@ -302,6 +359,156 @@
    "options": "Loading DN Batch"
   },
   {
+   "collapsible": 1,
+   "fieldname": "transport_section",
+   "fieldtype": "Section Break",
+   "label": "Transport & Weighment"
+  },
+  {
+   "fieldname": "transport_delivery_order",
+   "fieldtype": "Link",
+   "label": "Transport Delivery Order",
+   "options": "Delivery Order",
+   "read_only": 1
+  },
+  {
+   "description": "Planned gross kg (product + packaging) used for weighbridge variance.",
+   "fieldname": "planned_quantity",
+   "fieldtype": "Float",
+   "label": "Planned Gross (KG)",
+   "read_only": 1
+  },
+  {
+   "description": "Sum from Security loading entries (units × unit gross or actual kg).",
+   "fieldname": "calculated_gross_kg",
+   "fieldtype": "Float",
+   "label": "Calculated Gross (KG)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "expected_packaging_qty",
+   "fieldtype": "Int",
+   "label": "Expected Packaging Qty",
+   "read_only": 1
+  },
+  {
+   "fieldname": "loaded_packaging_qty",
+   "fieldtype": "Int",
+   "label": "Loaded Packaging Qty",
+   "read_only": 1
+  },
+  {
+   "fieldname": "loading_start_time",
+   "fieldtype": "Datetime",
+   "label": "Loading Start Time"
+  },
+  {
+   "fieldname": "loading_end_time",
+   "fieldtype": "Datetime",
+   "label": "Loading End Time"
+  },
+  {
+   "fieldname": "loading_bay",
+   "fieldtype": "Data",
+   "label": "Loading Bay"
+  },
+  {
+   "fieldname": "column_break_ldn_transport",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "tare_weight",
+   "fieldtype": "Float",
+   "label": "Tare Weight (KG)"
+  },
+  {
+   "fieldname": "tare_weight_time",
+   "fieldtype": "Datetime",
+   "label": "Tare Weight Time"
+  },
+  {
+   "fieldname": "gross_weight",
+   "fieldtype": "Float",
+   "label": "Gross Weight (KG)"
+  },
+  {
+   "fieldname": "gross_weight_time",
+   "fieldtype": "Datetime",
+   "label": "Gross Weight Time"
+  },
+  {
+   "description": "Weighbridge net load (kg), including product and packaging.",
+   "fieldname": "net_weight",
+   "fieldtype": "Float",
+   "label": "Weighbridge Net (KG)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "weighbridge_slip_no",
+   "fieldtype": "Data",
+   "label": "Weighbridge Slip No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "seal_applied_by",
+   "fieldtype": "Data",
+   "label": "Seal Applied By",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "weight_variance_section",
+   "fieldtype": "Section Break",
+   "label": "Weight Variance"
+  },
+  {
+   "description": "Weighbridge net minus planned gross kg.",
+   "fieldname": "weight_variance_qty",
+   "fieldtype": "Float",
+   "label": "Weight Variance (KG)"
+  },
+  {
+   "fieldname": "package_variance_qty",
+   "fieldtype": "Int",
+   "label": "Package Variance (Qty)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "package_variance_status",
+   "fieldtype": "Select",
+   "label": "Package Variance Status",
+   "options": "\nOK\nMismatch",
+   "read_only": 1
+  },
+  {
+   "fieldname": "weight_variance_pct",
+   "fieldtype": "Float",
+   "label": "Weight Variance (%)"
+  },
+  {
+   "default": "Within Tolerance",
+   "fieldname": "weight_variance_status",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Weight Variance Status",
+   "options": "Within Tolerance\nRequires Approval\nApproved\nRejected"
+  },
+  {
+   "fieldname": "column_break_variance",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "weight_variance_approved_by",
+   "fieldtype": "Link",
+   "label": "Variance Approved By",
+   "options": "User"
+  },
+  {
+   "fieldname": "weight_variance_approved_on",
+   "fieldtype": "Datetime",
+   "label": "Variance Approved On"
+  },
+  {
    "fieldname": "qc_section",
    "fieldtype": "Section Break",
    "label": "QC Clearance"
@@ -310,20 +517,17 @@
    "fieldname": "qc_cleared_by",
    "fieldtype": "Link",
    "label": "QC Cleared By",
-   "options": "User",
-   "read_only": 1
+   "options": "User"
   },
   {
    "fieldname": "qc_cleared_on",
    "fieldtype": "Datetime",
-   "label": "QC Cleared On",
-   "read_only": 1
+   "label": "QC Cleared On"
   },
   {
    "fieldname": "sent_to_qc_on",
    "fieldtype": "Datetime",
-   "label": "Sent to QC On",
-   "read_only": 1
+   "label": "Sent to QC On"
   },
   {
    "fieldname": "column_break_4",
@@ -333,7 +537,113 @@
    "fieldname": "qc_report_request",
    "fieldtype": "Link",
    "label": "QC Report Request",
-   "options": "QC Report Request",
+   "options": "QC Report Request"
+  },
+  {
+   "default": "0",
+   "description": "Required before Zoho push / gate release.",
+   "fieldname": "qc_manager_approved",
+   "fieldtype": "Check",
+   "label": "QC Manager Approved"
+  },
+  {
+   "fieldname": "qc_manager_approved_by",
+   "fieldtype": "Link",
+   "label": "QC Manager Approved By",
+   "options": "User"
+  },
+  {
+   "fieldname": "qc_manager_approved_on",
+   "fieldtype": "Datetime",
+   "label": "QC Manager Approved On"
+  },
+  {
+   "default": "0",
+   "description": "QC final clearance after loading \u2014 separate from QC Manager approval.",
+   "fieldname": "final_qc_clearance",
+   "fieldtype": "Check",
+   "label": "Final QC Clearance"
+  },
+  {
+   "fieldname": "final_qc_clearance_by",
+   "fieldtype": "Link",
+   "label": "Final QC Clearance By",
+   "options": "User"
+  },
+  {
+   "fieldname": "final_qc_clearance_on",
+   "fieldtype": "Datetime",
+   "label": "Final QC Clearance On"
+  },
+  {
+   "default": "0",
+   "description": "Security exit inspection completed before gate out.",
+   "fieldname": "security_final_check",
+   "fieldtype": "Check",
+   "label": "Security Final Check"
+  },
+  {
+   "fieldname": "security_final_check_by",
+   "fieldtype": "Link",
+   "label": "Security Final Check By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "security_final_check_on",
+   "fieldtype": "Datetime",
+   "label": "Security Final Check On"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "erpnext_section",
+   "fieldtype": "Section Break",
+   "label": "ERPNext Stock"
+  },
+  {
+   "fieldname": "erpnext_delivery_note",
+   "fieldtype": "Link",
+   "label": "ERPNext Delivery Note",
+   "options": "Delivery Note",
+   "read_only": 1
+  },
+  {
+   "default": "Not Synced",
+   "fieldname": "erpnext_dn_sync_status",
+   "fieldtype": "Select",
+   "label": "ERPNext DN Sync Status",
+   "options": "Not Synced\nSynced\nFailed",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "zoho_section",
+   "fieldtype": "Section Break",
+   "label": "Zoho Books"
+  },
+  {
+   "fieldname": "zoho_dn_id",
+   "fieldtype": "Data",
+   "label": "Zoho DN ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "zoho_invoice_id",
+   "fieldtype": "Data",
+   "label": "Zoho Invoice ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "zoho_invoice_url",
+   "fieldtype": "Data",
+   "label": "Zoho Invoice URL",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "zoho_invoice_sent_to_customer",
+   "fieldtype": "Check",
+   "label": "Zoho Invoice Sent to Customer",
    "read_only": 1
   },
   {
@@ -390,13 +700,12 @@
   }
  ],
  "index_web_pages_for_search": 1,
- "is_submittable": 0,
  "links": [],
- "modified": "2026-04-28 12:00:00.000000",
+ "modified": "2026-05-23 16:09:12.665381",
  "modified_by": "Administrator",
  "module": "Shipping",
  "name": "Loading Delivery Note",
- "naming_rule": "Expression",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
@@ -413,7 +722,6 @@
   },
   {
    "create": 1,
-   "delete": 0,
    "email": 1,
    "export": 1,
    "print": 1,
@@ -424,8 +732,6 @@
    "write": 1
   },
   {
-   "create": 0,
-   "delete": 0,
    "email": 1,
    "export": 1,
    "print": 1,
@@ -436,8 +742,6 @@
    "write": 1
   },
   {
-   "create": 0,
-   "delete": 0,
    "email": 1,
    "export": 1,
    "print": 1,
@@ -448,6 +752,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

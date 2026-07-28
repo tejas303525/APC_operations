@@ -3,150 +3,113 @@
 		<div>
 			<div class="bad-eyebrow">Inventory Operations</div>
 			<h2>Batch Allocation</h2>
-			<p>Assign approved FIFO batches to customer demand efficiently.</p>
+			<p>Pick a product, choose the Job Order, then allocate FIFO batches.</p>
 		</div>
 		<div class="bad-hero-actions">
-			<button class="btn btn-default btn-sm bad-clear">Clear</button>
-			<button class="btn btn-default btn-sm bad-refresh">Refresh</button>
-			<button class="btn btn-primary btn-sm bad-auto-allocate">Confirm Allocation</button>
+			<button class="btn btn-default btn-sm bad-btn-refresh">Refresh</button>
 		</div>
 	</div>
 
-	<div class="bad-kpis"></div>
-
-	<div class="bad-filters">
-		<div class="bad-filter-fields"></div>
-		<div class="bad-search-wrap">
-			<span class="bad-search-icon">Search</span>
-			<input type="search" class="form-control bad-search" placeholder="Search orders, batches, products...">
-		</div>
+	<div class="bad-step-nav">
+		<button type="button" class="bad-step-tab bad-step-tab-products active" data-step="products">1. Product Lines</button>
+		<button type="button" class="bad-step-tab bad-step-tab-job-orders" data-step="job_orders" disabled>2. Job Orders</button>
+		<button type="button" class="bad-step-tab bad-step-tab-allocate" data-step="allocate" disabled>3. Allocate Batches</button>
 	</div>
 
-	<div class="bad-alerts"></div>
+	<div class="bad-context-bar"></div>
 
-	<div class="bad-shell">
-		<div class="bad-main">
-			<div class="bad-top-grid">
-				<section class="bad-panel">
-					<div class="bad-panel-heading">
-						<div>
-							<h4>Pending Orders <span class="bad-demand-count"></span></h4>
-							<p>Oldest required dispatch first</p>
-						</div>
-						<a class="bad-view-link" href="/app/apc-sales-demand">View all orders</a>
-					</div>
-					<div class="bad-table-wrap">
-						<table class="bad-table bad-demands">
-							<thead>
-								<tr>
-									<th>Order ID</th>
-									<th>SKU</th>
-									<th>Product</th>
-									<th class="text-right">Qty Required</th>
-									<th>Due Date</th>
-									<th>Priority</th>
-									<th>Status</th>
-								</tr>
-							</thead>
-							<tbody></tbody>
-						</table>
-					</div>
-				</section>
-
-				<section class="bad-panel">
-					<div class="bad-panel-heading">
-						<div>
-							<h4>Available Batches <span class="bad-batch-count"></span></h4>
-							<p>Approved stock sorted by FIFO</p>
-						</div>
-						<a class="bad-view-link" href="/app/apc-batch">View all batches</a>
-					</div>
-					<div class="bad-table-wrap">
-						<table class="bad-table bad-batches">
-							<thead>
-								<tr>
-									<th>Batch ID</th>
-									<th>Lot No.</th>
-									<th>Warehouse</th>
-									<th class="text-right">Available Qty</th>
-									<th>Expiry Date</th>
-									<th>Quality Status</th>
-								</tr>
-							</thead>
-							<tbody></tbody>
-						</table>
-					</div>
-				</section>
-			</div>
-
-			<div class="bad-lower-grid">
-				<section class="bad-panel bad-workspace">
-					<div class="bad-panel-heading">
-						<div>
-							<h4>Allocation Workspace</h4>
-							<p class="bad-selected-summary">Select a pending order to preview allocation.</p>
-						</div>
-						<div class="bad-progress-label"><span class="bad-progress-percent">0%</span> allocated</div>
-					</div>
-					<div class="bad-progress-track">
-						<div class="bad-progress-bar"></div>
-					</div>
-					<div class="bad-workspace-meta"></div>
-					<div class="bad-preview-empty text-muted">Select a pending demand row to preview FIFO allocation.</div>
-					<div class="bad-table-wrap bad-preview-wrap">
-						<table class="bad-table bad-preview">
-							<thead>
-								<tr>
-									<th>Batch ID</th>
-									<th>Lot No.</th>
-									<th>Warehouse</th>
-									<th>Expiry Date</th>
-									<th class="text-right">Allocated Qty</th>
-									<th>Allocation %</th>
-									<th>Status</th>
-								</tr>
-							</thead>
-							<tbody></tbody>
-						</table>
-					</div>
-					<div class="bad-shortages"></div>
-				</section>
-
-				<section class="bad-panel bad-suggestions-panel">
-					<div class="bad-panel-heading">
-						<div>
-							<h4>Suggested Allocation</h4>
-							<p>Best FIFO matches</p>
-						</div>
-					</div>
-					<div class="bad-suggestions"></div>
-					<button class="btn btn-default btn-sm bad-auto-allocate bad-apply-suggestion">Apply Suggestion</button>
-				</section>
-
-				<section class="bad-panel bad-insights-panel">
-					<div class="bad-panel-heading">
-						<div>
-							<h4>Insights</h4>
-							<p>Batch utilization</p>
-						</div>
-					</div>
-					<div class="bad-donut">
-						<div class="bad-donut-ring"><span class="bad-donut-value">0</span><small>Total Batches</small></div>
-						<div class="bad-donut-legend"></div>
-					</div>
-					<div class="bad-expiry-insight"></div>
-				</section>
-			</div>
+	<section class="bad-step bad-step-products">
+		<div class="bad-toolbar">
+			<input type="search" class="form-control bad-search-products" placeholder="Search product, grade, warehouse...">
 		</div>
+		<div class="bad-table-wrap">
+			<table class="bad-table bad-products-table">
+				<thead>
+					<tr>
+						<th>Product</th>
+						<th>Grade</th>
+						<th>Spec / Packaging</th>
+						<th>Warehouse</th>
+						<th class="text-right">Pending Qty</th>
+						<th class="text-right">FIFO Stock</th>
+						<th>Job Orders</th>
+						<th>Status</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody></tbody>
+			</table>
+		</div>
+	</section>
 
-		<aside class="bad-details">
-			<div class="bad-details-heading">
+	<section class="bad-step bad-step-job-orders" style="display:none">
+		<div class="bad-panel">
+			<div class="bad-panel-heading">
 				<div>
-					<h4>Batch Details</h4>
-					<p>Select a batch to inspect stock and quality.</p>
+					<h4>Job Orders</h4>
+					<p class="bad-job-orders-subtitle"></p>
+				</div>
+				<button type="button" class="btn btn-default btn-sm bad-back-to-products">Back to Products</button>
+			</div>
+			<div class="bad-table-wrap">
+				<table class="bad-table bad-job-orders-table">
+					<thead>
+						<tr>
+							<th>Job Order</th>
+							<th>Customer</th>
+							<th>Delivery Date</th>
+							<th class="text-right">Required</th>
+							<th class="text-right">Allocated</th>
+							<th class="text-right">Pending</th>
+							<th>Status</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody></tbody>
+				</table>
+			</div>
+		</div>
+	</section>
+
+	<section class="bad-step bad-step-allocate" style="display:none">
+		<div class="bad-panel bad-workspace">
+			<div class="bad-panel-heading">
+				<div>
+					<h4 class="bad-allocate-title">Allocate Batches</h4>
+					<p class="bad-allocate-subtitle"></p>
+				</div>
+				<div class="bad-workspace-actions">
+					<button type="button" class="btn btn-default btn-sm bad-back-to-job-orders">Back to Job Orders</button>
+					<button type="button" class="btn btn-default btn-sm bad-auto-fifo">Auto FIFO</button>
+					<button type="button" class="btn btn-primary btn-sm bad-save-allocation">Save Allocation</button>
 				</div>
 			</div>
-			<div class="bad-details-content"></div>
-		</aside>
-	</div>
+
+			<div class="bad-qty-summary"></div>
+			<div class="bad-pending-track">
+				<div class="bad-progress-track"><div class="bad-progress-bar"></div></div>
+				<div class="bad-pending-label"></div>
+			</div>
+
+			<div class="bad-table-wrap">
+				<table class="bad-table bad-batch-table">
+					<thead>
+						<tr>
+							<th>FIFO</th>
+							<th>Batch</th>
+							<th>Mfg Date</th>
+							<th>Expiry</th>
+							<th class="text-right">Available</th>
+							<th class="text-right">On This Line</th>
+							<th class="text-right">Allocate Qty</th>
+							<th>COA</th>
+						</tr>
+					</thead>
+					<tbody></tbody>
+				</table>
+			</div>
+
+			<div class="bad-shortage-panel"></div>
+		</div>
+	</section>
 </div>

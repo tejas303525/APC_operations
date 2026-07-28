@@ -13,6 +13,10 @@
   "uom",
   "manufacturing_date",
   "fifo_sequence",
+  "sd_section",
+  "sales_demand",
+  "sales_demand_item",
+  "batch_allocation_detail",
   "qty_section",
   "allocated_qty",
   "dispatched_qty",
@@ -50,7 +54,7 @@
    "read_only": 1
   },
   {
-   "fetch_from": "batch.product.item_name",
+   "fetch_from": "product.item_name",
    "fieldname": "product_name",
    "fieldtype": "Data",
    "label": "Product Name",
@@ -81,6 +85,32 @@
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "FIFO Seq",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sd_section",
+   "fieldtype": "Section Break",
+   "label": "Sales Demand Linkage"
+  },
+  {
+   "fieldname": "sales_demand",
+   "fieldtype": "Link",
+   "label": "Sales Demand",
+   "options": "APC Sales Demand",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sales_demand_item",
+   "fieldtype": "Link",
+   "label": "Sales Demand Item",
+   "options": "APC Sales Demand Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "batch_allocation_detail",
+   "fieldtype": "Link",
+   "label": "Batch Allocation Detail",
+   "options": "APC Batch Allocation Detail",
    "read_only": 1
   },
   {

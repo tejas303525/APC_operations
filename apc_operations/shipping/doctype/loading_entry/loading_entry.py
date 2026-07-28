@@ -4,5 +4,5 @@
 from frappe.model.document import Document
 
 
-class APCProductPackagingConfig(Document):
+class LoadingEntry(Document):
 	pass
