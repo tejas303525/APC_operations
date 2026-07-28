@@ -1,0 +1,96 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:container_type_name",
+ "creation": "2026-07-28 00:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "container_type_name",
+  "container_size",
+  "active",
+  "max_gross_kg",
+  "description",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "container_type_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Container Type",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "description": "Base size category this variant belongs to (e.g. 20FT, 40FT).",
+   "fieldname": "container_size",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Container Size"
+  },
+  {
+   "default": "1",
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  },
+  {
+   "fieldname": "max_gross_kg",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Max Gross Weight (KG)"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-28 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Shipping",
+ "name": "APC Container Type",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Shipping User",
+   "share": 1,
+   "write": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

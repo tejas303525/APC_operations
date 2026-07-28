@@ -831,6 +831,28 @@ class JobOrder(Document):
         return self.loading_remarks or self.loading_instructions or ""
 
 
+@frappe.whitelist()
+def get_product_packaging_config(product):
+	"""Return packaging defaults for a Product, used to autofill Job Order Item rows."""
+	if not product:
+		return {}
+	config = frappe.db.get_value(
+		"APC Product Packaging Config",
+		product,
+		["packaging_type", "hs_code", "drum_carton_filling_kg", "ibc_filling_kg", "flexi_iso_filling_mt"],
+		as_dict=True,
+	)
+	if not config:
+		return {}
+	return {
+		"packaging": config.packaging_type,
+		"hs_code": config.hs_code,
+		"drum_carton_filling_kg": config.drum_carton_filling_kg,
+		"ibc_filling_kg": config.ibc_filling_kg,
+		"flexi_iso_filling_mt": config.flexi_iso_filling_mt,
+	}
+
+
 # Module-level handler functions for hooks.py doc_events
 
 def validate_job_order(doc, method):

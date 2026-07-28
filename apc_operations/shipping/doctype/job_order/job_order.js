@@ -67,6 +67,28 @@ frappe.ui.form.on("Job Order", {
 	},
 });
 
+frappe.ui.form.on("Job Order Item", {
+	item(frm, cdt, cdn) {
+		const row = locals[cdt][cdn];
+		if (!row.item) {
+			return;
+		}
+		frappe.call({
+			method: "apc_operations.shipping.doctype.job_order.job_order.get_product_packaging_config",
+			args: { product: row.item },
+			callback(r) {
+				const config = r.message || {};
+				if (config.packaging) {
+					frappe.model.set_value(cdt, cdn, "packaging", config.packaging);
+				}
+				if (config.hs_code) {
+					frappe.model.set_value(cdt, cdn, "hs_code", config.hs_code);
+				}
+			},
+		});
+	},
+});
+
 frappe.listview_settings["Job Order"] = {
 	add_fields: [
 		"commercial_movement",
