@@ -561,6 +561,33 @@ def get_container_load_capacity(
 	}
 
 
+def resolve_packaging_type_name(packing_material: str | None, packing_unit_type: str | None = None) -> str | None:
+	"""Match a packing material/unit type to a real APC Packaging Type record
+	name, so autofilled values line up with the master list shown in the
+	Packaging Type dropdown. Falls back to the raw material text when no
+	master record matches (free text is still accepted on that field)."""
+	material = normalize_packing_material(packing_material)
+	if not material and not packing_unit_type:
+		return None
+
+	filters: dict[str, Any] = {"active": 1}
+	if material:
+		filters["packing_material"] = material
+	if packing_unit_type:
+		filters["packing_unit_type"] = packing_unit_type
+
+	name = frappe.db.get_value("APC Packaging Type", filters, "name", order_by="modified desc")
+	if name:
+		return name
+	if material:
+		name = frappe.db.get_value(
+			"APC Packaging Type", {"active": 1, "packing_material": material}, "name", order_by="modified desc"
+		)
+		if name:
+			return name
+	return material
+
+
 @frappe.whitelist()
 def calculate_job_order_item_packing(item_row: dict, container_type: str | None = None) -> dict:
 	"""Client-side helper: return packing fields for a Job Order Item row.
@@ -586,7 +613,9 @@ def calculate_job_order_item_packing(item_row: dict, container_type: str | None 
 			if capacity.get("packing_unit_type"):
 				row["packing_unit_type"] = capacity["packing_unit_type"]
 			if capacity.get("packing_material") and not row.get("packaging_type"):
-				row["packaging_type"] = capacity["packing_material"]
+				row["packaging_type"] = resolve_packaging_type_name(
+					capacity["packing_material"], capacity.get("packing_unit_type")
+				)
 
 	apply_packing_fields(row)
 	return row

@@ -89,9 +89,10 @@
    "read_only_depends_on": "eval:!!doc.sales_demand_item"
   },
   {
+   "description": "Suggestions come from the APC Packaging Type master; free text is still accepted.",
    "fetch_from": "sales_demand_item.packaging_type",
    "fieldname": "packaging_type",
-   "fieldtype": "Data",
+   "fieldtype": "Autocomplete",
    "in_list_view": 1,
    "label": "Packaging Type",
    "read_only_depends_on": "eval:!!doc.sales_demand_item"

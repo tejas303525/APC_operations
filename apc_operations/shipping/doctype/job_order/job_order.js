@@ -74,6 +74,29 @@ function apc_refresh_container_number_options(frm) {
 	});
 }
 
+function apc_refresh_packaging_type_options(frm) {
+	const grid = frm.fields_dict.items && frm.fields_dict.items.grid;
+	if (!grid) {
+		return;
+	}
+	frappe.db
+		.get_list("APC Packaging Type", {
+			filters: { active: 1 },
+			fields: ["name"],
+			order_by: "name asc",
+			limit: 0,
+		})
+		.then((rows) => {
+			const options = (rows || []).map((r) => r.name).join("\n");
+			grid.update_docfield_property("packaging_type", "options", options);
+			(grid.grid_rows || []).forEach((row) => {
+				if (row.refresh_field) {
+					row.refresh_field("packaging_type");
+				}
+			});
+		});
+}
+
 frappe.ui.form.on("Job Order", {
 	setup(frm) {
 		frm.set_query("bank_account", () => ({
@@ -83,6 +106,7 @@ frappe.ui.form.on("Job Order", {
 
 	onload(frm) {
 		apc_refresh_container_number_options(frm);
+		apc_refresh_packaging_type_options(frm);
 	},
 
 	container_type(frm) {
@@ -108,6 +132,7 @@ frappe.ui.form.on("Job Order", {
 	refresh(frm) {
 		toggle_counterparty_visibility(frm);
 		apc_refresh_container_number_options(frm);
+		apc_refresh_packaging_type_options(frm);
 		renderJobOrderContainerCapacitySummary(frm);
 
 		const bank_account = (frm.doc.bank_account || "").trim();

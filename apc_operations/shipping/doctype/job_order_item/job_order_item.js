@@ -85,5 +85,6 @@ frappe.ui.form.on("Job Order Item", {
 	},
 	items_add(frm) {
 		apc_refresh_container_number_options(frm);
+		apc_refresh_packaging_type_options(frm);
 	},
 });
