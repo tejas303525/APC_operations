@@ -8,35 +8,48 @@
   "sales_demand_item",
   "item",
   "item_name",
+  "product_name",
   "grade",
   "specification",
   "packaging_type",
+  "packing_material",
   "packing_unit_type",
   "warehouse",
   "packaging",
   "quantity",
+  "planned_container_no",
   "uom",
   "packing_section",
   "packing_profile",
+  "capacity_load_mode",
   "product_fill_kg",
+  "ibc_fill_kg",
+  "flexi_fill_mt",
+  "iso_fill_mt",
+  "bulk_fill_mt",
   "empty_packaging_kg",
   "unit_gross_kg",
+  "profile_status",
+  "profile_message",
   "column_break_packing",
   "packaging_qty",
   "packaging_qty_override",
   "planned_product_kg",
+  "planned_packaging_tare_kg",
   "planned_gross_kg",
+  "planned_cargo_gross_kg",
   "net_weight",
+  "gross_weight",
   "hs_code",
   "description"
  ],
  "fields": [
   {
+   "description": "Optional link to the originating APC Sales Demand Item. When set, grade / specification / packaging type / warehouse below are inherited and locked.",
    "fieldname": "sales_demand_item",
    "fieldtype": "Link",
    "label": "Sales Demand Item",
-   "options": "APC Sales Demand Item",
-   "description": "Optional link to the originating APC Sales Demand Item. When set, grade / specification / packaging type / warehouse below are inherited and locked."
+   "options": "APC Sales Demand Item"
   },
   {
    "fieldname": "item",
@@ -56,10 +69,15 @@
    "read_only": 1
   },
   {
+   "fieldname": "product_name",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Product Name (legacy)"
+  },
+  {
    "fetch_from": "sales_demand_item.grade",
    "fieldname": "grade",
    "fieldtype": "Data",
-   "in_list_view": 1,
    "label": "Grade",
    "read_only_depends_on": "eval:!!doc.sales_demand_item"
   },
@@ -74,13 +92,19 @@
    "fetch_from": "sales_demand_item.packaging_type",
    "fieldname": "packaging_type",
    "fieldtype": "Data",
-   "label": "Packing Material",
+   "in_list_view": 1,
+   "label": "Packaging Type",
    "read_only_depends_on": "eval:!!doc.sales_demand_item"
+  },
+  {
+   "fieldname": "packing_material",
+   "fieldtype": "Select",
+   "label": "Packing Material",
+   "options": "\nSteel\nHDPE\nCartons\nBags\nFlexi\nISO\nOther"
   },
   {
    "fieldname": "packing_unit_type",
    "fieldtype": "Select",
-   "in_list_view": 1,
    "label": "Packing Unit Type",
    "options": "\nDrum\nIBC\nBag\nCarton\nFlexi\nISO\nBulk"
   },
@@ -93,10 +117,9 @@
    "read_only_depends_on": "eval:!!doc.sales_demand_item"
   },
   {
-   "fieldname": "description",
-   "fieldtype": "Text",
-   "in_list_view": 1,
-   "label": "Description"
+   "fieldname": "packaging",
+   "fieldtype": "Data",
+   "label": "Packaging (legacy)"
   },
   {
    "fieldname": "quantity",
@@ -104,6 +127,12 @@
    "in_list_view": 1,
    "label": "Quantity",
    "reqd": 1
+  },
+  {
+   "fieldname": "planned_container_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Planned Container No"
   },
   {
    "fieldname": "uom",
@@ -126,10 +155,44 @@
    "read_only": 1
   },
   {
+   "fieldname": "capacity_load_mode",
+   "fieldtype": "Select",
+   "label": "Capacity Load Mode",
+   "options": "\nPalletised Drums\nNon-Pallet Drums\nIBC\nFlexi\nBags"
+  },
+  {
    "description": "Product net weight per packing unit from matrix.",
    "fieldname": "product_fill_kg",
    "fieldtype": "Float",
    "label": "Product Fill (KG)",
+   "read_only": 1
+  },
+  {
+   "description": "Product net weight per IBC from the packing matrix.",
+   "fieldname": "ibc_fill_kg",
+   "fieldtype": "Float",
+   "label": "IBC Fill (KG)",
+   "read_only": 1
+  },
+  {
+   "description": "Product net weight per flexi tank from the packing matrix.",
+   "fieldname": "flexi_fill_mt",
+   "fieldtype": "Float",
+   "label": "Flexi Fill (MT)",
+   "read_only": 1
+  },
+  {
+   "description": "Product net weight per ISO tank from the packing matrix.",
+   "fieldname": "iso_fill_mt",
+   "fieldtype": "Float",
+   "label": "ISO Tank Fill (MT)",
+   "read_only": 1
+  },
+  {
+   "description": "Product net weight per bulk load from the packing matrix.",
+   "fieldname": "bulk_fill_mt",
+   "fieldtype": "Float",
+   "label": "Bulk Fill (MT)",
    "read_only": 1
   },
   {
@@ -146,11 +209,23 @@
    "read_only": 1
   },
   {
+   "fieldname": "profile_status",
+   "fieldtype": "Data",
+   "label": "Profile Status",
+   "read_only": 1
+  },
+  {
+   "fieldname": "profile_message",
+   "fieldtype": "Small Text",
+   "label": "Profile Message",
+   "read_only": 1
+  },
+  {
    "fieldname": "column_break_packing",
    "fieldtype": "Column Break"
   },
   {
-   "description": "Autofill from commercial qty ÷ product fill; override when needed.",
+   "description": "Autofill from commercial qty \u00f7 product fill; override when needed.",
    "fieldname": "packaging_qty",
    "fieldtype": "Int",
    "in_list_view": 1,
@@ -170,11 +245,23 @@
    "read_only": 1
   },
   {
+   "fieldname": "planned_packaging_tare_kg",
+   "fieldtype": "Float",
+   "label": "Planned Packaging Tare (KG)",
+   "read_only": 1
+  },
+  {
    "description": "Expected loaded weight including packaging (for weighbridge).",
    "fieldname": "planned_gross_kg",
    "fieldtype": "Float",
-   "in_list_view": 1,
    "label": "Planned Gross (KG)",
+   "read_only": 1
+  },
+  {
+   "description": "Planned product weight plus packaging weight (cargo gross).",
+   "fieldname": "planned_cargo_gross_kg",
+   "fieldtype": "Float",
+   "label": "Product + Packaging KG",
    "read_only": 1
   },
   {
@@ -185,14 +272,20 @@
    "read_only": 1
   },
   {
-   "fieldname": "packaging",
-   "fieldtype": "Data",
-   "label": "Packaging (legacy)"
+   "fieldname": "gross_weight",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "Gross Weight (legacy)"
   },
   {
    "fieldname": "hs_code",
    "fieldtype": "Data",
    "label": "HS CODE"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text",
+   "label": "Description"
   }
  ],
  "index_web_pages_for_search": 1,
