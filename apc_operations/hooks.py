@@ -166,6 +166,12 @@ fixtures = [
                 "Transportation Dashboard",
             ]]
         ]
+    },
+    {
+        "dt": "Custom Field",
+    },
+    {
+        "dt": "Property Setter",
     }
 ]
 
