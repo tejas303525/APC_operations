@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"Dcz5TvUXsx\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Shipping Console\",\"col\":4}},{\"id\":\"sec_console_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Security Console\",\"col\":4}},{\"id\":\"qc_console_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"QC Console\",\"col\":4}},{\"id\":\"fdFtCcTp_W\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"JjScDkZoO2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Create Booking\",\"col\":3}},{\"id\":\"5lWNWGDUsL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pending CRO\",\"col\":3}},{\"id\":\"vKjzXOwzUW\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Generate Transport\",\"col\":3}},{\"id\":\"HLYxAXKrG0\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"View Shipments\",\"col\":3}},{\"id\":\"sXDUMIibIg\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"vvGt-IVRTQ\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\">QUICK LINKS</span>\",\"col\":12}},{\"id\":\"CcI7fKQa_2\",\"type\":\"card\",\"data\":{\"card_name\":\"Shipping Bookings\",\"col\":4}},{\"id\":\"uZ_IeuYrub\",\"type\":\"card\",\"data\":{\"card_name\":\"Transportation\",\"col\":4}}]",
+ "content": "[{\"id\":\"Dcz5TvUXsx\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Shipping Console\",\"col\":4}},{\"id\":\"sec_console_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Security Console\",\"col\":4}},{\"id\":\"qc_console_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"QC Console\",\"col\":4}},{\"id\":\"fdFtCcTp_W\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"JjScDkZoO2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Create Booking\",\"col\":3}},{\"id\":\"5lWNWGDUsL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pending CRO\",\"col\":3}},{\"id\":\"vKjzXOwzUW\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Generate Transport\",\"col\":3}},{\"id\":\"HLYxAXKrG0\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"View Shipments\",\"col\":3}},{\"id\":\"sXDUMIibIg\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"vvGt-IVRTQ\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\">QUICK LINKS</span>\",\"col\":12}},{\"id\":\"jobOrdersCard1\",\"type\":\"card\",\"data\":{\"card_name\":\"Job Orders\",\"col\":4}},{\"id\":\"CcI7fKQa_2\",\"type\":\"card\",\"data\":{\"card_name\":\"Shipping Bookings\",\"col\":4}},{\"id\":\"uZ_IeuYrub\",\"type\":\"card\",\"data\":{\"card_name\":\"Transportation\",\"col\":4}}]",
  "creation": "2026-04-27 14:05:58.196405",
  "custom_blocks": [],
  "docstatus": 0,
@@ -13,6 +13,25 @@
  "is_hidden": 0,
  "label": "Shipping",
  "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Job Orders",
+   "link_count": 1,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Job Order",
+   "link_count": 0,
+   "link_to": "Job Order",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
   {
    "hidden": 0,
    "is_query_report": 0,
