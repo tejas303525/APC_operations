@@ -974,6 +974,15 @@ def refresh_logistics_cost_summary_api(job_order: str):
     return {"html": get_logistics_cost_html_for_job_order(job_order)}
 
 
+@frappe.whitelist()
+def refresh_container_capacity_summary_api(job_order: str):
+    from apc_operations.shipping.services.container_capacity_service import (
+        get_container_capacity_html_for_job_order,
+    )
+
+    return {"html": get_container_capacity_html_for_job_order(job_order)}
+
+
 def on_submit_job_order(doc, method):
     """Hook handler for Job Order on_submit event."""
     doc.create_or_link_operational_booking()

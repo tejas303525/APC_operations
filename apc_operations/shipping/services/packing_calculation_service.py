@@ -482,9 +482,111 @@ def apply_packing_variance_to_ldn(ldn, do: dict[str, Any] | None = None) -> None
 			ldn.package_variance_status = "Mismatch"
 
 
+# A Capacity Load Mode implies a packing unit type even before the user has
+# picked a packaging type — this is the primary signal used to resolve which
+# packing profile a container-capacity lookup should use.
+_LOAD_MODE_UNIT_TYPES = {
+	"Palletised Drums": "Drum",
+	"Non-Pallet Drums": "Drum",
+	"IBC": "IBC",
+	"Flexi": "Flexi",
+	"Bags": "Bag",
+}
+
+
+def container_size_bucket(container_type: str | None) -> str | None:
+	"""Map a Job Order's APC Container Type link to the 20FT/40FT/Truck bucket
+	used by APC Container Load Capacity."""
+	if not container_type:
+		return None
+	return frappe.db.get_value("APC Container Type", container_type, "container_size")
+
+
+def get_container_load_capacity(
+	item: str | None,
+	*,
+	packing_material: str | None = None,
+	packing_unit_type: str | None = None,
+	container_size: str | None = None,
+	load_mode: str | None = None,
+) -> dict[str, Any] | None:
+	"""Look up the drum/unit count and net MT a container holds for an item,
+	from the item's packing profile's container capacity matrix.
+
+	packing_unit_type falls back to what the load_mode implies (e.g.
+	"Palletised Drums" -> "Drum") so this resolves correctly even before a
+	packaging type has been chosen on the row.
+	"""
+	if not item or not container_size or not load_mode:
+		return None
+
+	unit = packing_unit_type or _LOAD_MODE_UNIT_TYPES.get(load_mode)
+
+	profile_filters: dict[str, Any] = {"item": item, "active": 1}
+	if unit:
+		profile_filters["packing_unit_type"] = unit
+	material = normalize_packing_material(packing_material)
+	if material:
+		profile_filters["packing_material"] = material
+
+	profile_names = frappe.get_all("APC Product Packing Profile", filters=profile_filters, pluck="name")
+	if not profile_names and material:
+		# Relax the material filter — the unit type (from load_mode) is the
+		# more reliable signal here.
+		relaxed = {k: v for k, v in profile_filters.items() if k != "packing_material"}
+		profile_names = frappe.get_all("APC Product Packing Profile", filters=relaxed, pluck="name")
+	if not profile_names:
+		return None
+
+	rows = frappe.get_all(
+		"APC Container Load Capacity",
+		filters={"parent": ["in", profile_names], "container_size": container_size, "load_mode": load_mode},
+		fields=["parent", "max_units", "max_product_net_mt"],
+		order_by="max_units desc, max_product_net_mt desc",
+		limit=1,
+	)
+	if not rows:
+		return None
+
+	row = rows[0]
+	profile = frappe.db.get_value(
+		"APC Product Packing Profile", row.parent, ["packing_material", "packing_unit_type"], as_dict=True
+	)
+	return {
+		"packing_profile": row.parent,
+		"packing_material": profile.packing_material if profile else None,
+		"packing_unit_type": profile.packing_unit_type if profile else None,
+		"max_units": row.max_units,
+		"max_product_net_mt": row.max_product_net_mt,
+	}
+
+
 @frappe.whitelist()
-def calculate_job_order_item_packing(item_row: dict) -> dict:
-	"""Client-side helper: return packing fields for a Job Order Item row."""
+def calculate_job_order_item_packing(item_row: dict, container_type: str | None = None) -> dict:
+	"""Client-side helper: return packing fields for a Job Order Item row.
+
+	When the row has a Capacity Load Mode set and a container_type is passed
+	(the parent Job Order's container), fill quantity/UOM from the matching
+	container's full-load capacity before running the normal packing calc —
+	e.g. Steel Drum + Palletised Drums + 20FT -> 80 drums / 14.8 MT.
+	"""
 	row = dict(item_row or {})
+	load_mode = row.get("capacity_load_mode")
+	if row.get("item") and load_mode:
+		capacity = get_container_load_capacity(
+			row.get("item"),
+			packing_material=row.get("packaging_type"),
+			packing_unit_type=row.get("packing_unit_type"),
+			container_size=container_size_bucket(container_type),
+			load_mode=load_mode,
+		)
+		if capacity and flt(capacity.get("max_product_net_mt")) > 0:
+			row["quantity"] = flt(capacity.get("max_product_net_mt"))
+			row["uom"] = "Metric Ton"
+			if capacity.get("packing_unit_type"):
+				row["packing_unit_type"] = capacity["packing_unit_type"]
+			if capacity.get("packing_material") and not row.get("packaging_type"):
+				row["packaging_type"] = capacity["packing_material"]
+
 	apply_packing_fields(row)
 	return row

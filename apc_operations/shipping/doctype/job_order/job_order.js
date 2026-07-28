@@ -33,11 +33,69 @@ function renderJobOrderLogisticsCostSummary(frm) {
 		});
 }
 
+function renderJobOrderContainerCapacitySummary(frm) {
+	if (frm.is_new() || !frm.fields_dict.container_capacity_html) {
+		return;
+	}
+	frappe
+		.call({
+			method:
+				"apc_operations.shipping.doctype.job_order.job_order.refresh_container_capacity_summary_api",
+			args: { job_order: frm.doc.name },
+		})
+		.then((r) => {
+			const html = (r.message && r.message.html) || "<p class='text-muted'>No container capacity data.</p>";
+			frm.get_field("container_capacity_html").$wrapper.html(html);
+		});
+}
+
+function apc_container_number_options(frm) {
+	const count = cint(frm.doc.container_quantity);
+	if (!count || count <= 0) {
+		return "";
+	}
+	const options = [];
+	for (let i = 1; i <= count; i++) {
+		options.push(String(i));
+	}
+	return "\n" + options.join("\n");
+}
+
+function apc_refresh_container_number_options(frm) {
+	const grid = frm.fields_dict.items && frm.fields_dict.items.grid;
+	if (!grid) {
+		return;
+	}
+	grid.update_docfield_property("planned_container_no", "options", apc_container_number_options(frm));
+	(grid.grid_rows || []).forEach((row) => {
+		if (row.refresh_field) {
+			row.refresh_field("planned_container_no");
+		}
+	});
+}
+
 frappe.ui.form.on("Job Order", {
 	setup(frm) {
 		frm.set_query("bank_account", () => ({
 			filters: { disabled: 0, is_company_account: 1 },
 		}));
+	},
+
+	onload(frm) {
+		apc_refresh_container_number_options(frm);
+	},
+
+	container_type(frm) {
+		frm.trigger("apc_refresh_container_capacity_summary");
+	},
+
+	container_quantity(frm) {
+		apc_refresh_container_number_options(frm);
+		frm.trigger("apc_refresh_container_capacity_summary");
+	},
+
+	apc_refresh_container_capacity_summary(frm) {
+		renderJobOrderContainerCapacitySummary(frm);
 	},
 
 	before_save(frm) {
@@ -49,6 +107,8 @@ frappe.ui.form.on("Job Order", {
 
 	refresh(frm) {
 		toggle_counterparty_visibility(frm);
+		apc_refresh_container_number_options(frm);
+		renderJobOrderContainerCapacitySummary(frm);
 
 		const bank_account = (frm.doc.bank_account || "").trim();
 		if (LEGACY_BANK_ACCOUNT_MAP[bank_account]) {

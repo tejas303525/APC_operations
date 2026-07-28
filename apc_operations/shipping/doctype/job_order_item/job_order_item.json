@@ -129,8 +129,9 @@
    "reqd": 1
   },
   {
+   "description": "Which planned container (1..Container Quantity) this line loads into. Options are generated from the Job Order's Container Quantity.",
    "fieldname": "planned_container_no",
-   "fieldtype": "Data",
+   "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Planned Container No"
   },
