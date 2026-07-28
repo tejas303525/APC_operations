@@ -2,7 +2,7 @@
 // For license information, please see license.txt
 
 function movement_is_import(frm) {
-	return (frm.doc.commercial_movement || "Export") === "Import";
+	return (frm.doc.commercial_movement || "Outward") === "Import";
 }
 
 function toggle_counterparty_visibility(frm) {

@@ -5,13 +5,13 @@ import frappe
 
 
 def execute():
-	"""Default all existing Job Orders to Export commercial movement."""
+	"""Default all existing Job Orders to Outward commercial movement."""
 	if not frappe.db.has_column("Job Order", "commercial_movement"):
 		return
 	frappe.db.sql(
 		"""
 		UPDATE `tabJob Order`
-		SET commercial_movement = 'Export'
+		SET commercial_movement = 'Outward'
 		WHERE IFNULL(commercial_movement, '') = ''
 		"""
 	)

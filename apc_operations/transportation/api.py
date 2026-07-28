@@ -150,6 +150,23 @@ def _job_order_summary(jo_name: str) -> dict[str, Any]:
 	)
 
 
+def _job_order_product_summary(jo_name: str) -> str:
+	"""Comma-separated product names for a Job Order's items."""
+	names = frappe.get_all(
+		"Job Order Item",
+		filters={"parent": jo_name},
+		fields=["item_name"],
+		order_by="idx asc",
+		pluck="item_name",
+	)
+	names = [n for n in names if n]
+	if not names:
+		return "-"
+	if len(names) > 2:
+		return f"{names[0]}, {names[1]} +{len(names) - 2} more"
+	return ", ".join(names)
+
+
 def _display_job_order(value: Any, fallback: str | None = None) -> str:
 	"""Return the human-readable job order number when available."""
 	jo_name = value if isinstance(value, str) else None
@@ -165,7 +182,7 @@ def _active_transport_for_job_order(
 	"""Latest non-cancelled Transport Schedule for a Job Order.
 
 	When ``transport_type`` is omitted, use the Job Order's ``commercial_movement``
-	to pick the primary leg (Outward for Export, Inward for Import).
+	to pick the primary leg (Outward for Outward, Inward for Import).
 	"""
 	if transport_type:
 		ttype = transport_type
@@ -174,7 +191,7 @@ def _active_transport_for_job_order(
 			get_primary_transport_type_for_job_order,
 		)
 
-		movement = frappe.db.get_value("Job Order", jo_name, "commercial_movement") or "Export"
+		movement = frappe.db.get_value("Job Order", jo_name, "commercial_movement") or "Outward"
 		ttype = get_primary_transport_type_for_job_order(movement)
 
 	rows = frappe.get_all(
@@ -272,7 +289,7 @@ def get_inward_import_list() -> list[dict[str, Any]]:
 	for jo in jos:
 		if (jo.get("mode_of_transport") or "") != "Sea":
 			continue
-		if (jo.get("commercial_movement") or "Export") != "Import":
+		if (jo.get("commercial_movement") or "Outward") != "Import":
 			continue
 		# Filter to inward (heuristic: incoterm in EXW/FCA/FOB from APC POV
 		# is outward; for now use the existing transport_type via TS).
@@ -296,6 +313,7 @@ def get_inward_import_list() -> list[dict[str, Any]]:
 				"vessel_status_tone": console_status.vessel_status_tone(vessel_label),
 				"transport_status": ts.get("transport_status"),
 				"container_number": ts.get("container_type"),
+				"products": _job_order_product_summary(jo["name"]),
 			}
 		)
 	return out
@@ -329,6 +347,7 @@ def get_inward_import_detail(job_order: str) -> dict[str, Any]:
 		"transport_schedule": ts.get("name"),
 		"vessel_name": sb.get("vessel_name"),
 		"container_number": ts.get("container_type"),
+		"products": _job_order_product_summary(job_order),
 		"vehicle_number": vd["vehicle_number"],
 		"driver_name": vd["driver_name"],
 		"driver_contact": vd["driver_contact"],
@@ -368,7 +387,7 @@ def update_inward_import_tracking(
 	if not job_order:
 		frappe.throw(_("job_order is required"))
 
-	movement = frappe.db.get_value("Job Order", job_order, "commercial_movement") or "Export"
+	movement = frappe.db.get_value("Job Order", job_order, "commercial_movement") or "Outward"
 	if movement != "Import":
 		frappe.throw(_("Job Order {0} is not an Import movement.").format(job_order))
 
@@ -942,7 +961,7 @@ def create_security_delivery_draft_note(job_order: str) -> dict[str, Any]:
 	if not job_order:
 		frappe.throw(_("job_order is required"))
 
-	movement = frappe.db.get_value("Job Order", job_order, "commercial_movement") or "Export"
+	movement = frappe.db.get_value("Job Order", job_order, "commercial_movement") or "Outward"
 	transport_type = "Inward" if movement == "Import" else "Outward"
 	ts_row = _active_transport_for_job_order(job_order, transport_type)
 	if not ts_row:

@@ -284,7 +284,7 @@ def create_job_order_from_pfi(pfi_id):
 
         # Create Job Order
         job_order = frappe.new_doc("Job Order")
-        job_order.commercial_movement = "Export"
+        job_order.commercial_movement = "Outward"
         job_order.customer = sales_demand.customer
         job_order.date = sales_demand.sales_order_date or today()
         job_order.status = "Draft"

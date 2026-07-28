@@ -379,7 +379,7 @@ SHIPPING_BOOKING_MODES = {"sea", "air"}
 def get_incoterm_rule(incoterm, movement=None):
     """Return the rules dict for a given incoterm and commercial movement.
 
-    ``movement``: ``Export`` (default), ``Import``, or None to infer Export.
+    ``movement``: ``Outward`` (default), ``Import``, or None to infer Outward.
     """
     if not incoterm:
         return None
@@ -405,15 +405,15 @@ class JobOrder(Document):
         self.validate_insurance_on_confirm()
 
     def validate_commercial_counterparty(self):
-        movement = (self.commercial_movement or "").strip() or "Export"
-        if movement == "Export":
+        movement = (self.commercial_movement or "").strip() or "Outward"
+        if movement == "Outward":
             if not self.customer:
-                frappe.throw(_("Customer is mandatory for Export Job Orders."))
+                frappe.throw(_("Customer is mandatory for Outward Job Orders."))
         elif movement == "Import":
             if not self.supplier:
                 frappe.throw(_("Supplier is mandatory for Import Job Orders."))
         else:
-            frappe.throw(_("Commercial movement must be Export or Import."))
+            frappe.throw(_("Commercial movement must be Outward or Import."))
 
     def validate_import_sea_ports(self):
         if not self._is_import_movement():
@@ -704,7 +704,7 @@ class JobOrder(Document):
         For **Import** Job Orders, the primary ``transport_schedule`` is Inward;
         this method ensures one exists and links it on the Job Order.
 
-        For **Export** Job Orders, the primary link stays Outward; this only
+        For **Outward** Job Orders, the primary link stays Outward; this only
         creates a secondary Inward leg when needed and does **not** replace
         ``transport_schedule``.
         """

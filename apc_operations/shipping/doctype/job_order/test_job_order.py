@@ -137,16 +137,16 @@ class TestJobOrder(FrappeTestCase):
         with self.assertRaises(frappe.ValidationError):
             jo.create_inward_transport_schedule()
 
-    def test_default_commercial_movement_is_export(self):
+    def test_default_commercial_movement_is_outward(self):
         jo = make_job_order()
-        self.assertEqual(jo.commercial_movement, "Export")
+        self.assertEqual(jo.commercial_movement, "Outward")
 
-    def test_export_requires_customer(self):
+    def test_outward_requires_customer(self):
         with self.assertRaises(frappe.ValidationError):
             frappe.get_doc(
                 {
                     "doctype": "Job Order",
-                    "commercial_movement": "Export",
+                    "commercial_movement": "Outward",
                     "date": today(),
                     "status": "Draft",
                     "terms_of_delivery": "EXW",
@@ -250,12 +250,12 @@ def make_job_order(**overrides):
         "status": "Draft",
         "terms_of_delivery": "EXW",
         "mode_of_transport": "Road",
-        "commercial_movement": "Export",
+        "commercial_movement": "Outward",
         "port_of_loading": port_of_loading,
         "port_of_discharge": port_of_discharge,
     }
     values.update(overrides)
-    if values.get("commercial_movement") == "Export" and not values.get("customer"):
+    if values.get("commercial_movement") == "Outward" and not values.get("customer"):
         values["customer"] = _ensure_customer()
     if values.get("commercial_movement") == "Import" and "supplier" not in overrides:
         values["supplier"] = _ensure_supplier()

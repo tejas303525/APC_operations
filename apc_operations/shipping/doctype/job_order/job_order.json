@@ -6,22 +6,35 @@
  "engine": "InnoDB",
  "field_order": [
   "job_order_number",
+  "is_import_purchase_order",
+  "source_transport_schedule",
   "commercial_movement",
+  "shipment_type",
   "customer",
   "customer_name",
+  "sales_demand",
   "supplier",
   "supplier_name",
+  "linked_export_job_order",
+  "source_import_job_order",
+  "zoho_import_receipt_id",
   "date",
   "status",
   "col_break_1",
   "payment_terms",
   "pi_number",
-  "bank",
+  "bank_account",
   "currency",
   "section_items",
   "items",
   "section_logistics",
   "mode_of_transport",
+  "local_delivery_type",
+  "export_load_type",
+  "import_load_type",
+  "container_type",
+  "container_quantity",
+  "container_capacity_html",
   "col_break_2",
   "port_of_loading",
   "port_of_discharge",
@@ -55,24 +68,55 @@
   "col_break_3",
   "pallet_instructions",
   "labelling",
+  "section_logistics_costs",
+  "logistics_cost_html",
   "section_documents",
   "documents_required"
  ],
  "fields": [
   {
-   "default": "Export",
+   "fieldname": "job_order_number",
+   "fieldtype": "Data",
+   "label": "Job order number"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_import_purchase_order",
+   "fieldtype": "Check",
+   "label": "Import Purchase Order",
+   "read_only": 1
+  },
+  {
+   "fieldname": "source_transport_schedule",
+   "fieldtype": "Link",
+   "label": "Source Transport Schedule",
+   "options": "Transport Schedule",
+   "read_only": 1
+  },
+  {
+   "default": "Outward",
    "fieldname": "commercial_movement",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Commercial movement",
-   "options": "Export\nImport",
+   "options": "Outward\nImport",
+   "reqd": 1
+  },
+  {
+   "default": "Export",
+   "description": "Operational loading type. Separate from commercial movement.",
+   "fieldname": "shipment_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Shipment Type",
+   "options": "Local\nExport",
    "reqd": 1
   },
   {
    "fieldname": "customer",
    "fieldtype": "Link",
    "label": "Customer",
-   "mandatory_depends_on": "eval:doc.commercial_movement=='Export'",
+   "mandatory_depends_on": "eval:doc.commercial_movement=='Outward'",
    "options": "Customer",
    "search_index": 1
   },
@@ -82,6 +126,13 @@
    "fieldtype": "Data",
    "label": "Customer Name",
    "read_only": 1
+  },
+  {
+   "description": "Optional link to the originating APC Sales Demand. Mandatory when APC Operations Settings.require_sales_demand_on_job_order is on.",
+   "fieldname": "sales_demand",
+   "fieldtype": "Link",
+   "label": "Sales Demand",
+   "options": "APC Sales Demand"
   },
   {
    "fieldname": "supplier",
@@ -99,9 +150,31 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval:doc.commercial_movement=='Import'",
+   "fieldname": "linked_export_job_order",
+   "fieldtype": "Link",
+   "label": "Linked Export Job Order",
+   "options": "Job Order"
+  },
+  {
+   "depends_on": "eval:doc.commercial_movement=='Outward'",
+   "fieldname": "source_import_job_order",
+   "fieldtype": "Link",
+   "label": "Source Import Job Order",
+   "options": "Job Order",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.commercial_movement=='Import'",
+   "fieldname": "zoho_import_receipt_id",
+   "fieldtype": "Data",
+   "label": "Zoho Import Receipt ID",
+   "read_only": 1
+  },
+  {
    "fieldname": "date",
    "fieldtype": "Date",
-   "label": "Date",
+   "label": "Date of delivery",
    "reqd": 1
   },
   {
@@ -118,15 +191,27 @@
   },
   {
    "fieldname": "payment_terms",
-   "fieldtype": "Select",
+   "fieldtype": "Link",
    "label": "Payment Terms",
-   "options": "100% CASH /TT/CDC IN ADVANCE\n100% cash In Advance Before Shipment/Loading\n100% CASH/TT/CDC AGAINST DELIVERY\n20% Advance Balance 80% against scan copy docs\n25% Advance and Balance 75% CAD at sight thru bank\n30 DAYS FROM INVOICE/DELIVERY DATE\n30 DAYS PDC AGAINST DELIVERY\n30 DAYS PDC IN ADVANCE\n30% Advance Balance 70% against scan copy docs\n50% Advance and Balance 50% CAD at sight thru bank\n50% Advance Balance 50% against scan copy docs\n60 DAYS FROM INVOICE /DELIVERY DATE\n60 DAYS PDC AGAINST DELIVERY\n60 DAYS PDC IN ADVANCE\n90 DAYS FROM INVOICE/ DELIVERY DATE\n90 DAYS PDC AGAINST DELIVERY\n90 DAYS PDC IN ADVANCE\nAvalised Draft 30 Days from Bill of Lading date\nAvalised Draft 60 Days from Bill of Lading date\nAvalised Draft 90 Days from Bill of Lading date\nCash against Documents (CAD)\nCash against Documents (CAD) Payable at sight through Bank\nConfirm Letter of credit payable at 30 days from Bill of Lading date\nConfirm Letter of credit payable at 60 days from Bill of Lading date\nConfirm Letter of credit payable at 90 days from Bill of Lading date\nIrrevocable Letter of Credit payable at sight\nPayable at 30 days from Bill of Lading Date thru Bank\nPayable at 30 days from Shipped on Board Date\nPayable at 60 days from Bill of Lading Date thru Bank\nPayable at 60 days from Shipped on Board Date\nPayable at 90 days from Bill of Lading Date thru Bank\nPayable at 90 days from Shipped on Board Date"
+   "options": "Payment Term"
   },
   {
    "fieldname": "pi_number",
    "fieldtype": "Data",
-   "label": "P.I. Number",
-   "search_index": 1
+   "label": "P.I. Number"
+  },
+  {
+   "description": "APC company bank account for PI / payment instructions (ERPNext Bank Account).",
+   "fieldname": "bank_account",
+   "fieldtype": "Link",
+   "label": "Bank Account",
+   "options": "Bank Account"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Select",
+   "label": "Currency",
+   "options": "AED\nEUR\nUSD"
   },
   {
    "fieldname": "section_items",
@@ -151,6 +236,53 @@
    "options": "\nSea\nAir\nRoad\nRail"
   },
   {
+   "default": "Local Delivery",
+   "depends_on": "eval:doc.shipment_type=='Local'",
+   "description": "Road movement category used when creating the Transport Schedule.",
+   "fieldname": "local_delivery_type",
+   "fieldtype": "Select",
+   "label": "Local Delivery Type",
+   "mandatory_depends_on": "eval:doc.shipment_type=='Local'",
+   "options": "Local Delivery\nTanker Delivery\nTrailer Delivery"
+  },
+  {
+   "default": "Full Container Single Product",
+   "depends_on": "eval:doc.shipment_type=='Export' && doc.commercial_movement!='Import'",
+   "fieldname": "export_load_type",
+   "fieldtype": "Select",
+   "label": "Export Load Type",
+   "options": "Full Container Single Product\nMixed Product Load"
+  },
+  {
+   "default": "Full Container Single Product",
+   "depends_on": "eval:doc.shipment_type=='Export' && doc.commercial_movement=='Import'",
+   "fieldname": "import_load_type",
+   "fieldtype": "Select",
+   "label": "Import Load Type",
+   "options": "Full Container Single Product\nMixed Product Load"
+  },
+  {
+   "depends_on": "eval:doc.shipment_type=='Export'",
+   "fieldname": "container_type",
+   "fieldtype": "Link",
+   "label": "Container Type",
+   "mandatory_depends_on": "eval:doc.shipment_type=='Export'",
+   "options": "APC Container Type"
+  },
+  {
+   "depends_on": "eval:doc.shipment_type=='Export'",
+   "fieldname": "container_quantity",
+   "fieldtype": "Int",
+   "label": "Container Quantity",
+   "mandatory_depends_on": "eval:doc.shipment_type=='Export'"
+  },
+  {
+   "depends_on": "eval:doc.shipment_type=='Export' && doc.export_load_type=='Mixed Product Load'",
+   "fieldname": "container_capacity_html",
+   "fieldtype": "HTML",
+   "label": "Container Capacity Summary"
+  },
+  {
    "fieldname": "col_break_2",
    "fieldtype": "Column Break"
   },
@@ -173,66 +305,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Terms of Delivery/Incoterms",
-   "options": "\nEXW\nFCA\nFOB\nCFR\nCIF\nCPT\nCIP\nDAP\nDPU\nDDP"
-  },
-  {
-   "default": "Pending Review",
-   "fieldname": "transport_requirement_status",
-   "fieldtype": "Select",
-   "label": "Transport Requirement Status",
-   "options": "Pending Review\nTransport Not Required\nTransport Required\nCustomer Arranged\nBuyer Arranged\nPending Shipping Booking\nPending Transport Request",
-   "read_only": 1
-  },
-  {
-   "fieldname": "transport_requirement_notes",
-   "fieldtype": "Small Text",
-   "label": "Transport Requirement Notes",
-   "read_only": 1
-  },
-  {
-   "fieldname": "section_loading",
-   "fieldtype": "Section Break",
-   "label": "Loading Details"
-  },
-  {
-   "fieldname": "loading_instructions",
-   "fieldtype": "Text",
-   "label": "Loading Instructions"
-  },
-  {
-   "fieldname": "loading_remarks",
-   "fieldtype": "Text",
-   "label": "Loading Remarks"
-  },
-  {
-   "fieldname": "col_break_3",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "pallet_instructions",
-   "fieldtype": "Check",
-   "label": "Pallet Instructions"
-  },
-  {
-   "fieldname": "labelling",
-   "fieldtype": "Small Text",
-   "label": "Labelling"
-  },
-  {
-   "fieldname": "section_documents",
-   "fieldtype": "Section Break",
-   "label": "Documents"
-  },
-  {
-   "fieldname": "documents_required",
-   "fieldtype": "Text Editor",
-   "label": "Documents Required"
-  },
-  {
-   "fieldname": "job_order_number",
-   "fieldtype": "Data",
-   "label": "Job order number"
+   "options": "\nEXW\nFCA\nFOB\nCFR\nCIF\nCPT\nCIP\nDAP\nDDU\nDPU\nDDP"
   },
   {
    "fieldname": "booking_requirement",
@@ -284,6 +357,20 @@
    "in_list_view": 1,
    "label": "Shipping Status",
    "options": "Pending Review\nNot Required\nPending Shipping Booking\nPending Shipping Review\nSupplier Arranged\nIn Progress\nCompleted\nCancelled",
+   "read_only": 1
+  },
+  {
+   "default": "Pending Review",
+   "fieldname": "transport_requirement_status",
+   "fieldtype": "Select",
+   "label": "Transport Requirement Status",
+   "options": "Pending Review\nTransport Not Required\nTransport Required\nCustomer Arranged\nBuyer Arranged\nPending Shipping Booking\nPending Transport Request",
+   "read_only": 1
+  },
+  {
+   "fieldname": "transport_requirement_notes",
+   "fieldtype": "Small Text",
+   "label": "Transport Requirement Notes",
    "read_only": 1
   },
   {
@@ -383,16 +470,56 @@
    "options": "Currency"
   },
   {
-   "fieldname": "bank",
-   "fieldtype": "Select",
-   "label": "BANK",
-   "options": "HABIB"
+   "fieldname": "section_loading",
+   "fieldtype": "Section Break",
+   "label": "Loading Details"
   },
   {
-   "fieldname": "currency",
-   "fieldtype": "Select",
-   "label": "Currency",
-   "options": "AED\nEUR\nUSD"
+   "fieldname": "loading_instructions",
+   "fieldtype": "Text",
+   "label": "Loading Instructions"
+  },
+  {
+   "fieldname": "loading_remarks",
+   "fieldtype": "Text",
+   "label": "Loading Remarks"
+  },
+  {
+   "fieldname": "col_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "pallet_instructions",
+   "fieldtype": "Check",
+   "label": "Pallet Instructions"
+  },
+  {
+   "fieldname": "labelling",
+   "fieldtype": "Small Text",
+   "label": "Labelling"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_logistics_costs",
+   "fieldtype": "Section Break",
+   "label": "Logistics Costs (Computed)"
+  },
+  {
+   "fieldname": "logistics_cost_html",
+   "fieldtype": "HTML",
+   "label": "Cost Summary",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_documents",
+   "fieldtype": "Section Break",
+   "label": "Documents"
+  },
+  {
+   "fieldname": "documents_required",
+   "fieldtype": "Text Editor",
+   "label": "Documents Required"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -408,7 +535,7 @@
    "link_fieldname": "job_order"
   }
  ],
- "modified": "2026-05-06 10:42:12.757495",
+ "modified": "2026-07-28 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Shipping",
  "name": "Job Order",

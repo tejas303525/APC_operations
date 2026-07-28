@@ -119,6 +119,8 @@ function buildInwardImportScreen() {
 					title: item.job_order_number || item.name,
 					subtitle: item.customer_name || item.customer || "-",
 					body_html: `
+						<div class="apc-kv-label">${__("Product")}</div>
+						<div>${frappe.utils.escape_html(item.products || "-")}</div>
 						<div class="apc-kv-label">${__("ETA")}</div>
 						<div>${APCConsoleUI.formatDate(item.eta)}</div>
 						<div class="apc-kv-label">${__("Container")}</div>
@@ -177,6 +179,7 @@ function openInwardImportModal(item, onClose) {
 							renderKvGrid(data, [
 								["Job Order", data.job_order_number || data.job_order],
 								["Supplier", counterparty],
+									["Product", data.products || "-"],
 								["ETA", APCConsoleUI.formatDate(data.eta)],
 								["Cutoff Date", APCConsoleUI.formatDate(data.cutoff_date)],
 								["POL", data.port_of_loading],
