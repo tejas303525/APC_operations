@@ -15,6 +15,7 @@ function apc_recalc_job_order_item_packing(frm, cdt, cdn) {
 			}
 			const data = r.message;
 			for (const field of [
+				"packaging_type",
 				"packing_unit_type",
 				"packing_profile",
 				"quantity",
