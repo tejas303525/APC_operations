@@ -1,0 +1,272 @@
+{
+ "actions": [],
+ "creation": "2026-04-27 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "delivery_order",
+  "job_order",
+  "column_break_do",
+  "overall_status",
+  "block_reason",
+  "security_section",
+  "security_status",
+  "security_checked_by",
+  "security_check_time",
+  "security_remarks",
+  "qc_section",
+  "qc_status",
+  "qc_pre_check_status",
+  "qc_checked_by",
+  "qc_check_time",
+  "qc_remarks",
+  "failure_reason",
+  "qc_detail_section",
+  "product_confirmed",
+  "batch_no",
+  "coa_status",
+  "column_break_qc",
+  "tanker_cleanliness",
+  "odour_check",
+  "seal_condition_before_loading"
+ ],
+ "fields": [
+  {
+   "fieldname": "delivery_order",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Delivery Order",
+   "options": "Delivery Order",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "delivery_order.job_order",
+   "fieldname": "job_order",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Job Order",
+   "options": "Job Order",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_do",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "overall_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Overall Status",
+   "options": "Pending\nAuthorized\nBlocked",
+   "read_only": 1
+  },
+  {
+   "description": "Why overall_status is Blocked - set automatically from the QC/Security failure or hold reason.",
+   "fieldname": "block_reason",
+   "fieldtype": "Small Text",
+   "label": "Block Reason",
+   "read_only": 1
+  },
+  {
+   "fieldname": "security_section",
+   "fieldtype": "Section Break",
+   "label": "Security Pre-Check"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "security_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Security Status",
+   "options": "Pending\nPassed\nFailed"
+  },
+  {
+   "fieldname": "security_checked_by",
+   "fieldtype": "Link",
+   "label": "Security Checked By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "security_check_time",
+   "fieldtype": "Datetime",
+   "label": "Security Check Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "security_remarks",
+   "fieldtype": "Small Text",
+   "label": "Security Remarks"
+  },
+  {
+   "fieldname": "qc_section",
+   "fieldtype": "Section Break",
+   "label": "QC Pre-Check"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "qc_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "QC Status",
+   "options": "Pending\nPassed\nFailed"
+  },
+  {
+   "default": "Pending",
+   "description": "Mirrors qc_status, plus an On Hold state the plain qc_status field doesn't carry.",
+   "fieldname": "qc_pre_check_status",
+   "fieldtype": "Select",
+   "label": "QC Pre-Check Status",
+   "options": "Pending\nPassed\nFailed\nOn Hold"
+  },
+  {
+   "fieldname": "qc_checked_by",
+   "fieldtype": "Link",
+   "label": "QC Checked By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "qc_check_time",
+   "fieldtype": "Datetime",
+   "label": "QC Check Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "qc_remarks",
+   "fieldtype": "Small Text",
+   "label": "QC Remarks"
+  },
+  {
+   "fieldname": "failure_reason",
+   "fieldtype": "Small Text",
+   "label": "Failure Reason"
+  },
+  {
+   "fieldname": "qc_detail_section",
+   "fieldtype": "Section Break",
+   "label": "QC Inspection Detail"
+  },
+  {
+   "default": "0",
+   "fieldname": "product_confirmed",
+   "fieldtype": "Check",
+   "label": "Product Confirmed"
+  },
+  {
+   "fieldname": "batch_no",
+   "fieldtype": "Link",
+   "label": "Batch",
+   "options": "APC Batch"
+  },
+  {
+   "default": "Not Checked",
+   "fieldname": "coa_status",
+   "fieldtype": "Select",
+   "label": "COA Status",
+   "options": "Not Checked\nPresent\nApproved\nMissing\nRejected"
+  },
+  {
+   "fieldname": "column_break_qc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Not Checked",
+   "fieldname": "tanker_cleanliness",
+   "fieldtype": "Select",
+   "label": "Tanker Cleanliness",
+   "options": "Not Checked\nClean\nAcceptable\nContaminated"
+  },
+  {
+   "default": "Not Applicable",
+   "fieldname": "odour_check",
+   "fieldtype": "Select",
+   "label": "Odour Check",
+   "options": "Not Applicable\nPassed\nFailed"
+  },
+  {
+   "default": "Not Applicable",
+   "fieldname": "seal_condition_before_loading",
+   "fieldtype": "Select",
+   "label": "Seal Condition",
+   "options": "Not Applicable\nIntact\nBroken"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-29 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Quality",
+ "name": "Pre-Check Clearance",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Quality Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Quality User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Security Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Security User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
