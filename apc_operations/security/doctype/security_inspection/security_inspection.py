@@ -446,20 +446,21 @@ class SecurityInspection(Document):
         """
         Security creates the Loading Delivery Note after completing the security checklist.
         The Loading DN is created in 'Pending QC' status — QC clearance happens separately.
-        A QC Report Request must be raised AFTER this via report_to_qc().
+
+        Normally a QC Report Request is raised AFTER this via report_to_qc(). But
+        report_to_qc() doesn't require an LDN to exist first (it resolves one if
+        available, see _resolve_loading_delivery_note_for_report), so a QC Report
+        Request can legitimately already exist here too (e.g. Security reported
+        to QC for pre-check before creating the LDN). In that case, create the
+        LDN as normal and link it back onto the existing QC Report Request
+        instead of blocking - the "already exists" guard below only protects
+        against creating a second LDN for the same inspection, which is the
+        actual duplicate this method needs to prevent.
         """
         if self.loading_delivery_note:
             frappe.throw(_("Loading Delivery Note already exists for this inspection"))
 
-        # Security checklist must be complete — QC clearance is NOT required at this point
-        if self.security_status not in ("Checklist Completed", "Draft", "Pending Checklist"):
-            if self.security_status not in ("Checklist Completed",):
-                pass  # allow any valid transition from Security side
-
-        if self.security_status == "Reported to QC":
-            frappe.throw(
-                _("A QC Report Request has already been raised. View the existing QC request.")
-            )
+        already_reported_to_qc = self.security_status == "Reported to QC" and self.qc_report_request
 
         loading_dn = frappe.new_doc("Loading Delivery Note")
         loading_dn.security_inspection = self.name
@@ -512,8 +513,18 @@ class SecurityInspection(Document):
         ensure_ldn_do_link(ldn_name=loading_dn.name, update_modified=False)
 
         self.loading_delivery_note = loading_dn.name
-        self.security_status = "Loading DN Created"
+        if not already_reported_to_qc:
+            self.security_status = "Loading DN Created"
         self.save()
+
+        if already_reported_to_qc:
+            frappe.db.set_value(
+                "QC Report Request",
+                self.qc_report_request,
+                "loading_delivery_note",
+                loading_dn.name,
+                update_modified=False,
+            )
 
         # Copy Job Order reservations first; fall back to fresh FIFO when none exist.
         try:
@@ -531,9 +542,18 @@ class SecurityInspection(Document):
         except Exception:
             frappe.log_error(frappe.get_traceback(), "Loading DN Batch Allocation")
 
+        if already_reported_to_qc:
+            msg = _(
+                "Loading Delivery Note {0} created and linked to the existing "
+                "QC Report Request {1}."
+            ).format(loading_dn.name, self.qc_report_request)
+        else:
+            msg = _(
+                "Loading Delivery Note {0} created in Pending QC status. "
+                "Use 'Report to QC' to send for QC clearance."
+            ).format(loading_dn.name)
         frappe.msgprint(
-            _("Loading Delivery Note {0} created in Pending QC status. "
-              "Use 'Report to QC' to send for QC clearance.").format(loading_dn.name),
+            msg,
             indicator="blue",
         )
 

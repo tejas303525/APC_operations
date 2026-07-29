@@ -21,6 +21,13 @@ def on_loading_delivery_note_update_hook(doc, method):
 	sync_from_ldn(doc.name)
 
 
+def on_loading_delivery_note_after_insert(doc, method):
+	"""Sync the Delivery Order chain as soon as the LDN exists, not just on
+	its later updates - mirrors on_loading_delivery_note_update_hook, which
+	on_update already covers for every save after this first one."""
+	sync_from_ldn(doc.name)
+
+
 def on_qc_report_request_update_hook(doc, method):
 	sync_from_qcr(doc.name)
 
