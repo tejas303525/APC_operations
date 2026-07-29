@@ -145,8 +145,8 @@ def generate_delivery_order_for_job_order(
 	if not jo:
 		frappe.throw(_("Job Order {0} not found").format(job_order))
 
-	movement = (movement or jo.get("commercial_movement") or "Export").strip()
-	if movement not in ("Export", "Import"):
+	movement = (movement or jo.get("commercial_movement") or "Outward").strip()
+	if movement not in ("Outward", "Import"):
 		frappe.throw(_("Invalid commercial movement: {0}").format(movement))
 
 	existing_do = find_delivery_order_for_job_order_primary(job_order)
@@ -451,9 +451,9 @@ def generate_followup_delivery_order_for_job_order(
 	if not jo:
 		frappe.throw(_("Job Order {0} not found").format(job_order))
 
-	movement = (jo.get("commercial_movement") or "Export").strip()
-	if movement != "Export":
-		frappe.throw(_("Follow-up Delivery Orders are supported for Export Job Orders only."))
+	movement = (jo.get("commercial_movement") or "Outward").strip()
+	if movement != "Outward":
+		frappe.throw(_("Follow-up Delivery Orders are supported for Outward Job Orders only."))
 
 	sb_name = ts.get("shipping_booking") or jo.get("shipping_booking")
 	sb = (
@@ -553,7 +553,7 @@ def try_auto_issue_import_delivery_order(
 	if not job_order:
 		return None
 
-	movement = frappe.db.get_value("Job Order", job_order, "commercial_movement") or "Export"
+	movement = frappe.db.get_value("Job Order", job_order, "commercial_movement") or "Outward"
 	if movement != "Import":
 		return None
 

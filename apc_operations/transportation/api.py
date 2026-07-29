@@ -193,7 +193,7 @@ def _active_transport_for_job_order(
 			get_primary_transport_type_for_job_order,
 		)
 
-		movement = frappe.db.get_value("Job Order", jo_name, "commercial_movement") or "Export"
+		movement = frappe.db.get_value("Job Order", jo_name, "commercial_movement") or "Outward"
 		ttype = get_primary_transport_type_for_job_order(movement)
 
 	rows = frappe.get_all(
@@ -312,7 +312,7 @@ def get_inward_import_list() -> list[dict[str, Any]]:
 	for jo in jos:
 		if (jo.get("mode_of_transport") or "") != "Sea":
 			continue
-		if (jo.get("commercial_movement") or "Export") != "Import":
+		if (jo.get("commercial_movement") or "Outward") != "Import":
 			continue
 		# Filter to inward (heuristic: incoterm in EXW/FCA/FOB from APC POV
 		# is outward; for now use the existing transport_type via TS).
@@ -427,7 +427,7 @@ def update_inward_import_tracking(
 	if not job_order:
 		frappe.throw(_("job_order is required"))
 
-	movement = frappe.db.get_value("Job Order", job_order, "commercial_movement") or "Export"
+	movement = frappe.db.get_value("Job Order", job_order, "commercial_movement") or "Outward"
 	if movement != "Import":
 		frappe.throw(_("Job Order {0} is not an Import movement.").format(job_order))
 
@@ -545,7 +545,7 @@ def get_inward_land_detail(job_order: str) -> dict[str, Any]:
 	sddn = _sddn_for_transport(ts.get("name")) or {}
 	inspection = _security_inspection_for_transport(ts.get("name"))
 	qc_status = inspection.get("qc_status") if inspection else None
-	movement = (jo.get("commercial_movement") or "Export").strip()
+	movement = (jo.get("commercial_movement") or "Outward").strip()
 	handoff = {}
 	if movement == "Import":
 		try:
@@ -934,7 +934,7 @@ def get_partial_delivery_followup_list(only_actionable: int | str = 0) -> list[d
 			"docstatus": ["<", 2],
 			"status": ["!=", "Cancelled"],
 			"transport_required": 1,
-			"commercial_movement": "Export",
+			"commercial_movement": "Outward",
 		},
 		fields=[
 			"name",
@@ -1047,7 +1047,7 @@ def get_partial_delivery_followup_detail(job_order: str) -> dict[str, Any]:
 	return {
 		**row,
 		"terms_of_delivery": jo.get("terms_of_delivery"),
-		"commercial_movement": jo.get("commercial_movement") or "Export",
+		"commercial_movement": jo.get("commercial_movement") or "Outward",
 		"scheduled_pickup_date": (completed_ts or reference_ts).get("scheduled_pickup_date"),
 		"scheduled_delivery_date": (completed_ts or reference_ts).get("scheduled_delivery_date"),
 		"last_vehicle_number": vd.get("vehicle_number"),
@@ -1685,7 +1685,7 @@ def create_security_delivery_draft_note(job_order: str) -> dict[str, Any]:
 	if not job_order:
 		frappe.throw(_("job_order is required"))
 
-	movement = frappe.db.get_value("Job Order", job_order, "commercial_movement") or "Export"
+	movement = frappe.db.get_value("Job Order", job_order, "commercial_movement") or "Outward"
 	transport_type = "Inward" if movement == "Import" else "Outward"
 	ts_row = _active_transport_for_job_order(job_order, transport_type)
 	if not ts_row:

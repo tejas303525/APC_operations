@@ -104,7 +104,7 @@ class TestTransportationConsoleApi(FrappeTestCase):
 
 		exp = make_job_order(
 			status="Confirmed",
-			commercial_movement="Export",
+			commercial_movement="Outward",
 			terms_of_delivery="FOB",
 			mode_of_transport="Sea",
 		)

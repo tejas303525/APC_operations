@@ -340,7 +340,7 @@ function _formatQtyWithUom(qty, uom) {
 function _doModalKvPairs(data) {
 	const pairs = [
 		["Delivery Order", data.delivery_order],
-		["Operation", data.commercial_movement || "Export"],
+		["Operation", data.commercial_movement || "Outward"],
 		["Job Order", data.job_order_number || data.job_order],
 		["Customer", data.customer_name || data.customer],
 		["Incoterm", data.terms_of_delivery || "—"],
@@ -504,7 +504,7 @@ function openDoModal(doCard, readOnly, refresh) {
 							options: "Job Order",
 							reqd: 1,
 							get_query: () => ({
-								filters: { commercial_movement: "Export", docstatus: ["<", 2] },
+								filters: { commercial_movement: "Outward", docstatus: ["<", 2] },
 							}),
 						},
 					],

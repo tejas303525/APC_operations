@@ -53,7 +53,7 @@ class TestConsoleQueueService(FrappeTestCase):
 		jo.customer = "_Test Console Queue Customer"
 		jo.date = add_days(today(), -1)
 		jo.status = "Confirmed"
-		jo.commercial_movement = "Export"
+		jo.commercial_movement = "Outward"
 		jo.insert(ignore_permissions=True)
 
 		card = attach_delivery_due_fields({"job_order": jo.name})

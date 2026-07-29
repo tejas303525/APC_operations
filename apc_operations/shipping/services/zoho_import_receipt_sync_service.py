@@ -31,11 +31,11 @@ def push_import_receipt_to_zoho(delivery_order: str) -> dict[str, Any]:
 	if not frappe.db.exists("Delivery Order", delivery_order):
 		frappe.throw(_("Delivery Order {0} not found").format(delivery_order))
 
-	movement = "Export"
+	movement = "Outward"
 	if frappe.db.has_column("Delivery Order", "commercial_movement"):
 		movement = (
 			frappe.db.get_value("Delivery Order", delivery_order, "commercial_movement")
-			or "Export"
+			or "Outward"
 		)
 	if movement != "Import":
 		return {"success": False, "skipped": True, "reason": "not-import-do"}

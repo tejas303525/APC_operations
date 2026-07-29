@@ -1251,7 +1251,7 @@ def generate_delivery_order_for_export(job_order: str):
         generate_delivery_order_for_job_order,
     )
 
-    return generate_delivery_order_for_job_order(job_order, movement="Export")
+    return generate_delivery_order_for_job_order(job_order, movement="Outward")
 
 
 @frappe.whitelist()

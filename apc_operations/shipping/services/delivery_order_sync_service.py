@@ -106,7 +106,7 @@ def apply_job_order_to_delivery_order(
 	if jo.get("customer") and not doc.get("buyer"):
 		doc.buyer = jo["customer"]
 
-	movement = (jo.get("commercial_movement") or "Export").strip()
+	movement = (jo.get("commercial_movement") or "Outward").strip()
 	if frappe.db.has_column("Delivery Order", "commercial_movement"):
 		doc.commercial_movement = movement
 	if movement == "Import":

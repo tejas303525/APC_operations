@@ -14,9 +14,9 @@ _COMPLETED_GRN_STATUSES = frozenset({"Approved", "Posted"})
 
 
 def resolve_commercial_movement_for_do(do_name: str) -> str:
-	"""Return Export or Import for a Delivery Order (DO field, then Job Order)."""
+	"""Return Outward or Import for a Delivery Order (DO field, then Job Order)."""
 	if not do_name:
-		return "Export"
+		return "Outward"
 	movement = None
 	if frappe.db.has_column("Delivery Order", "commercial_movement"):
 		movement = frappe.db.get_value("Delivery Order", do_name, "commercial_movement")
@@ -25,7 +25,7 @@ def resolve_commercial_movement_for_do(do_name: str) -> str:
 	jo = frappe.db.get_value("Delivery Order", do_name, "job_order")
 	if jo and frappe.db.has_column("Job Order", "commercial_movement"):
 		movement = frappe.db.get_value("Job Order", jo, "commercial_movement")
-	return (movement or "Export").strip()
+	return (movement or "Outward").strip()
 
 
 def _is_import_do(do_name: str) -> bool:

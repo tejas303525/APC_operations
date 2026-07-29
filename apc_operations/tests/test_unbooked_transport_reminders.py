@@ -24,7 +24,7 @@ class TestUnbookedTransportReminders(FrappeTestCase):
 		jo.customer = "_Test Unbooked Transport Customer"
 		jo.date = frappe.utils.today()
 		jo.status = "Confirmed"
-		jo.commercial_movement = "Export"
+		jo.commercial_movement = "Outward"
 		jo.terms_of_delivery = "FOB"
 		jo.transport_required = 1
 		jo.insert(ignore_permissions=True)

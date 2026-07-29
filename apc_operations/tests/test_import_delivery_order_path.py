@@ -129,7 +129,7 @@ class TestImportDeliveryOrderPath(FrappeTestCase):
 			created["export_job_order"],
 		)
 
-		export_jo = make_job_order(status="Draft", commercial_movement="Export")
+		export_jo = make_job_order(status="Draft", commercial_movement="Outward")
 		jo2 = make_job_order(
 			status="Confirmed",
 			commercial_movement="Import",

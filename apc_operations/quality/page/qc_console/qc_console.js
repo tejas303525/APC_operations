@@ -318,7 +318,7 @@ function openQcDoDetailModal(data, kind, refresh) {
 
 	const kvRows = [
 		["Delivery Order", doName],
-		["Operation", data.commercial_movement || "Export"],
+		["Operation", data.commercial_movement || "Outward"],
 		["Job Order", data.job_order_number || data.job_order],
 		["Customer", data.customer_name || data.customer],
 		["Incoterm", data.terms_of_delivery || "—"],

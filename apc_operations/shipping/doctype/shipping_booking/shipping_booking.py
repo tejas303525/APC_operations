@@ -37,14 +37,14 @@ class ShippingBooking(Document):
 
     def validate_counterparty(self):
         if self.job_order:
-            movement = frappe.db.get_value("Job Order", self.job_order, "commercial_movement") or "Export"
+            movement = frappe.db.get_value("Job Order", self.job_order, "commercial_movement") or "Outward"
             if movement == "Import":
                 if not self.supplier and not self.customer:
                     frappe.throw(
                         _("Set Supplier (or Customer) on the Shipping Booking for an Import Job Order.")
                     )
             elif not self.customer:
-                frappe.throw(_("Customer is required for Export shipping bookings linked to a Job Order."))
+                frappe.throw(_("Customer is required for Outward shipping bookings linked to a Job Order."))
         elif not self.customer and not self.supplier:
             frappe.throw(_("Set Customer or Supplier on the Shipping Booking."))
 
@@ -63,7 +63,7 @@ class ShippingBooking(Document):
             movement = frappe.db.get_value(
                 "Job Order", self.job_order, "commercial_movement"
             ) or ""
-        return movement or "Export"
+        return movement or "Outward"
 
     def _is_import_tracking_booking(self) -> bool:
         status = (self.booking_status or "Draft").strip()

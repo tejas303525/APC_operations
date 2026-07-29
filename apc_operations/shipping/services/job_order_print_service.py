@@ -15,7 +15,7 @@ def get_print_context(job_order_name: str) -> dict:
 	summary = get_logistics_cost_summary(job_order_name)
 	jo = summary.get("job_order") or {}
 	counterparty_name = jo.get("customer_name") or jo.get("supplier_name")
-	counterparty_label = "Customer" if (jo.get("commercial_movement") or "Export") == "Export" else "Supplier"
+	counterparty_label = "Customer" if (jo.get("commercial_movement") or "Outward") == "Outward" else "Supplier"
 
 	payment_terms_label = jo.get("payment_terms")
 	if jo.get("payment_terms"):

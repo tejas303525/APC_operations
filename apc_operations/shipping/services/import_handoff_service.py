@@ -106,8 +106,8 @@ def link_import_to_export_job_order(import_job_order: str, export_job_order: str
 	export_movement = frappe.db.get_value(
 		"Job Order", export_job_order, "commercial_movement"
 	)
-	if (export_movement or "Export") != "Export":
-		frappe.throw(_("Job Order {0} must be an Export movement.").format(export_job_order))
+	if (export_movement or "Outward") != "Outward":
+		frappe.throw(_("Job Order {0} must be an Outward movement.").format(export_job_order))
 
 	if not _handoff_ready(import_job_order):
 		frappe.throw(
@@ -168,7 +168,7 @@ def create_export_job_order_from_import(
 
 	import_doc = frappe.get_doc("Job Order", import_job_order)
 	export = frappe.new_doc("Job Order")
-	export.commercial_movement = "Export"
+	export.commercial_movement = "Outward"
 	export.customer = customer
 	export.date = today()
 	export.status = "Draft"

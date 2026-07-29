@@ -1038,7 +1038,7 @@ function attachImportHandoffActions(dialog, data, refresh) {
 						options: "Job Order",
 						reqd: 1,
 						get_query: () => ({
-							filters: { commercial_movement: "Export", docstatus: ["<", 2] },
+							filters: { commercial_movement: "Outward", docstatus: ["<", 2] },
 						}),
 					},
 				],
