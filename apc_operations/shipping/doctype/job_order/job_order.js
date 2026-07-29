@@ -34,14 +34,20 @@ function renderJobOrderLogisticsCostSummary(frm) {
 }
 
 function renderJobOrderContainerCapacitySummary(frm) {
-	if (frm.is_new() || !frm.fields_dict.container_capacity_html) {
+	if (!frm.fields_dict.container_capacity_html) {
 		return;
 	}
+	// Live, not DB-driven: built from the form's current in-memory items so
+	// it reflects unsaved edits too, not just what's already been saved.
 	frappe
 		.call({
 			method:
-				"apc_operations.shipping.doctype.job_order.job_order.refresh_container_capacity_summary_api",
-			args: { job_order: frm.doc.name },
+				"apc_operations.shipping.services.container_capacity_service.get_live_container_capacity_html",
+			args: {
+				container_type: frm.doc.container_type,
+				container_quantity: frm.doc.container_quantity,
+				items: frm.doc.items || [],
+			},
 		})
 		.then((r) => {
 			const html = (r.message && r.message.html) || "<p class='text-muted'>No container capacity data.</p>";
@@ -251,6 +257,10 @@ frappe.ui.form.on("Job Order Item", {
 	items_add(frm) {
 		apc_refresh_container_number_options(frm);
 		apc_refresh_packaging_type_options(frm);
+		frm.trigger("apc_refresh_container_capacity_summary");
+	},
+	items_remove(frm) {
+		frm.trigger("apc_refresh_container_capacity_summary");
 	},
 });
 

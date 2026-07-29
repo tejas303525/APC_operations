@@ -15,6 +15,12 @@ container carries more than one product. Capacity is tracked two ways:
 
 This is informational only (a soft warning), not a hard block - per user,
 over-capacity should be visible but not prevent adding more items.
+
+The summary is built from whatever row data is handed to it, not from a DB
+query keyed on the Job Order name - an unsaved/new Job Order has no rows in
+`tabJob Order Item` yet, so a DB-driven lookup would always show nothing
+until after the first save. Building from the client's current in-memory
+`frm.doc.items` instead makes the widget live.
 """
 
 from __future__ import annotations
@@ -25,47 +31,43 @@ import frappe
 from frappe.utils import escape_html, flt
 
 
-def get_container_capacity_summary(job_order: str) -> dict[str, Any]:
-	if not job_order or not frappe.db.exists("Job Order", job_order):
-		return {}
+def _val(row: Any, field: str, default=None):
+	if isinstance(row, dict):
+		return row.get(field, default)
+	return getattr(row, field, default)
 
-	jo = frappe.db.get_value(
-		"Job Order", job_order, ["container_type", "container_quantity"], as_dict=True
-	)
-	if not jo:
-		return {}
 
+def get_container_capacity_summary(
+	*,
+	container_type: str | None,
+	container_quantity: float | int | None,
+	rows: list,
+) -> dict[str, Any]:
+	"""Build the capacity summary from already-loaded row data - works
+	identically for saved and unsaved Job Orders, since neither path
+	requires a DB query for the child rows."""
 	capacity_kg = 0.0
 	container_size = None
-	if jo.container_type:
-		capacity_kg = flt(frappe.db.get_value("APC Container Type", jo.container_type, "max_gross_kg"))
-		container_size = frappe.db.get_value("APC Container Type", jo.container_type, "container_size")
-
-	rows = frappe.get_all(
-		"Job Order Item",
-		filters={"parent": job_order},
-		fields=[
-			"item",
-			"item_name",
-			"planned_container_no",
-			"packaging_qty",
-			"planned_product_kg",
-			"planned_gross_kg",
-			"planned_cargo_gross_kg",
-			"capacity_load_mode",
-			"packaging_type",
-			"packing_unit_type",
-		],
-		order_by="idx asc",
-	)
+	if container_type:
+		info = frappe.db.get_value(
+			"APC Container Type", container_type, ["max_gross_kg", "container_size"], as_dict=True
+		)
+		if info:
+			capacity_kg = flt(info.max_gross_kg)
+			container_size = info.container_size
 
 	containers: dict[str, dict[str, Any]] = {}
 	unassigned_count = 0
-	for row in rows:
-		if not row.item:
+	for row in rows or []:
+		item = _val(row, "item")
+		if not item:
 			continue
-		used_kg = flt(row.planned_cargo_gross_kg) or flt(row.planned_gross_kg) or flt(row.planned_product_kg)
-		container_no = (row.planned_container_no or "").strip()
+		used_kg = (
+			flt(_val(row, "planned_cargo_gross_kg"))
+			or flt(_val(row, "planned_gross_kg"))
+			or flt(_val(row, "planned_product_kg"))
+		)
+		container_no = (_val(row, "planned_container_no") or "").strip()
 		if not container_no:
 			unassigned_count += 1
 			continue
@@ -74,8 +76,8 @@ def get_container_capacity_summary(job_order: str) -> dict[str, Any]:
 			{"container_no": container_no, "used_kg": 0.0, "packaging_qty": 0, "products": [], "rows": []},
 		)
 		bucket["used_kg"] += used_kg
-		bucket["packaging_qty"] += int(flt(row.packaging_qty))
-		bucket["products"].append(row.item_name or row.item)
+		bucket["packaging_qty"] += int(flt(_val(row, "packaging_qty")))
+		bucket["products"].append(_val(row, "item_name") or item)
 		bucket["rows"].append(row)
 
 	def _sort_key(no: str):
@@ -107,13 +109,46 @@ def get_container_capacity_summary(job_order: str) -> dict[str, Any]:
 		)
 
 	return {
-		"job_order": job_order,
-		"container_type": jo.container_type,
+		"has_data": True,
+		"container_type": container_type,
 		"capacity_kg": capacity_kg,
-		"total_planned_containers": int(flt(jo.container_quantity)) if jo.container_quantity else 0,
+		"total_planned_containers": int(flt(container_quantity)) if container_quantity else 0,
 		"containers": container_rows,
 		"unassigned_count": unassigned_count,
 	}
+
+
+def get_container_capacity_summary_for_job_order(job_order: str) -> dict[str, Any]:
+	"""DB-driven fallback: build the summary from the saved Job Order and its
+	saved Job Order Item rows. Only reflects what's actually saved."""
+	if not job_order or not frappe.db.exists("Job Order", job_order):
+		return {}
+
+	jo = frappe.db.get_value("Job Order", job_order, ["container_type", "container_quantity"], as_dict=True)
+	if not jo:
+		return {}
+
+	rows = frappe.get_all(
+		"Job Order Item",
+		filters={"parent": job_order},
+		fields=[
+			"item",
+			"item_name",
+			"planned_container_no",
+			"packaging_qty",
+			"planned_product_kg",
+			"planned_gross_kg",
+			"planned_cargo_gross_kg",
+			"capacity_load_mode",
+			"packaging_type",
+			"packing_unit_type",
+		],
+		order_by="idx asc",
+	)
+
+	return get_container_capacity_summary(
+		container_type=jo.container_type, container_quantity=jo.container_quantity, rows=rows
+	)
 
 
 def _reference_max_units(rows: list, container_size: str | None) -> int:
@@ -131,14 +166,13 @@ def _reference_max_units(rows: list, container_size: str | None) -> int:
 	)
 
 	for row in rows:
-		load_mode = row.get("capacity_load_mode") if isinstance(row, dict) else row.capacity_load_mode
-		item = row.get("item") if isinstance(row, dict) else row.item
+		load_mode = _val(row, "capacity_load_mode")
+		item = _val(row, "item")
 		if not load_mode or not item:
 			continue
-		packing_unit_type = row.get("packing_unit_type") if isinstance(row, dict) else row.packing_unit_type
 		capacity = get_container_load_capacity(
 			item,
-			packing_unit_type=packing_unit_type,
+			packing_unit_type=_val(row, "packing_unit_type"),
 			container_size=container_size,
 			load_mode=load_mode,
 		)
@@ -152,7 +186,7 @@ def _fmt_kg(value) -> str:
 
 
 def build_container_capacity_html(summary: dict[str, Any]) -> str:
-	if not summary or not summary.get("job_order"):
+	if not summary or not summary.get("has_data"):
 		return "<p class='text-muted'>No container capacity data.</p>"
 
 	if not summary.get("container_type"):
@@ -220,4 +254,19 @@ def get_container_capacity_html_for_job_order(job_order: str) -> str:
 	"""Return HTML for the Job Order form (HTML field is not stored in DB)."""
 	if not job_order or not frappe.db.exists("Job Order", job_order):
 		return "<p class='text-muted'>No container capacity data.</p>"
-	return build_container_capacity_html(get_container_capacity_summary(job_order))
+	return build_container_capacity_html(get_container_capacity_summary_for_job_order(job_order))
+
+
+@frappe.whitelist()
+def get_live_container_capacity_html(
+	container_type: str | None = None,
+	container_quantity: float | int | None = None,
+	items: list | str | None = None,
+) -> dict:
+	"""Client-facing endpoint: build the widget HTML from the form's current
+	in-memory state (unsaved edits included), not a DB query."""
+	rows = frappe.parse_json(items) if items else []
+	summary = get_container_capacity_summary(
+		container_type=container_type, container_quantity=container_quantity, rows=rows
+	)
+	return {"html": build_container_capacity_html(summary)}
