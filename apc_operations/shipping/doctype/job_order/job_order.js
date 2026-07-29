@@ -74,6 +74,32 @@ function apc_refresh_container_number_options(frm) {
 	});
 }
 
+// Autocomplete controls only read df.options once, at creation
+// (frappe/public/js/frappe/form/controls/autocomplete.js make_input ->
+// set_options()) — unlike Select, refresh()/refresh_field() does not
+// re-read them. So for an already-rendered inline grid cell, updating the
+// docfield alone (grid.update_docfield_property) is not enough; the live
+// control instance's set_options() must be called directly too.
+function apc_set_autocomplete_options(grid_row, fieldname, options) {
+	if (!grid_row) {
+		return;
+	}
+	const docfield = (grid_row.docfields || []).find((d) => d.fieldname === fieldname);
+	if (docfield) {
+		docfield.options = options;
+	}
+	const inline_field = grid_row.on_grid_fields_dict && grid_row.on_grid_fields_dict[fieldname];
+	if (inline_field) {
+		inline_field.df.options = options;
+		inline_field.set_options && inline_field.set_options();
+	}
+	const form_field = grid_row.grid_form && grid_row.grid_form.fields_dict[fieldname];
+	if (form_field) {
+		form_field.df.options = options;
+		form_field.set_options && form_field.set_options();
+	}
+}
+
 function apc_refresh_packaging_type_options(frm) {
 	const grid = frm.fields_dict.items && frm.fields_dict.items.grid;
 	if (!grid) {
@@ -90,11 +116,22 @@ function apc_refresh_packaging_type_options(frm) {
 			const options = (rows || []).map((r) => r.name).join("\n");
 			grid.update_docfield_property("packaging_type", "options", options);
 			(grid.grid_rows || []).forEach((row) => {
-				if (row.refresh_field) {
-					row.refresh_field("packaging_type");
-				}
+				apc_set_autocomplete_options(row, "packaging_type", options);
 			});
 		});
+}
+
+// Narrow each existing row's Packaging Type suggestions to what that row's
+// item actually has a packing profile for (defined in job_order_item.js,
+// runs after the unfiltered default above so rows with an item already set —
+// e.g. on opening a saved Job Order — get the filtered list too, not just
+// rows where Item is freshly picked).
+function apc_refresh_all_row_packaging_type_options(frm) {
+	(frm.doc.items || []).forEach((row) => {
+		if (row.item) {
+			apc_refresh_row_packaging_type_options(frm, row.doctype, row.name);
+		}
+	});
 }
 
 frappe.ui.form.on("Job Order", {
@@ -107,6 +144,7 @@ frappe.ui.form.on("Job Order", {
 	onload(frm) {
 		apc_refresh_container_number_options(frm);
 		apc_refresh_packaging_type_options(frm);
+		apc_refresh_all_row_packaging_type_options(frm);
 	},
 
 	container_type(frm) {
@@ -133,6 +171,7 @@ frappe.ui.form.on("Job Order", {
 		toggle_counterparty_visibility(frm);
 		apc_refresh_container_number_options(frm);
 		apc_refresh_packaging_type_options(frm);
+		apc_refresh_all_row_packaging_type_options(frm);
 		renderJobOrderContainerCapacitySummary(frm);
 
 		const bank_account = (frm.doc.bank_account || "").trim();

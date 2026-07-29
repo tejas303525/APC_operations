@@ -37,6 +37,23 @@ function apc_recalc_job_order_item_packing(frm, cdt, cdn) {
 	});
 }
 
+function apc_refresh_row_packaging_type_options(frm, cdt, cdn) {
+	const row = locals[cdt][cdn];
+	const grid = frm.fields_dict.items && frm.fields_dict.items.grid;
+	const grid_row = grid && grid.grid_rows_by_docname[cdn];
+	if (!row || !row.item || !grid_row) {
+		return;
+	}
+	frappe.call({
+		method: "apc_operations.shipping.services.packing_calculation_service.get_packaging_type_options_for_item",
+		args: { item: row.item },
+		callback(r) {
+			const names = r.message || [];
+			apc_set_autocomplete_options(grid_row, "packaging_type", names.join("\n"));
+		},
+	});
+}
+
 function apc_container_number_options(frm) {
 	const count = cint(frm.doc.container_quantity);
 	if (!count || count <= 0) {
@@ -65,6 +82,7 @@ function apc_refresh_container_number_options(frm) {
 frappe.ui.form.on("Job Order Item", {
 	item(frm, cdt, cdn) {
 		apc_recalc_job_order_item_packing(frm, cdt, cdn);
+		apc_refresh_row_packaging_type_options(frm, cdt, cdn);
 	},
 	packaging_type(frm, cdt, cdn) {
 		apc_recalc_job_order_item_packing(frm, cdt, cdn);

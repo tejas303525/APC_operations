@@ -561,6 +561,42 @@ def get_container_load_capacity(
 	}
 
 
+@frappe.whitelist()
+def get_packaging_type_options_for_item(item: str | None = None) -> list[str]:
+	"""Active APC Packaging Type names valid for this item, based on which
+	packing materials/unit types the item actually has a packing profile for
+	(e.g. an item with only a Flexi profile should only offer Flexi-family
+	packaging types). Falls back to the full active list when the item has no
+	packing profile yet, so the field still has suggestions before that data
+	exists."""
+	all_active = frappe.get_all(
+		"APC Packaging Type", filters={"active": 1}, pluck="name", order_by="name asc"
+	)
+
+	if not item:
+		return all_active
+
+	profiles = frappe.get_all(
+		"APC Product Packing Profile",
+		filters={"item": item, "active": 1},
+		fields=["packing_material", "packing_unit_type"],
+	)
+	if not profiles:
+		return all_active
+
+	combos = {(p.packing_material, p.packing_unit_type) for p in profiles}
+	names: set[str] = set()
+	for material, unit in combos:
+		filters: dict[str, Any] = {"active": 1}
+		if material:
+			filters["packing_material"] = material
+		if unit:
+			filters["packing_unit_type"] = unit
+		names.update(frappe.get_all("APC Packaging Type", filters=filters, pluck="name"))
+
+	return sorted(names) if names else all_active
+
+
 def resolve_packaging_type_name(packing_material: str | None, packing_unit_type: str | None = None) -> str | None:
 	"""Match a packing material/unit type to a real APC Packaging Type record
 	name, so autofilled values line up with the master list shown in the
