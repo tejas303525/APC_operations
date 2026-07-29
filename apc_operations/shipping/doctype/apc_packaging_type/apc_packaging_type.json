@@ -13,6 +13,7 @@
   "packing_unit_type",
   "active",
   "tare_weight_kg",
+  "fixed_capacity_mt",
   "legacy_aliases",
   "description",
   "notes"
@@ -50,6 +51,13 @@
    "fieldname": "tare_weight_kg",
    "fieldtype": "Float",
    "label": "Tare Weight (KG)"
+  },
+  {
+   "description": "Fixed capacity for Bulk/Tanker packaging types (e.g. a road tanker), which isn't tied to a container size. Only used when Packing Unit Type is Bulk.",
+   "fieldname": "fixed_capacity_mt",
+   "fieldtype": "Float",
+   "label": "Fixed Capacity (MT)",
+   "non_negative": 1
   },
   {
    "description": "Comma-separated alternate spellings used to match imported/legacy product data to this packaging type.",

@@ -66,11 +66,17 @@ function apc_refresh_container_number_options(frm) {
 	if (!grid) {
 		return;
 	}
-	grid.update_docfield_property("planned_container_no", "options", apc_container_number_options(frm));
+	const options = apc_container_number_options(frm);
+	grid.update_docfield_property("planned_container_no", "options", options);
 	(grid.grid_rows || []).forEach((row) => {
 		if (row.refresh_field) {
 			row.refresh_field("planned_container_no");
 		}
+		// Belt and braces: Select is documented to re-read df.options on every
+		// refresh (control_select.js set_formatted_input -> set_options()),
+		// but this Frappe setup has repeatedly surprised us on inline-grid
+		// refresh behavior, so force it directly too rather than trust it.
+		apc_set_autocomplete_options(row, "planned_container_no", options);
 	});
 }
 
@@ -79,7 +85,8 @@ function apc_refresh_container_number_options(frm) {
 // set_options()) — unlike Select, refresh()/refresh_field() does not
 // re-read them. So for an already-rendered inline grid cell, updating the
 // docfield alone (grid.update_docfield_property) is not enough; the live
-// control instance's set_options() must be called directly too.
+// control instance's set_options() must be called directly too. Works for
+// any control with a set_options() method, not just Autocomplete.
 function apc_set_autocomplete_options(grid_row, fieldname, options) {
 	if (!grid_row) {
 		return;
@@ -132,6 +139,28 @@ function apc_refresh_all_row_packaging_type_options(frm) {
 			apc_refresh_row_packaging_type_options(frm, row.doctype, row.name);
 		}
 	});
+}
+
+// Container fields (Container Type/Quantity, Capacity Load Mode, Planned
+// Container No, the capacity widget) only make sense for Export shipments -
+// Local shipments don't reference a container at all, so hide them rather
+// than leave them sitting there unused. Packaging Qty stays editable either
+// way (the existing Manual Packaging Qty checkbox already covers manual
+// entry when the computed value isn't wanted).
+function apc_toggle_container_fields_for_shipment_type(frm) {
+	const is_export = frm.doc.shipment_type === "Export";
+	frm.set_df_property("container_type", "hidden", is_export ? 0 : 1);
+	frm.set_df_property("container_quantity", "hidden", is_export ? 0 : 1);
+	frm.set_df_property("container_capacity_html", "hidden", is_export ? 0 : 1);
+	frm.refresh_field("container_type");
+	frm.refresh_field("container_quantity");
+	frm.refresh_field("container_capacity_html");
+
+	const grid = frm.fields_dict.items && frm.fields_dict.items.grid;
+	if (grid && grid.toggle_display) {
+		grid.toggle_display("capacity_load_mode", is_export);
+		grid.toggle_display("planned_container_no", is_export);
+	}
 }
 
 // --- Job Order Item (child table) row logic ---
@@ -233,9 +262,14 @@ frappe.ui.form.on("Job Order", {
 	},
 
 	onload(frm) {
+		apc_toggle_container_fields_for_shipment_type(frm);
 		apc_refresh_container_number_options(frm);
 		apc_refresh_packaging_type_options(frm);
 		apc_refresh_all_row_packaging_type_options(frm);
+	},
+
+	shipment_type(frm) {
+		apc_toggle_container_fields_for_shipment_type(frm);
 	},
 
 	container_type(frm) {
@@ -260,6 +294,7 @@ frappe.ui.form.on("Job Order", {
 
 	refresh(frm) {
 		toggle_counterparty_visibility(frm);
+		apc_toggle_container_fields_for_shipment_type(frm);
 		apc_refresh_container_number_options(frm);
 		apc_refresh_packaging_type_options(frm);
 		apc_refresh_all_row_packaging_type_options(frm);

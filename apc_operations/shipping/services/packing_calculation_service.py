@@ -487,10 +487,11 @@ def apply_packing_variance_to_ldn(ldn, do: dict[str, Any] | None = None) -> None
 # packing profile a container-capacity lookup should use.
 _LOAD_MODE_UNIT_TYPES = {
 	"Palletised Drums": "Drum",
-	"Non-Pallet Drums": "Drum",
+	"Non-Palletised Drums": "Drum",
 	"IBC": "IBC",
 	"Flexi": "Flexi",
 	"Bags": "Bag",
+	"Bulk": "Bulk",
 }
 
 
@@ -597,6 +598,24 @@ def get_packaging_type_options_for_item(item: str | None = None) -> list[str]:
 	return sorted(names) if names else all_active
 
 
+def get_tanker_fixed_capacity(packaging_type_name: str | None) -> float:
+	"""Fixed capacity in MT for a Bulk/Tanker packaging type (e.g. a road
+	tanker). Tankers aren't loaded into a 20FT/40FT container, so the
+	container-capacity lookup doesn't apply to them - each tanker packaging
+	type just declares its own fixed capacity."""
+	if not packaging_type_name:
+		return 0.0
+	row = frappe.db.get_value(
+		"APC Packaging Type",
+		packaging_type_name,
+		["packing_unit_type", "fixed_capacity_mt"],
+		as_dict=True,
+	)
+	if not row or row.packing_unit_type != "Bulk":
+		return 0.0
+	return flt(row.fixed_capacity_mt)
+
+
 def resolve_packaging_type_name(packing_material: str | None, packing_unit_type: str | None = None) -> str | None:
 	"""Match a packing material/unit type to a real APC Packaging Type record
 	name, so autofilled values line up with the master list shown in the
@@ -659,6 +678,15 @@ def calculate_job_order_item_packing(item_row: dict | str, container_type: str |
 				row["packaging_type"] = resolve_packaging_type_name(
 					capacity["packing_material"], capacity.get("packing_unit_type")
 				)
+
+	# Bulk/Tanker packaging types (Road Tanker, Road tanker 22MT, ...) have a
+	# fixed capacity independent of container size - not covered by the
+	# Capacity Load Mode branch above, which is container-based.
+	tanker_capacity = get_tanker_fixed_capacity(row.get("packaging_type"))
+	if tanker_capacity > 0:
+		row["quantity"] = tanker_capacity
+		row["uom"] = "Metric Ton"
+		row["packing_unit_type"] = "Bulk"
 
 	apply_packing_fields(row)
 	return row
