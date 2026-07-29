@@ -625,15 +625,19 @@ def resolve_packaging_type_name(packing_material: str | None, packing_unit_type:
 
 
 @frappe.whitelist()
-def calculate_job_order_item_packing(item_row: dict, container_type: str | None = None) -> dict:
+def calculate_job_order_item_packing(item_row: dict | str, container_type: str | None = None) -> dict:
 	"""Client-side helper: return packing fields for a Job Order Item row.
 
 	When the row has a Capacity Load Mode set and a container_type is passed
 	(the parent Job Order's container), fill quantity/UOM from the matching
 	container's full-load capacity before running the normal packing calc —
 	e.g. Steel Drum + Palletised Drums + 20FT -> 80 drums / 14.8 MT.
+
+	item_row arrives as a JSON string over the wire (frappe.call sends the
+	grid row doc form-encoded, not as a parsed object), so it must be parsed
+	before use.
 	"""
-	row = dict(item_row or {})
+	row = dict(frappe.parse_json(item_row) or {})
 	load_mode = row.get("capacity_load_mode")
 	if row.get("item") and load_mode:
 		capacity = get_container_load_capacity(
@@ -648,7 +652,10 @@ def calculate_job_order_item_packing(item_row: dict, container_type: str | None 
 			row["uom"] = "Metric Ton"
 			if capacity.get("packing_unit_type"):
 				row["packing_unit_type"] = capacity["packing_unit_type"]
-			if capacity.get("packing_material") and not row.get("packaging_type"):
+			if capacity.get("packing_material"):
+				# Capacity Load Mode is an explicit, authoritative choice - it
+				# should override whatever the earlier ambiguous item-only
+				# lookup guessed for packaging_type, not just fill it if empty.
 				row["packaging_type"] = resolve_packaging_type_name(
 					capacity["packing_material"], capacity.get("packing_unit_type")
 				)
