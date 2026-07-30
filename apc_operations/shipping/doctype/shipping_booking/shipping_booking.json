@@ -21,6 +21,7 @@
   "container_type",
   "container_number",
   "container_count",
+  "containers",
   "column_break_1",
   "port_of_loading",
   "port_of_discharge",
@@ -134,6 +135,13 @@
    "fieldname": "container_count",
    "fieldtype": "Int",
    "label": "Container Count"
+  },
+  {
+   "description": "One row per physical container with its own Container Number and Seal Number. Kept in sync with Container Count — rows are added automatically when the count increases; rows are only removed automatically while still blank.",
+   "fieldname": "containers",
+   "fieldtype": "Table",
+   "label": "Containers",
+   "options": "Shipping Booking Container"
   },
   {
    "fieldname": "column_break_1",

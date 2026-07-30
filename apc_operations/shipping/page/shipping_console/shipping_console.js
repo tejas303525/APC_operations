@@ -57,6 +57,7 @@ function buildPendingBookingsScreen() {
 					subtitle: sb.customer_name || sb.customer || "-",
 					body_html: `
 						${APCConsoleUI.deliveryDueKvHtml(sb)}
+						${APCConsoleUI.productPackagingKvHtml(sb)}
 						<div class="apc-kv-label">${__("POL")}</div>
 						<div>${frappe.utils.escape_html(sb.pol || "-")}</div>
 						<div class="apc-kv-label">${__("POD")}</div>
@@ -96,6 +97,7 @@ function buildPendingCroScreen() {
 					subtitle: sb.customer_name || sb.customer || "-",
 					body_html: `
 						${APCConsoleUI.deliveryDueKvHtml(sb)}
+						${APCConsoleUI.productPackagingKvHtml(sb)}
 						<div class="apc-kv-label">${__("Line")}</div>
 						<div>${frappe.utils.escape_html(sb.shipping_line || "-")}</div>
 						<div class="apc-kv-label">${__("Vessel")}</div>
@@ -137,6 +139,7 @@ function buildOpenCroScheduleScreen() {
 					subtitle: `${sb.job_order_number || sb.shipping_booking}`,
 					body_html: `
 						${APCConsoleUI.deliveryDueKvHtml(sb)}
+						${APCConsoleUI.productPackagingKvHtml(sb)}
 						<div class="apc-kv-label">${__("ETD")}</div>
 						<div>${APCConsoleUI.formatDate(sb.etd)}</div>
 						<div class="apc-kv-label">${__("SI Cutoff")}</div>
@@ -181,6 +184,7 @@ const BOOKING_EDITOR_FIELDS = [
 	"container_type",
 	"container_number",
 	"container_count",
+	"containers",
 	"port_of_loading",
 	"port_of_discharge",
 	"cargo_description",
@@ -263,6 +267,32 @@ function openBookingEditorModal(sb, refresh, opts) {
 					label: __("Container Count"),
 					reqd: 1,
 					default: data.container_count || 1,
+					onchange: () => _syncContainerRows(d),
+				},
+				{ fieldtype: "Section Break" },
+				{
+					fieldtype: "Table",
+					fieldname: "containers",
+					label: __("Containers"),
+					description: __("One row per physical container — Container Number and Seal Number."),
+					cannot_add_rows: true,
+					cannot_delete_rows: true,
+					in_place_edit: false,
+					fields: [
+						{
+							fieldname: "container_number",
+							fieldtype: "Data",
+							label: __("Container Number"),
+							in_list_view: 1,
+						},
+						{
+							fieldname: "seal_number",
+							fieldtype: "Data",
+							label: __("Seal Number"),
+							in_list_view: 1,
+						},
+					],
+					data: _initialContainerRows(data),
 				},
 
 				// --- Ports & Cargo ---
@@ -467,6 +497,16 @@ function openBookingEditorModal(sb, refresh, opts) {
 				BOOKING_EDITOR_FIELDS.forEach((k) => {
 					if (values[k] !== undefined) payload[k] = values[k];
 				});
+				if (Array.isArray(payload.containers)) {
+					// Strip the dialog grid's local bookkeeping keys
+					// (name/idx/doctype/__islocal/...) - only the two real
+					// fields should reach the server, so each row inserts
+					// as a clean new Shipping Booking Container child row.
+					payload.containers = payload.containers.map((row) => ({
+						container_number: row.container_number || "",
+						seal_number: row.seal_number || "",
+					}));
+				}
 
 				d.disable_primary_action();
 				frappe.db
@@ -507,6 +547,44 @@ function openBookingEditorModal(sb, refresh, opts) {
 
 function renderCardScreen($root, options) {
 	return APCConsoleUI.renderCardScreen($root, options);
+}
+
+function _initialContainerRows(data) {
+	const rows = (data.containers || []).map((r) => ({
+		container_number: r.container_number || "",
+		seal_number: r.seal_number || "",
+	}));
+	// Existing bookings saved before the per-container list existed have no
+	// rows yet even if container_count > 1 - pad to match immediately
+	// instead of waiting for the next server-side save to backfill them.
+	const count = Math.max(1, parseInt(data.container_count) || 1);
+	while (rows.length < count) {
+		rows.push({ container_number: "", seal_number: "" });
+	}
+	return rows;
+}
+
+function _syncContainerRows(d) {
+	const count = Math.max(0, parseInt(d.get_value("container_count")) || 0);
+	const rows = (d.get_value("containers") || []).slice();
+	if (rows.length < count) {
+		while (rows.length < count) {
+			rows.push({ container_number: "", seal_number: "" });
+		}
+		d.set_value("containers", rows);
+	} else if (rows.length > count) {
+		// Only drop trailing rows that are still blank - a container/seal
+		// number the user already typed in is never silently discarded,
+		// mirroring ShippingBooking.sync_container_rows() server-side.
+		while (rows.length > count) {
+			const last = rows[rows.length - 1];
+			if (last && (last.container_number || last.seal_number)) {
+				break;
+			}
+			rows.pop();
+		}
+		d.set_value("containers", rows);
+	}
 }
 
 function renderKvGrid(data, pairs) {

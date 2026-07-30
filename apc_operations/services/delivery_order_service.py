@@ -199,13 +199,23 @@ def find_open_delivery_order_for_transport_schedule(
 
 
 def find_open_delivery_order_for_job_order(job_order: str | None) -> str | None:
-	"""Return the latest non-terminal Delivery Order for a Job Order, if any."""
+	"""Return the latest Delivery Order for a Job Order that still blocks a
+	follow-up leg, if any.
+
+	A prior DO stops blocking once it reaches a terminal status OR once its
+	dispatch is confirmed (``Delivery Note Generated`` onward) - stock is
+	already deducted at that point, so the next trip doesn't need to wait
+	for the truck to physically gate out.
+	"""
 	if not job_order or not frappe.db.has_column("Delivery Order", "job_order"):
 		return None
 
 	from apc_operations.shipping.services.dispatch_lifecycle_service import (
+		DISPATCH_CONFIRMED_STATUSES,
 		TERMINAL_LIFECYCLE_STATUSES,
 	)
+
+	non_blocking = TERMINAL_LIFECYCLE_STATUSES | DISPATCH_CONFIRMED_STATUSES
 
 	rows = frappe.get_all(
 		"Delivery Order",
@@ -215,7 +225,7 @@ def find_open_delivery_order_for_job_order(job_order: str | None) -> str | None:
 	)
 	for row in rows:
 		status = (row.get("operational_status") or "").strip()
-		if status not in TERMINAL_LIFECYCLE_STATUSES:
+		if status not in non_blocking:
 			return row["name"]
 	return None
 
@@ -941,9 +951,13 @@ def do_qc_precheck_passed_pending_followup(card: dict[str, Any]) -> bool:
 		return True
 
 	movement = (card.get("commercial_movement") or "").strip()
-	jo = card.get("job_order")
-	if movement == "Import" and jo:
-		if not frappe.db.get_value("Job Order", jo, "linked_export_job_order"):
+	if movement == "Import":
+		# Once the Import GRN exists, QC's own work on this DO is done -
+		# whether it also needs linking to a downstream re-export Job Order
+		# is a separate handoff concern (surfaced elsewhere as a reminder),
+		# not something that should keep this DO stuck in "Pending" forever
+		# for a plain receipt that was never going to have one.
+		if not frappe.db.exists("Import GRN", {"delivery_order": do_name}):
 			return True
 	return False
 
@@ -961,6 +975,19 @@ def get_qc_new_dos() -> list[dict[str, Any]]:
 		if _card_matches_legacy(card, {"Sent to QC"}):
 			out.append(card)
 			continue
+
+		if (card.get("commercial_movement") or "").strip() == "Import":
+			# Import has no physical loading-bay Security Inspection step -
+			# QC and Security both act independently, directly off the DO's
+			# Pre-Check Clearance, the moment the DO is issued (unlike
+			# Outward, which requires Security's checklist to report the
+			# truck to QC first). Gating on an SI record here would mean an
+			# Import DO never surfaces to QC at all.
+			ldn = card.get("loading_delivery_note") or card.get("ldn")
+			if op not in ("Gate Out Completed", "Cancelled", "QC Pre-check Failed") and not _ldn_fully_confirmed(ldn):
+				out.append(card)
+			continue
+
 		jo = card.get("job_order")
 		if not jo:
 			continue

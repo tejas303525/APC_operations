@@ -1146,11 +1146,18 @@ def _booking_card(sb: dict) -> dict:
         "si_cutoff": sb.get("si_cutoff"),
         "gate_cutoff": sb.get("gate_cutoff"),
         "pull_out_date": sb.get("pull_out_date"),
+        "product_summary": sb.get("product_summary"),
+        "packaging_summary": sb.get("packaging_summary"),
     }
     return attach_delivery_due_fields(card)
 
 
 def _sorted_booking_cards(rows: list[dict]) -> list[dict]:
+    from apc_operations.shipping.services.job_order_sync_service import (
+        attach_job_order_product_summary,
+    )
+
+    attach_job_order_product_summary(rows)
     return enrich_and_sort_console_queue([_booking_card(r) for r in rows])
 
 
@@ -1198,6 +1205,13 @@ def get_pending_booking_detail(name: str):
     # pre-populate without inverting the pol/pod/etd/vessel rename map.
     for k, v in sb.items():
         base.setdefault(k, v)
+
+    base["containers"] = frappe.get_all(
+        "Shipping Booking Container",
+        filters={"parent": name, "parenttype": "Shipping Booking"},
+        fields=["container_number", "seal_number"],
+        order_by="idx asc",
+    )
     return base
 
 
@@ -1256,7 +1270,7 @@ def generate_delivery_order_for_export(job_order: str):
 
 @frappe.whitelist()
 def generate_followup_delivery_order_for_export(
-    job_order: str, transport_schedule: str | None = None
+    job_order: str, transport_schedule: str | None = None, quantity: float | None = None
 ):
     """Create a follow-up Delivery Order for remaining partial-dispatch quantity."""
     from apc_operations.shipping.services.delivery_order_generation_service import (
@@ -1264,7 +1278,7 @@ def generate_followup_delivery_order_for_export(
     )
 
     return generate_followup_delivery_order_for_job_order(
-        job_order, transport_schedule=transport_schedule
+        job_order, transport_schedule=transport_schedule, quantity=quantity
     )
 
 

@@ -11,7 +11,7 @@ from typing import Any
 import frappe
 from frappe.utils import flt
 
-from apc_operations.shipping.services.uom_service import quantity_to_kg
+from apc_operations.shipping.services.uom_service import kg_to_commercial_quantity, quantity_to_kg
 
 PACKING_UNIT_TYPES = frozenset({"Drum", "IBC", "Bag", "Carton", "Flexi", "ISO", "Bulk"})
 
@@ -306,9 +306,6 @@ def apply_packing_fields(row: Any, *, origin: str | None = None) -> bool:
 
 	qty = flt(getattr(row, "quantity", None) or (row.get("quantity") if isinstance(row, dict) else 0))
 	uom = getattr(row, "uom", None) or (row.get("uom") if isinstance(row, dict) else None)
-	product_kg = quantity_to_kg(qty, uom)
-	_set("planned_product_kg", product_kg)
-	_set("net_weight", product_kg)
 
 	override = flt(
 		getattr(row, "packaging_qty_override", None)
@@ -317,6 +314,26 @@ def apply_packing_fields(row: Any, *, origin: str | None = None) -> bool:
 	manual_qty = int(
 		flt(getattr(row, "packaging_qty", None) or (row.get("packaging_qty") if isinstance(row, dict) else 0))
 	)
+
+	# Reverse direction: Packaging Qty entered but Quantity is still blank
+	# (e.g. Local shipments, which have no container context to drive the
+	# forward container-capacity calc) - back-calculate Quantity from
+	# packaging_qty x the same per-unit fill weight used below for the
+	# forward direction, instead of leaving Quantity at 0.
+	if qty <= 0 and manual_qty > 0 and profile:
+		fill_kg = product_fill_kg_for_profile(profile)
+		if fill_kg > 0:
+			back_calc_kg = manual_qty * fill_kg
+			if back_calc_kg > 0:
+				uom = uom or "Metric Ton"
+				qty = kg_to_commercial_quantity(back_calc_kg, uom)
+				_set("quantity", qty)
+				_set("uom", uom)
+
+	product_kg = quantity_to_kg(qty, uom)
+	_set("planned_product_kg", product_kg)
+	_set("net_weight", product_kg)
+
 	if override and manual_qty > 0:
 		pkg_qty = manual_qty
 	else:
@@ -473,6 +490,11 @@ def apply_packing_variance_to_ldn(ldn, do: dict[str, Any] | None = None) -> None
 	loaded_units = loaded_packaging_qty_from_loading_entries(si)
 	if loaded_units > 0:
 		ldn.loaded_packaging_qty = loaded_units
+	else:
+		# No per-batch Loading Entry rows (unused in the real workflow) —
+		# fall back to whatever's already on loaded_packaging_qty, e.g. a
+		# count security entered directly via record_package_count().
+		loaded_units = int(flt(_doc_val(ldn, "loaded_packaging_qty")))
 
 	if expected_units > 0 and loaded_units > 0:
 		ldn.package_variance_qty = loaded_units - expected_units

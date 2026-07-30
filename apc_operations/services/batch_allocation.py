@@ -6,6 +6,21 @@ from frappe.utils import flt, today, getdate, now
 from frappe import _
 
 
+def _coa_number(coa_name):
+    """COA Number for a Loading DN Batch row - coa_number is a fetch_from
+    field that only populates via client-side onchange, never for rows
+    appended server-side, so every append site must set it explicitly."""
+    if not coa_name:
+        return None
+    return frappe.db.get_value("APC COA", coa_name, "coa_number")
+
+
+def _product_name(product):
+    if not product:
+        return None
+    return frappe.db.get_value("Item", product, "item_name")
+
+
 # =============================================================================
 # FIFO Batch Allocation Engine
 # =============================================================================
@@ -635,17 +650,20 @@ def sync_loading_dn_from_job_order_allocations(loading_dn_name, force=False):
             continue
 
         coa = detail.coa or batch_row.linked_coa
+        product = detail.item or batch_row.product
         loading_dn.append(
             "batch_allocations",
             {
                 "batch": detail.batch,
                 "batch_number": detail.batch_number or batch_row.batch_number or detail.batch,
-                "product": detail.item or batch_row.product,
+                "product": product,
+                "product_name": _product_name(product),
                 "uom": batch_row.uom or loading_dn.uom or "",
                 "manufacturing_date": detail.manufacturing_date or batch_row.manufacturing_date,
                 "allocated_qty": qty,
                 "dispatched_qty": 0,
                 "coa": coa,
+                "coa_number": _coa_number(coa),
                 "fifo_sequence": detail.fifo_sequence or (len(rows_created) + 1),
                 "is_fifo_override": 0,
                 "sales_demand": sales_demand,
@@ -784,11 +802,13 @@ def create_loading_dn_batch_allocations(loading_dn_name, product=None, required_
             "batch": batch.name,
             "batch_number": batch.batch_number,
             "product": batch.product,
+            "product_name": _product_name(batch.product),
             "uom": batch.get("uom") or "",
             "manufacturing_date": batch.manufacturing_date,
             "allocated_qty": take,
             "dispatched_qty": 0,
             "coa": batch.linked_coa,
+            "coa_number": _coa_number(batch.linked_coa),
             "fifo_sequence": fifo_seq,
             "is_fifo_override": 0,
             "sales_demand": sd_name,
@@ -1008,7 +1028,14 @@ def confirm_dispatch_and_deduct_stock(loading_dn_name):
     if loading_dn.dispatch_confirmed:
         frappe.throw(_("Dispatch already confirmed for {0}.").format(loading_dn_name))
 
-    if not loading_dn.batch_allocations:
+    is_third_party = bool(
+        loading_dn.transport_delivery_order
+        and frappe.db.get_value(
+            "Delivery Order", loading_dn.transport_delivery_order, "third_party_loading"
+        )
+    )
+
+    if not loading_dn.batch_allocations and not is_third_party:
         frappe.throw(_("No batch allocations found. Run FIFO allocation before confirming dispatch."))
 
     # Pull weights before validation — weighment slips may populate gross/tare/net.
@@ -1175,13 +1202,20 @@ def confirm_dispatch_and_deduct_stock(loading_dn_name):
         )
         loading_dn.db_set("erpnext_dn_sync_status", "Failed", update_modified=False)
 
-    frappe.msgprint(
-        _("Dispatch confirmed for {0}. Stock deducted from {1} batch(es).").format(
-            loading_dn_name, len(loading_dn.batch_allocations)
-        ),
-        indicator="green",
-        alert=True,
-    )
+    if is_third_party:
+        frappe.msgprint(
+            _("Dispatch confirmed for {0} (third-party loading).").format(loading_dn_name),
+            indicator="green",
+            alert=True,
+        )
+    else:
+        frappe.msgprint(
+            _("Dispatch confirmed for {0}. Stock deducted from {1} batch(es).").format(
+                loading_dn_name, len(loading_dn.batch_allocations)
+            ),
+            indicator="green",
+            alert=True,
+        )
 
     if loading_dn.get("transport_delivery_order"):
         from apc_operations.shipping.services.dispatch_lifecycle_service import (
@@ -1442,6 +1476,88 @@ def preview_fifo_allocation_for_loading_dn(product, required_qty, grade=None,
         "shortage": max(0, remaining),
         "total_allocated": required_qty - max(0, remaining),
     }
+
+
+def reconcile_batch_quantities(batch_name, dry_run=False):
+    """Recompute allocated_quantity/dispatched_quantity/available_quantity for
+    one APC Batch from current ground-truth reservation records, instead of
+    trusting whatever is currently stored.
+
+    Ground truth = APC Batch Allocation Detail rows (survive independently of
+    Loading DN deletion — see design note in _ensure_batch_allocation_detail)
+    plus any Loading DN Batch rows not backed by a Detail (ad-hoc reservations
+    seeded directly onto a Loading DN, e.g. from a QC Report Request). Rows on
+    a deleted Loading Delivery Note leave no trace here by construction, so a
+    batch whose only reservation lived on a since-deleted LDN reconciles back
+    to 0 for that reservation — deleting an LDN does not reverse a stock
+    deduction anywhere else in this codebase either, so this is consistent
+    with the rest of the system's behaviour, not a new gap.
+
+    Returns the recomputed values; only writes them when dry_run is False.
+    """
+    batch = frappe.get_doc("APC Batch", batch_name)
+
+    detail_rows = frappe.get_all(
+        "APC Batch Allocation Detail",
+        filters={
+            "batch": batch_name,
+            "docstatus": ["<", 2],
+            "status": ["not in", ["Released", "Cancelled"]],
+        },
+        fields=["name", "allocated_quantity", "dispatched_quantity"],
+    )
+    dispatched = sum(flt(r.dispatched_quantity) for r in detail_rows)
+    allocated = sum(max(flt(r.allocated_quantity) - flt(r.dispatched_quantity), 0) for r in detail_rows)
+    counted_detail_names = {r.name for r in detail_rows}
+
+    ldn_rows = frappe.db.sql(
+        """
+        SELECT ldb.allocated_qty, ldb.dispatched_qty, ldb.batch_allocation_detail
+        FROM `tabLoading DN Batch` ldb
+        INNER JOIN `tabLoading Delivery Note` ldn ON ldn.name = ldb.parent
+        WHERE ldb.batch = %s AND ldn.docstatus < 2
+        """,
+        (batch_name,),
+        as_dict=True,
+    )
+    for row in ldn_rows:
+        if row.batch_allocation_detail and row.batch_allocation_detail in counted_detail_names:
+            continue
+        dispatched += flt(row.dispatched_qty)
+        allocated += max(flt(row.allocated_qty) - flt(row.dispatched_qty), 0)
+
+    available = flt(batch.batch_quantity) - allocated - dispatched
+
+    result = {
+        "batch": batch_name,
+        "before": {
+            "allocated_quantity": flt(batch.allocated_quantity),
+            "dispatched_quantity": flt(batch.dispatched_quantity),
+            "available_quantity": flt(batch.available_quantity),
+        },
+        "after": {
+            "allocated_quantity": allocated,
+            "dispatched_quantity": dispatched,
+            "available_quantity": available,
+        },
+        "changed": (
+            flt(batch.allocated_quantity) != allocated
+            or flt(batch.dispatched_quantity) != dispatched
+            or flt(batch.available_quantity) != available
+        ),
+    }
+
+    if not dry_run and result["changed"]:
+        batch.db_set(
+            {
+                "allocated_quantity": allocated,
+                "dispatched_quantity": dispatched,
+                "available_quantity": available,
+            },
+            update_modified=False,
+        )
+
+    return result
 
 
 def get_batch_allocation_report(product=None, grade=None, warehouse=None, as_of_date=None):

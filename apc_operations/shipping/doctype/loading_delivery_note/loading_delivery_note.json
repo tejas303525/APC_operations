@@ -45,6 +45,7 @@
   "batch_allocation_section",
   "batch_allocations",
   "transport_section",
+  "weight_variance_method",
   "transport_delivery_order",
   "planned_quantity",
   "calculated_gross_kg",
@@ -365,6 +366,15 @@
    "label": "Transport & Weighment"
   },
   {
+   "default": "Weighbridge",
+   "description": "Which method gates dispatch readiness for this DN — the other method's fields are still recorded when available, but only the selected one is required and validated.",
+   "fieldname": "weight_variance_method",
+   "fieldtype": "Select",
+   "label": "Variance Method",
+   "options": "Weighbridge\nPackage Count",
+   "reqd": 1
+  },
+  {
    "fieldname": "transport_delivery_order",
    "fieldtype": "Link",
    "label": "Transport Delivery Order",
@@ -392,10 +402,11 @@
    "read_only": 1
   },
   {
+   "description": "Auto-summed from Security's per-batch loading entries when present; otherwise enter the count security physically counted while loading.",
    "fieldname": "loaded_packaging_qty",
    "fieldtype": "Int",
    "label": "Loaded Packaging Qty",
-   "read_only": 1
+   "read_only_depends_on": "eval:doc.weight_variance_method !== \"Package Count\""
   },
   {
    "fieldname": "loading_start_time",

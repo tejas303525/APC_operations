@@ -48,6 +48,12 @@
   "shipping_status",
   "transport_requirement_status",
   "transport_requirement_notes",
+  "third_party_loading_section",
+  "third_party_loading",
+  "third_party_loader",
+  "column_break_3pl",
+  "third_party_loading_location",
+  "third_party_loading_notes",
   "section_responsibility",
   "freight_borne_by",
   "transport_arranged_by",
@@ -372,6 +378,44 @@
    "fieldtype": "Small Text",
    "label": "Transport Requirement Notes",
    "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "description": "Loading is carried out by a third party outside APC's own security/QC checks (e.g. buyer's own loading team). When checked, the Delivery Order routes to QC for batch/COA entry instead of Security, and Security's normal inspection checklist is bypassed at dispatch.",
+   "fieldname": "third_party_loading_section",
+   "fieldtype": "Section Break",
+   "label": "Third Party Loading"
+  },
+  {
+   "default": "0",
+   "fieldname": "third_party_loading",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Third Party Loading"
+  },
+  {
+   "depends_on": "eval:doc.third_party_loading",
+   "fieldname": "third_party_loader",
+   "fieldtype": "Data",
+   "label": "Third Party Loader"
+  },
+  {
+   "depends_on": "eval:doc.third_party_loading",
+   "fieldname": "column_break_3pl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.third_party_loading",
+   "fieldname": "third_party_loading_location",
+   "fieldtype": "Data",
+   "label": "Third Party Loading Location"
+  },
+  {
+   "depends_on": "eval:doc.third_party_loading",
+   "fieldname": "third_party_loading_notes",
+   "fieldtype": "Small Text",
+   "label": "Third Party Loading Notes"
   },
   {
    "collapsible": 1,

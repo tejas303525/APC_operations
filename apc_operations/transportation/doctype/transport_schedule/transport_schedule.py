@@ -149,6 +149,46 @@ class TransportSchedule(Document):
         self.create_gate_passes(allow_without_submit=False, ignore_permissions=False)
         self.notify_payables_team()
 
+    def on_trash(self):
+        """Cascade-delete this Transport Schedule's own satellite records.
+
+        Frappe's link-existence check (which blocks delete with "cannot
+        delete because linked with X") runs AFTER on_trash, so cleaning
+        these up here lets a normal delete go through instead of throwing.
+        Only covers Transport PO Request / Security Draft Delivery Note /
+        Gate Pass - documents that exist solely to serve this Transport
+        Schedule and have no purpose once it's gone. Does NOT touch the
+        Shipping Booking itself, or a sibling amended (``-1``) Transport
+        Schedule - those are independent documents with their own history,
+        not disposable satellites, and should be handled deliberately. A
+        Shipping Booking that references this Transport Schedule just has
+        its ``linked_transport`` reference cleared, not the whole booking
+        deleted.
+        """
+        if frappe.db.has_column("Shipping Booking", "linked_transport"):
+            frappe.db.set_value(
+                "Shipping Booking",
+                {"linked_transport": self.name},
+                "linked_transport",
+                None,
+                update_modified=False,
+            )
+
+        satellites = [
+            ("Transport PO Request", self.transport_po_request),
+            ("Security Draft Delivery Note", self.security_draft_delivery_note),
+            ("Gate Pass", self.gate_pass),
+        ]
+        for doctype, name in satellites:
+            if not name:
+                name = frappe.db.get_value(doctype, {"transport_schedule": self.name}, "name")
+            if not name or not frappe.db.exists(doctype, name):
+                continue
+            doc = frappe.get_doc(doctype, name)
+            if doc.docstatus == 1:
+                doc.cancel()
+            frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
+
     def on_update(self):
         # Sync to Shipping Booking (parent document relationship)
         self.sync_status_to_booking()

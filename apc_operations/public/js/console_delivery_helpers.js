@@ -66,6 +66,24 @@
 			<div>${frappe.utils.escape_html(formatDeliveryDate(item.delivery_due_date))}</div>`;
 	}
 
+	function productPackagingKvHtml(item) {
+		if (!item || (!item.product_summary && !item.packaging_summary)) {
+			return "";
+		}
+		let html = "";
+		if (item.product_summary) {
+			html += `
+			<div class="apc-kv-label">${__("Product")}</div>
+			<div>${frappe.utils.escape_html(item.product_summary)}</div>`;
+		}
+		if (item.packaging_summary) {
+			html += `
+			<div class="apc-kv-label">${__("Packaging")}</div>
+			<div>${frappe.utils.escape_html(item.packaging_summary)}</div>`;
+		}
+		return html;
+	}
+
 	function consoleDeliveryBadges(item, extraBadges) {
 		const badges = [];
 		const dueBadge = deliveryUrgencyBadge(item);
@@ -250,6 +268,7 @@
 	UI.deliveryUrgencyTone = deliveryUrgencyTone;
 	UI.deliveryUrgencyBadge = deliveryUrgencyBadge;
 	UI.deliveryDueKvHtml = deliveryDueKvHtml;
+	UI.productPackagingKvHtml = productPackagingKvHtml;
 	UI.consoleDeliveryBadges = consoleDeliveryBadges;
 	UI.formatDailyWorkSubtitle = formatDailyWorkSubtitle;
 	UI.aggregateQueueCounts = aggregateQueueCounts;

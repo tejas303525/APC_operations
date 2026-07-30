@@ -138,14 +138,22 @@ def sync_ldn_batch_from_qc_report(ldn_name: str) -> None:
 	batch's own linked COA (CLAUDE.md: Allocated Batch -> Linked COA ->
 	Dispatch COA). Also seeds a single allocation row from the linked QC
 	Report Request's batch/coa when the LDN has no allocation rows at all
-	yet (e.g. a simple single-batch dispatch)."""
+	yet (e.g. a simple single-batch dispatch).
+
+	Also backfills coa_number/product_name/batch_number - these are
+	fetch_from fields that only populate via client-side onchange, never for
+	rows appended server-side, so a row can have `coa` set correctly while
+	`coa_number` stays blank (silently drops the COA off print formats that
+	only read coa_number)."""
 	if not ldn_name or not frappe.db.exists("Loading Delivery Note", ldn_name):
 		return
+
+	from apc_operations.services.batch_allocation import _coa_number, _product_name
 
 	rows = frappe.get_all(
 		"Loading DN Batch",
 		filters={"parent": ldn_name, "parenttype": "Loading Delivery Note"},
-		fields=["name", "batch", "coa"],
+		fields=["name", "batch", "coa", "coa_number", "product", "product_name", "batch_number"],
 	)
 
 	if not rows:
@@ -155,29 +163,46 @@ def sync_ldn_batch_from_qc_report(ldn_name: str) -> None:
 		if qcr_batch:
 			ldn = frappe.get_doc("Loading Delivery Note", ldn_name)
 			batch_doc = frappe.db.get_value(
-				"APC Batch", qcr_batch, ["item", "item_name", "batch_qty", "manufacturing_date", "uom"], as_dict=True
+				"APC Batch", qcr_batch, ["product", "batch_quantity", "manufacturing_date", "uom"], as_dict=True
 			)
+			coa = qcr_coa or frappe.db.get_value("APC Batch", qcr_batch, "linked_coa")
+			product = batch_doc.product if batch_doc else None
 			ldn.append(
 				"batch_allocations",
 				{
 					"batch": qcr_batch,
-					"coa": qcr_coa or frappe.db.get_value("APC Batch", qcr_batch, "linked_coa"),
-					"product": batch_doc.item if batch_doc else None,
-					"product_name": batch_doc.item_name if batch_doc else None,
+					"batch_number": qcr_batch,
+					"coa": coa,
+					"coa_number": _coa_number(coa),
+					"product": product,
+					"product_name": _product_name(product),
 					"uom": batch_doc.uom if batch_doc else None,
 					"manufacturing_date": batch_doc.manufacturing_date if batch_doc else None,
-					"allocated_qty": flt(batch_doc.batch_qty) if batch_doc else 0,
+					"allocated_qty": flt(batch_doc.batch_quantity) if batch_doc else 0,
 				},
 			)
 			ldn.save(ignore_permissions=True)
 		return
 
 	for row in rows:
-		if row.coa or not row.batch:
-			continue
-		linked_coa = frappe.db.get_value("APC Batch", row.batch, "linked_coa")
-		if linked_coa:
-			frappe.db.set_value("Loading DN Batch", row.name, "coa", linked_coa, update_modified=False)
+		updates = {}
+		if not row.coa and row.batch:
+			linked_coa = frappe.db.get_value("APC Batch", row.batch, "linked_coa")
+			if linked_coa:
+				updates["coa"] = linked_coa
+				row.coa = linked_coa
+		if row.coa and not row.coa_number:
+			coa_number = _coa_number(row.coa)
+			if coa_number:
+				updates["coa_number"] = coa_number
+		if row.product and not row.product_name:
+			product_name = _product_name(row.product)
+			if product_name:
+				updates["product_name"] = product_name
+		if row.batch and not row.batch_number:
+			updates["batch_number"] = row.batch
+		if updates:
+			frappe.db.set_value("Loading DN Batch", row.name, updates, update_modified=False)
 
 
 def verify_ldn_coas(ldn_name: str) -> bool:
@@ -219,34 +244,119 @@ def verify_ldn_coas(ldn_name: str) -> bool:
 
 @frappe.whitelist()
 def get_dispatch_readiness(delivery_order: str) -> dict[str, Any]:
-	"""Read-only summary of what's still blocking dispatch for a Delivery
-	Order - used to drive a "ready to dispatch" indicator/checklist."""
-	blockers: list[str] = []
+	"""Read-only checklist of what's still blocking dispatch for a Delivery
+	Order - drives the Loading Bay Console's readiness widget.
+
+	Return shape is a hard contract with security_console.js's
+	_renderDispatchReadiness(): {steps: [{label, done, detail}], blocking,
+	can_issue_dn, loading_delivery_note}. An empty/missing `steps` list makes
+	the console show "No Loading DN linked" regardless of `blocking` or
+	`ready` — a shape mismatch here silently reads as that message even when
+	an LDN *is* linked.
+	"""
 	ldn_name = _resolve_ldn_for_do(delivery_order)
 	if not ldn_name:
-		blockers.append(_("No Loading Delivery Note linked yet."))
-		return {"delivery_order": delivery_order, "loading_delivery_note": None, "ready": False, "blockers": blockers}
+		return {
+			"delivery_order": delivery_order,
+			"loading_delivery_note": None,
+			"steps": [],
+			"blocking": [],
+			"can_issue_dn": False,
+		}
+
+	do = frappe.db.get_value(
+		"Delivery Order",
+		delivery_order,
+		["third_party_loading", "third_party_batch", "third_party_coa"],
+		as_dict=True,
+	) or {}
+	if do.get("third_party_loading"):
+		# Loading happened outside APC's own checks - the only thing this
+		# DO needs before Security can issue the Delivery Note is QC having
+		# recorded what the third party supplied.
+		entered = bool(do.get("third_party_batch") and do.get("third_party_coa"))
+		dispatch_confirmed = bool(
+			frappe.db.get_value("Loading Delivery Note", ldn_name, "dispatch_confirmed")
+		)
+		return {
+			"delivery_order": delivery_order,
+			"loading_delivery_note": ldn_name,
+			"weight_variance_method": None,
+			"third_party_loading": True,
+			"steps": [
+				{"label": _("Loading DN created"), "done": True},
+				{"label": _("QC entered third-party batch/COA"), "done": entered},
+			],
+			"blocking": [_("Dispatch already confirmed.")] if dispatch_confirmed else [],
+			"can_issue_dn": entered and not dispatch_confirmed,
+		}
 
 	ldn = frappe.db.get_value(
 		"Loading Delivery Note",
 		ldn_name,
-		["net_weight", "coa_verified", "qc_manager_approved", "dispatch_confirmed", "delivery_note_status"],
+		[
+			"name",
+			"coa_verified",
+			"qc_manager_approved",
+			"dispatch_confirmed",
+			"delivery_note_status",
+			"loading_start_time",
+			"loading_end_time",
+			"tare_weight",
+			"gross_weight",
+			"net_weight",
+			"weight_variance_method",
+			"expected_packaging_qty",
+			"loaded_packaging_qty",
+			"package_variance_status",
+		],
 		as_dict=True,
 	) or {}
 
-	if not flt(ldn.get("net_weight")):
-		blockers.append(_("Net weight not captured."))
-	if not ldn.get("coa_verified"):
-		blockers.append(_("COA not verified."))
-	if not ldn.get("qc_manager_approved"):
-		blockers.append(_("QC manager approval pending."))
+	has_batches = bool(
+		frappe.db.exists("Loading DN Batch", {"parent": ldn_name, "parenttype": "Loading Delivery Note"})
+	)
+	is_package_count = ldn.get("weight_variance_method") == "Package Count"
+
+	steps = [
+		{"label": _("Loading DN created"), "done": True},
+		{"label": _("Batch & COA synced"), "done": has_batches},
+		{"label": _("COA verified"), "done": bool(ldn.get("coa_verified"))},
+		{"label": _("Loading completed"), "done": bool(ldn.get("loading_start_time") and ldn.get("loading_end_time"))},
+	]
+	if is_package_count:
+		steps.append(
+			{
+				"label": _("Package count matches Job Order"),
+				"done": bool(
+					flt(ldn.get("expected_packaging_qty"))
+					and flt(ldn.get("loaded_packaging_qty"))
+					and flt(ldn.get("expected_packaging_qty")) == flt(ldn.get("loaded_packaging_qty"))
+				),
+			}
+		)
+	else:
+		steps.extend(
+			[
+				{"label": _("Tare weight recorded"), "done": bool(flt(ldn.get("tare_weight")))},
+				{"label": _("Gross weight recorded"), "done": bool(flt(ldn.get("gross_weight")))},
+				{"label": _("Net weight captured"), "done": bool(flt(ldn.get("net_weight")))},
+			]
+		)
+	steps.append({"label": _("QC manager approved"), "done": bool(ldn.get("qc_manager_approved"))})
+
+	blocking: list[str] = []
 	if ldn.get("dispatch_confirmed"):
-		blockers.append(_("Dispatch already confirmed."))
+		blocking.append(_("Dispatch already confirmed."))
+
+	can_issue_dn = all(s["done"] for s in steps) and not ldn.get("dispatch_confirmed")
 
 	return {
 		"delivery_order": delivery_order,
 		"loading_delivery_note": ldn_name,
 		"delivery_note_status": ldn.get("delivery_note_status"),
-		"ready": not blockers,
-		"blockers": blockers,
+		"weight_variance_method": ldn.get("weight_variance_method") or "Weighbridge",
+		"steps": steps,
+		"blocking": blocking,
+		"can_issue_dn": can_issue_dn,
 	}

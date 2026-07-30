@@ -44,6 +44,8 @@ def get_loading_bay_queue():
 			do.customer_name,
 			do.do_status,
 			do.operational_status,
+			do.third_party_loading,
+			do.third_party_loader,
 			do.transport_delivery_order_number,
 			do.loading_delivery_note,
 			do.planned_quantity,
@@ -106,6 +108,13 @@ def get_loading_bay_queue():
 		""",
 		as_dict=True,
 	)
+
+	from apc_operations.shipping.services.job_order_sync_service import (
+		attach_job_order_product_summary,
+	)
+
+	attach_job_order_product_summary(rows)
+
 	for row in rows:
 		if not row.get("loading_delivery_note") and row.get("ldn_resolved"):
 			row["loading_delivery_note"] = row["ldn_resolved"]
@@ -175,6 +184,7 @@ def get_gate_control_queue():
 			gp.delivery_order,
 			gp.gate_status,
 			gp.released_on,
+			do.job_order,
 			do.do_status,
 			do.operational_status,
 			do.loading_delivery_note,

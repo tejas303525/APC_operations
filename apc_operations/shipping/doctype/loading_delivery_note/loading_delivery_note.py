@@ -64,6 +64,27 @@ class LoadingDeliveryNote(Document):
 
     def on_update(self):
         self.sync_to_security_inspection()
+        self.sync_batch_reservations()
+
+    def sync_batch_reservations(self):
+        """Keep APC Batch.allocated_quantity/available_quantity in sync with
+        whatever batches are currently on batch_allocations - covers manual
+        grid edits, not just the FIFO-allocation service calls that already
+        call APC Batch.allocate_quantity() directly."""
+        from apc_operations.services.batch_allocation import reconcile_batch_quantities
+
+        batches = {row.batch for row in (self.batch_allocations or []) if row.batch}
+        before = self.get_doc_before_save()
+        if before:
+            batches |= {row.batch for row in (before.batch_allocations or []) if row.batch}
+
+        for batch_name in batches:
+            try:
+                reconcile_batch_quantities(batch_name)
+            except Exception:
+                frappe.log_error(
+                    frappe.get_traceback(), f"Batch reservation reconcile failed for {batch_name}"
+                )
 
     @frappe.whitelist()
     def confirm_dispatch(self):

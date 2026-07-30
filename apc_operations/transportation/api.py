@@ -31,6 +31,7 @@ from apc_operations.shipping.services.delivery_order_generation_service import (
 	get_followup_delivery_order_eligibility,
 )
 from apc_operations.shipping.services.job_order_sync_service import (
+	attach_job_order_product_summary,
 	attach_live_job_order_numbers,
 )
 from apc_operations.shipping.services.partial_dispatch_service import (
@@ -162,6 +163,10 @@ def _job_order_summary(jo_name: str) -> dict[str, Any]:
 				"shipping_status",
 				"booking_requirement",
 				"loading_remarks",
+				"third_party_loading",
+				"third_party_loader",
+				"third_party_loading_location",
+				"third_party_loading_notes",
 			],
 			as_dict=True,
 		)
@@ -338,6 +343,7 @@ def get_inward_import_list() -> list[dict[str, Any]]:
 				"container_number": ts.get("container_type"),
 			}
 		)
+	attach_job_order_product_summary(out)
 	return enrich_and_sort_console_queue(out)
 
 
@@ -531,6 +537,7 @@ def get_inward_land_list() -> list[dict[str, Any]]:
 			}
 		)
 	attach_live_job_order_numbers(out)
+	attach_job_order_product_summary(out)
 	return enrich_and_sort_console_queue(out)
 
 
@@ -602,6 +609,43 @@ def get_inward_land_detail(job_order: str) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
+_LOCAL_OUTWARD_TYPES = frozenset({"Local Delivery", "Tanker Delivery", "Trailer Delivery"})
+
+
+def _filter_stale_outward_type(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+	"""Drop rows whose Transport Schedule.outward_type no longer matches the
+	Job Order's CURRENT shipment_type - e.g. a "Local Delivery" leg left
+	over from before the Job Order was switched to Export never gets
+	updated or cancelled, so it kept showing as a duplicate card under
+	Local Deliveries even after an Export Container leg existed."""
+	if not rows:
+		return rows
+
+	job_orders = {r.get("job_order") for r in rows if r.get("job_order")}
+	if not job_orders:
+		return rows
+
+	shipment_types = dict(
+		frappe.get_all(
+			"Job Order",
+			filters={"name": ["in", list(job_orders)]},
+			fields=["name", "shipment_type"],
+			as_list=True,
+		)
+	)
+
+	out = []
+	for row in rows:
+		current = shipment_types.get(row.get("job_order")) if row.get("job_order") else None
+		outward_type = (row.get("outward_type") or "").strip()
+		if current == "Local" and outward_type and outward_type not in _LOCAL_OUTWARD_TYPES:
+			continue
+		if current == "Export" and outward_type and outward_type != "Export Container":
+			continue
+		out.append(row)
+	return out
+
+
 def _outward_rows(outward_type_filter: str | list[str] | None = None) -> list[dict[str, Any]]:
 	filters: dict[str, Any] = {
 		"transport_type": "Outward",
@@ -618,7 +662,7 @@ def _outward_rows(outward_type_filter: str | list[str] | None = None) -> list[di
 		order_by="modified desc",
 		limit=400,
 	)
-	return _filter_visible(rows)
+	return _filter_stale_outward_type(_filter_visible(rows))
 
 
 @frappe.whitelist()
@@ -648,6 +692,7 @@ def get_local_delivery_list() -> list[dict[str, Any]]:
 			}
 		)
 	attach_live_job_order_numbers(out)
+	attach_job_order_product_summary(out)
 	return enrich_and_sort_console_queue(out)
 
 
@@ -684,6 +729,10 @@ def get_local_delivery_detail(job_order: str) -> dict[str, Any]:
 		"do_operational_status": do.get("operational_status") if do else None,
 		"can_generate_do": console_status.can_generate_delivery_order(ts.get("transport_status"))
 		and not (do and do.get("name")),
+		"third_party_loading": jo.get("third_party_loading"),
+		"third_party_loader": jo.get("third_party_loader"),
+		"third_party_loading_location": jo.get("third_party_loading_location"),
+		"third_party_loading_notes": jo.get("third_party_loading_notes"),
 	}
 
 
@@ -722,6 +771,7 @@ def get_export_container_list() -> list[dict[str, Any]]:
 			}
 		)
 	attach_live_job_order_numbers(out)
+	attach_job_order_product_summary(out)
 	return enrich_and_sort_console_queue(out)
 
 
@@ -773,6 +823,10 @@ def get_export_container_detail(job_order: str) -> dict[str, Any]:
 		"do_operational_status": do.get("operational_status") if do else None,
 		"can_generate_do": console_status.can_generate_delivery_order(ts.get("transport_status"))
 		and not (do and do.get("name")),
+		"third_party_loading": jo.get("third_party_loading"),
+		"third_party_loader": jo.get("third_party_loader"),
+		"third_party_loading_location": jo.get("third_party_loading_location"),
+		"third_party_loading_notes": jo.get("third_party_loading_notes"),
 	}
 
 
@@ -957,6 +1011,7 @@ def get_partial_delivery_followup_list(only_actionable: int | str = 0) -> list[d
 			continue
 		out.append(row)
 	attach_live_job_order_numbers(out)
+	attach_job_order_product_summary(out)
 	return enrich_and_sort_console_queue(out)
 
 
@@ -1077,6 +1132,10 @@ def get_partial_delivery_followup_detail(job_order: str) -> dict[str, Any]:
 		"followup_do_reason": eligibility.get("reason"),
 		"needs_followup_transport": bool(eligibility.get("needs_followup_transport")),
 		"needs_transport_booking": bool(eligibility.get("needs_transport_booking")),
+		"third_party_loading": jo.get("third_party_loading"),
+		"third_party_loader": jo.get("third_party_loader"),
+		"third_party_loading_location": jo.get("third_party_loading_location"),
+		"third_party_loading_notes": jo.get("third_party_loading_notes"),
 	}
 
 
@@ -1092,6 +1151,10 @@ def create_partial_delivery_followup_transport(
 	assigned_vehicle: str | None = None,
 	assigned_driver: str | None = None,
 	driver_phone: str | None = None,
+	third_party_loading: int | str | None = None,
+	third_party_loader: str | None = None,
+	third_party_loading_location: str | None = None,
+	third_party_loading_notes: str | None = None,
 ) -> dict[str, Any]:
 	"""Create a new transport leg for partial delivery follow-up (never reuses completed schedule)."""
 	if not job_order:
@@ -1130,13 +1193,17 @@ def create_partial_delivery_followup_transport(
 	if jo.status != "Cancelled":
 		jo.db_set("status", "In Progress", update_modified=False)
 
-	if transporter or assigned_vehicle or assigned_driver or driver_phone:
+	if transporter or assigned_vehicle or assigned_driver or driver_phone or third_party_loading is not None:
 		book_transport_schedule(
 			ts_name,
 			transporter=transporter,
 			assigned_vehicle=assigned_vehicle,
 			assigned_driver=assigned_driver,
 			driver_phone=driver_phone,
+			third_party_loading=third_party_loading,
+			third_party_loader=third_party_loader,
+			third_party_loading_location=third_party_loading_location,
+			third_party_loading_notes=third_party_loading_notes,
 		)
 		ts_status = frappe.db.get_value("Transport Schedule", ts_name, "transport_status")
 
@@ -1159,6 +1226,109 @@ def create_partial_delivery_followup_transport(
 		"vehicle_number": vd.get("vehicle_number"),
 		"is_follow_up_leg": True,
 	}
+
+
+@frappe.whitelist()
+def create_partial_delivery_followup_transport_and_issue_do(
+	job_order: str,
+	outward_type: str | None = None,
+	scheduled_pickup_date: str | None = None,
+	scheduled_delivery_date: str | None = None,
+	pickup_location: str | None = None,
+	delivery_location: str | None = None,
+	transporter: str | None = None,
+	assigned_vehicle: str | None = None,
+	assigned_driver: str | None = None,
+	driver_phone: str | None = None,
+	third_party_loading: int | str | None = None,
+	third_party_loader: str | None = None,
+	third_party_loading_location: str | None = None,
+	third_party_loading_notes: str | None = None,
+	quantity: float | None = None,
+) -> dict[str, Any]:
+	"""One-click "Schedule Follow-up Trip": creates the new transport leg for
+	the remaining quantity AND immediately issues its Delivery Order in the
+	same call, instead of requiring the user to separately find the new leg
+	on the Local Deliveries / Export Containers screen and issue it from
+	there - which also made the follow-up leg look like a confusing
+	duplicate card on that screen with nothing left to do on it.
+
+	Uses generate_followup_delivery_order_for_job_order() - NOT the plain
+	generate_delivery_order_for_job_order() - because a Job Order can only
+	ever have one "primary" DO; calling the plain generator here just
+	found and silently returned whatever DO already existed for the job
+	order (e.g. an older, unrelated dispatch) instead of creating a new one
+	tied to this fresh leg.
+
+	Only attempts DO issuance when vehicle/driver/transporter (or
+	third-party loading) was actually supplied in this call, since that's
+	what makes the fresh leg's Transport Schedule bookable enough for
+	generate_followup_delivery_order_for_job_order() to accept it.
+
+	Checks follow-up eligibility (is the prior DO still open?) BEFORE
+	creating anything - a Transport Schedule here also cascades a Security
+	Draft DN and Transport PO Request via
+	TransportSchedule.on_update -> ensure_outward_follow_up_records(), so a
+	blocked attempt used to leave that whole trio behind with no DO ever
+	attached. Retrying after being blocked would silently pile up
+	duplicates instead of surfacing the error.
+	"""
+	from apc_operations.services.delivery_order_service import (
+		find_open_delivery_order_for_job_order,
+	)
+
+	open_do = find_open_delivery_order_for_job_order(job_order)
+	if open_do:
+		frappe.throw(
+			_(
+				"Delivery Order {0} is still open (dispatch not yet confirmed). "
+				"Confirm its dispatch before scheduling another follow-up leg."
+			).format(open_do)
+		)
+
+	result = create_partial_delivery_followup_transport(
+		job_order,
+		outward_type=outward_type,
+		scheduled_pickup_date=scheduled_pickup_date,
+		scheduled_delivery_date=scheduled_delivery_date,
+		pickup_location=pickup_location,
+		delivery_location=delivery_location,
+		transporter=transporter,
+		assigned_vehicle=assigned_vehicle,
+		assigned_driver=assigned_driver,
+		driver_phone=driver_phone,
+		third_party_loading=third_party_loading,
+		third_party_loader=third_party_loader,
+		third_party_loading_location=third_party_loading_location,
+		third_party_loading_notes=third_party_loading_notes,
+	)
+
+	do_result = None
+	do_error = None
+	if transporter or assigned_vehicle or assigned_driver or third_party_loading is not None:
+		if console_status.can_generate_delivery_order(result.get("transport_status")):
+			from apc_operations.shipping.services.delivery_order_generation_service import (
+				generate_followup_delivery_order_for_job_order,
+			)
+
+			try:
+				do_result = generate_followup_delivery_order_for_job_order(
+					job_order, transport_schedule=result.get("transport_schedule"), quantity=quantity
+				)
+			except Exception as e:
+				frappe.log_error(frappe.get_traceback(), f"Follow-up DO issue failed for {job_order}")
+				do_error = str(e) or _(
+					"Follow-up leg was created, but issuing the Delivery Note failed. Issue it manually."
+				)
+		else:
+			do_error = _(
+				"Follow-up leg was created, but its status ({0}) isn't bookable yet - issue the "
+				"Delivery Note manually once it is."
+			).format(result.get("transport_status"))
+
+	result["delivery_order_result"] = do_result
+	result["delivery_order_error"] = do_error
+	return result
 
 
 # ---------------------------------------------------------------------------
@@ -1277,6 +1447,7 @@ def get_grn_summary_list(only_actionable: int | str = 0) -> list[dict[str, Any]]
 			continue
 		out.append(row)
 	attach_live_job_order_numbers(out)
+	attach_job_order_product_summary(out)
 	return enrich_and_sort_console_queue(out)
 
 
@@ -1451,6 +1622,82 @@ def create_import_partial_receipt_followup_transport(
 	}
 
 
+@frappe.whitelist()
+def create_import_partial_receipt_followup_transport_and_issue_do(
+	job_order: str,
+	scheduled_pickup_date: str | None = None,
+	scheduled_delivery_date: str | None = None,
+	pickup_location: str | None = None,
+	delivery_location: str | None = None,
+	transporter: str | None = None,
+	assigned_vehicle: str | None = None,
+	assigned_driver: str | None = None,
+	driver_phone: str | None = None,
+	quantity: float | None = None,
+) -> dict[str, Any]:
+	"""One-click "Schedule Follow-up Trip" for Import GRN partial receipts:
+	creates the new inward leg for the remaining receipt quantity AND
+	immediately issues its Import Delivery Order in the same call, mirroring
+	create_partial_delivery_followup_transport_and_issue_do (Outward) -
+	instead of requiring a separate "Book Transport" step and leaving the
+	user to guess whether a DO/Pre-Check Clearance actually got created.
+
+	Checks follow-up eligibility BEFORE creating anything - a Transport
+	Schedule here also cascades a Security Draft DN and Transport PO
+	Request via TransportSchedule.on_update -> ensure_inward_follow_up_records(),
+	so a blocked attempt would otherwise leave that trio behind with no DO
+	ever attached (the exact bug already fixed on the Outward side).
+	"""
+	from apc_operations.shipping.services.delivery_order_generation_service import (
+		find_open_import_delivery_order_for_job_order,
+		generate_followup_import_delivery_order_for_job_order,
+	)
+
+	open_do = find_open_import_delivery_order_for_job_order(job_order)
+	if open_do:
+		frappe.throw(
+			_(
+				"Delivery Order {0} is still awaiting QC/Security precheck or its Import GRN. "
+				"Complete that before scheduling another follow-up leg."
+			).format(open_do)
+		)
+
+	result = create_import_partial_receipt_followup_transport(
+		job_order,
+		scheduled_pickup_date=scheduled_pickup_date,
+		scheduled_delivery_date=scheduled_delivery_date,
+		pickup_location=pickup_location,
+		delivery_location=delivery_location,
+		transporter=transporter,
+		assigned_vehicle=assigned_vehicle,
+		assigned_driver=assigned_driver,
+		driver_phone=driver_phone,
+	)
+
+	do_result = None
+	do_error = None
+	if transporter or assigned_vehicle or assigned_driver:
+		if console_status.can_generate_delivery_order(result.get("transport_status")):
+			try:
+				do_result = generate_followup_import_delivery_order_for_job_order(
+					job_order, transport_schedule=result.get("transport_schedule"), quantity=quantity
+				)
+			except Exception as e:
+				frappe.log_error(frappe.get_traceback(), f"Follow-up Import DO issue failed for {job_order}")
+				do_error = str(e) or _(
+					"Follow-up leg was created, but issuing the Delivery Note failed. Issue it manually."
+				)
+		else:
+			do_error = _(
+				"Follow-up leg was created, but its status ({0}) isn't bookable yet - issue the "
+				"Delivery Order manually once it is."
+			).format(result.get("transport_status"))
+
+	result["delivery_order_result"] = do_result
+	result["delivery_order_error"] = do_error
+	return result
+
+
 # ---------------------------------------------------------------------------
 # Book / re-book Transport Schedule (assignment + pricing)
 # ---------------------------------------------------------------------------
@@ -1565,6 +1812,10 @@ def book_transport_schedule(
 	currency: str | None = None,
 	si_cutoff: str | None = None,
 	gate_cutoff: str | None = None,
+	third_party_loading: int | str | None = None,
+	third_party_loader: str | None = None,
+	third_party_loading_location: str | None = None,
+	third_party_loading_notes: str | None = None,
 ) -> dict[str, Any]:
 	"""Book (or re-book) transport assignment + pricing for a Transport Schedule.
 
@@ -1664,6 +1915,18 @@ def book_transport_schedule(
 		new_status = doc.transport_status
 	else:
 		new_status = current_status
+
+	if third_party_loading is not None:
+		job_order = frappe.db.get_value("Transport Schedule", transport_schedule, "job_order")
+		if job_order:
+			jo_updates: dict[str, Any] = {"third_party_loading": cint(third_party_loading)}
+			if third_party_loader is not None:
+				jo_updates["third_party_loader"] = third_party_loader
+			if third_party_loading_location is not None:
+				jo_updates["third_party_loading_location"] = third_party_loading_location
+			if third_party_loading_notes is not None:
+				jo_updates["third_party_loading_notes"] = third_party_loading_notes
+			frappe.db.set_value("Job Order", job_order, jo_updates, update_modified=False)
 
 	return {
 		"transport_schedule": transport_schedule,
@@ -1777,3 +2040,18 @@ def send_security_delivery_draft_note_to_security(sddn: str) -> dict[str, Any]:
 		"sddn": sddn,
 		"security_status": "Sent to Security",
 	}
+
+
+@frappe.whitelist()
+def ensure_transport_po_for_schedule(transport_schedule: str) -> dict[str, Any]:
+	"""Get-or-create the Transport PO Request for a Transport Schedule, for
+	the console's "Print Transport PO" action. Wraps the existing
+	Transport Schedule.create_transport_po_request() (already used by
+	ensure_outward_follow_up_records()) - this whitelisted entry point for
+	it never existed even though the console JS has called it all along."""
+	if not transport_schedule:
+		frappe.throw(_("transport_schedule is required"))
+
+	doc = frappe.get_doc("Transport Schedule", transport_schedule)
+	tpo_name = doc.create_transport_po_request()
+	return {"transport_schedule": transport_schedule, "transport_po_request": tpo_name}

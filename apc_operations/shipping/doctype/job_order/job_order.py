@@ -163,6 +163,28 @@ INCOTERM_RULES = {
             "risk to delivery; insurance is APC's commercial decision."
         ),
     },
+    "DDU": {
+        # Pre-2010 Incoterms predecessor of DAP, superseded by it but still
+        # used by some counterparties. Same obligations as DAP: seller
+        # delivers to the named destination ready for unloading; buyer
+        # clears import and unloads.
+        "freight_borne_by": "APC",
+        "insurance_borne_by": "APC",
+        "transport_arranged_by": "APC",
+        "shipping_arranged_by": "APC",
+        "transport_required": 1,
+        "shipping_required": 1,
+        "insurance_required": 0,
+        "booking_requirement": "Transport and Ship Booking",
+        "transport_requirement_status": "Transport Required",
+        "risk_transfer_point": "At named destination, ready for unloading",
+        "transport_requirement_notes": (
+            "DDU (pre-2010 equivalent of DAP): APC delivers to the named "
+            "destination ready for unloading, not cleared for import. "
+            "Buyer unloads and clears imports/duties. APC carries risk to "
+            "delivery; insurance is APC's commercial decision."
+        ),
+    },
     "DPU": {
         "freight_borne_by": "APC",
         "insurance_borne_by": "APC",
@@ -333,6 +355,24 @@ INCOTERM_RULES_IMPORT = {
         "transport_requirement_notes": (
             "DAP (Import): Supplier delivers to the named place in the destination country ready for "
             "unloading. APC clears import and unloads. APC may use Transport Schedule for site coordination."
+        ),
+    },
+    "DDU": {
+        # Pre-2010 predecessor of DAP - same obligations.
+        "freight_borne_by": "Customer",
+        "insurance_borne_by": "Customer",
+        "transport_arranged_by": "Customer",
+        "shipping_arranged_by": "Customer",
+        "transport_required": 1,
+        "shipping_required": 1,
+        "insurance_required": 0,
+        "booking_requirement": "Transport and Ship Booking",
+        "transport_requirement_status": "Transport Required",
+        "risk_transfer_point": "At named destination ready for unloading — supplier delivers",
+        "transport_requirement_notes": (
+            "DDU (Import, pre-2010 equivalent of DAP): Supplier delivers to the named place in the "
+            "destination country ready for unloading, not cleared for import. APC clears import and "
+            "unloads. APC may use Transport Schedule for site coordination."
         ),
     },
     "DPU": {

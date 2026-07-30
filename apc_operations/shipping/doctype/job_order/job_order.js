@@ -251,6 +251,15 @@ frappe.ui.form.on("Job Order Item", {
 	uom(frm, cdt, cdn) {
 		apc_recalc_job_order_item_packing(frm, cdt, cdn);
 	},
+	packaging_qty(frm, cdt, cdn) {
+		// No handler previously existed for this field at all, so typing a
+		// Packaging Qty (e.g. drums) never recalculated Quantity - only the
+		// reverse (Quantity -> Packaging Qty) was wired up.
+		apc_recalc_job_order_item_packing(frm, cdt, cdn);
+	},
+	packaging_qty_override(frm, cdt, cdn) {
+		apc_recalc_job_order_item_packing(frm, cdt, cdn);
+	},
 	planned_container_no(frm) {
 		frm.trigger("apc_refresh_container_capacity_summary");
 	},

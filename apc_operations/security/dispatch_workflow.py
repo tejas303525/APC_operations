@@ -425,6 +425,38 @@ def record_gross_weight(
 	}
 
 
+def record_package_count(
+	delivery_order: str,
+	*,
+	loaded_packaging_qty: int,
+) -> dict[str, Any]:
+	"""Package Count method: security directly enters the physical count
+	loaded, cross-checked against the Job Order's expected_packaging_qty.
+	Bypasses the (unused in practice) per-batch Loading Entry auto-sum."""
+	if flt(loaded_packaging_qty) <= 0:
+		frappe.throw(_("Loaded packaging quantity must be greater than zero."))
+
+	ctx = _do_context(delivery_order)
+	ldn = ctx["ldn"]
+	do = ctx["do"]
+	if not ldn:
+		frappe.throw(_("No Loading Delivery Note linked to Delivery Order {0}.").format(delivery_order))
+
+	ldn.loaded_packaging_qty = int(flt(loaded_packaging_qty))
+	_apply_weight_variance(ldn, do)
+	ldn.save(ignore_permissions=True)
+
+	status = sync_dispatch_lifecycle_status(delivery_order, update_modified=True)
+	return {
+		"success": True,
+		"delivery_order": delivery_order,
+		"loaded_packaging_qty": ldn.loaded_packaging_qty,
+		"expected_packaging_qty": ldn.expected_packaging_qty,
+		"package_variance_status": ldn.package_variance_status,
+		"operational_status": status,
+	}
+
+
 def record_seal_details(
 	delivery_order: str,
 	*,

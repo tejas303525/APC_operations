@@ -41,6 +41,13 @@ DISPATCH_LIFECYCLE_STATUSES = (
 
 TERMINAL_LIFECYCLE_STATUSES = frozenset({"Cancelled", "Gate Out Completed"})
 
+# Statuses at or beyond dispatch-confirmed. Stock is already deducted here,
+# so a DO in one of these statuses no longer needs to block a follow-up leg
+# for the same Job Order - the truck's physical gate-out can happen later.
+DISPATCH_CONFIRMED_STATUSES = frozenset(
+	{"Delivery Note Generated", "Ready for Gate Out", "Gate Out Completed"}
+)
+
 # Explicit API transitions (Phase 4+) — recompute sync bypasses this graph.
 ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
 	"Draft": frozenset({"Issued", "Sent to Security", "Cancelled"}),
@@ -122,6 +129,7 @@ def _do_snapshot(do_name: str) -> dict[str, Any] | None:
 			"truck_arrived_on",
 			"sent_to_security_on",
 			"issued_on",
+			"commercial_movement",
 		],
 		as_dict=True,
 	)
@@ -237,7 +245,20 @@ def compute_dispatch_lifecycle_status(do_name: str) -> str:
 			as_dict=True,
 		)
 
-	si_name = resolve_security_inspection_for_do(do_name)
+	# Security Inspection is an Outward, loading-bay-specific concept
+	# (created from a Security Draft DN's checklist during dispatch).
+	# resolve_security_inspection_for_do() falls back to a job-order-wide
+	# lookup, not scoped to a specific DO/leg - on a Job Order that has any
+	# outward-flavored Security Inspection at all, that fallback would
+	# wrongly attach it to an unrelated Import DO and permanently cap its
+	# computed status at "Sent to Security", since Import never has an LDN
+	# to satisfy the `if not ldn: return "Sent to Security"` branch below.
+	# Import DOs advance purely off Pre-Check Clearance instead.
+	si_name = (
+		resolve_security_inspection_for_do(do_name)
+		if (do.get("commercial_movement") or "").strip() != "Import"
+		else None
+	)
 	si = None
 	if si_name:
 		si = frappe.db.get_value(

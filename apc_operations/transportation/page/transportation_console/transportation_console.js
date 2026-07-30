@@ -608,7 +608,7 @@ function openScheduleImportGrnFollowupDialog(data, onSuccess) {
 				fieldtype: "HTML",
 				options: `<p class="text-muted small">${frappe.utils.escape_html(
 					__(
-						"A new Inward Import transport schedule will be created for the remaining {0} units. Leg type: Partial Import Follow-up.",
+						"Creates a new Inward Import transport leg for the remaining {0} units AND issues its Delivery Order in the same step. It will appear on both QC's and Security's New Delivery Order queues for precheck.",
 						[data.pending_receipt_quantity]
 					)
 				)}</p>`,
@@ -637,24 +637,34 @@ function openScheduleImportGrnFollowupDialog(data, onSuccess) {
 				label: __("Delivery Location (APC Site)"),
 				default: data.delivery_location || "",
 			},
-			{ fieldtype: "Section Break", label: __("Optional — assign now") },
+			{
+				fieldtype: "Float",
+				fieldname: "quantity",
+				label: __("Qty to Receive"),
+				default: data.pending_receipt_quantity,
+				description: __("Leave blank to use the full remaining pending quantity."),
+			},
+			{ fieldtype: "Section Break", label: __("Assignment") },
 			{
 				fieldtype: "Link",
 				fieldname: "transporter",
 				label: __("Transporter"),
 				options: "Transporter",
+				description: __("3rd-party carrier (optional if assigning APC vehicle)"),
 			},
 			{
 				fieldtype: "Link",
 				fieldname: "assigned_vehicle",
 				label: __("Vehicle"),
 				options: "Vehicle",
+				reqd: 1,
 			},
 			{
 				fieldtype: "Link",
 				fieldname: "assigned_driver",
 				label: __("Driver"),
 				options: "Driver",
+				reqd: 1,
 			},
 			{
 				fieldtype: "Data",
@@ -662,7 +672,7 @@ function openScheduleImportGrnFollowupDialog(data, onSuccess) {
 				label: __("Driver Phone"),
 			},
 		],
-		primary_action_label: __("Create Import Follow-up Trip"),
+		primary_action_label: __("Create Follow-up Trip & Issue DO"),
 		primary_action(values) {
 			d.disable_primary_action();
 			const args = { job_order: data.job_order };
@@ -671,6 +681,7 @@ function openScheduleImportGrnFollowupDialog(data, onSuccess) {
 				"scheduled_delivery_date",
 				"pickup_location",
 				"delivery_location",
+				"quantity",
 				"transporter",
 				"assigned_vehicle",
 				"assigned_driver",
@@ -682,23 +693,30 @@ function openScheduleImportGrnFollowupDialog(data, onSuccess) {
 			});
 
 			APCConsoleUI.callApi(
-				"apc_operations.transportation.api.create_import_partial_receipt_followup_transport",
+				"apc_operations.transportation.api.create_import_partial_receipt_followup_transport_and_issue_do",
 				args
 			)
 				.then((res) => {
-					frappe.show_alert({
-						message: __("Import follow-up transport {0} created", [res.transport_schedule]),
-						indicator: "green",
-					});
+					const doRes = res.delivery_order_result;
+					if (doRes && doRes.delivery_order) {
+						frappe.show_alert({
+							message: __("Follow-up transport {0} created, Delivery Order {1} issued", [
+								res.transport_schedule,
+								doRes.delivery_order,
+							]),
+							indicator: "green",
+						});
+					} else {
+						frappe.show_alert({
+							message: __("Follow-up transport {0} created", [res.transport_schedule]),
+							indicator: "green",
+						});
+						if (res.delivery_order_error) {
+							frappe.msgprint(res.delivery_order_error);
+						}
+					}
 					d.hide();
 					onSuccess && onSuccess();
-					if (
-						res.transport_schedule &&
-						!values.assigned_driver &&
-						!values.assigned_vehicle
-					) {
-						openBookTransportDialog(res.transport_schedule, onSuccess);
-					}
 				})
 				.catch((err) => {
 					frappe.msgprint(err);
@@ -1836,6 +1854,13 @@ function openScheduleFollowupDialog(data, onSuccess) {
 					"\nLocal Delivery\nTanker Delivery\nTrailer Delivery\nExport Container",
 				default: data.outward_type || "Local Delivery",
 			},
+			{
+				fieldtype: "Float",
+				fieldname: "quantity",
+				label: __("Qty to Load"),
+				default: data.pending_dispatch_quantity,
+				description: __("Defaults to the full remaining quantity — lower it if even this trip can't carry all of it."),
+			},
 			{ fieldtype: "Section Break", label: __("Schedule") },
 			{
 				fieldtype: "Date",
@@ -1888,13 +1913,43 @@ function openScheduleFollowupDialog(data, onSuccess) {
 				fieldname: "driver_phone",
 				label: __("Driver Contact"),
 			},
+			{ fieldtype: "Section Break", label: __("Third Party Loading") },
+			{
+				fieldtype: "Check",
+				fieldname: "third_party_loading",
+				label: __("3rd Party Loading"),
+				default: data.third_party_loading ? 1 : 0,
+				description: __("Route the Delivery Order to QC when loading happens outside APC."),
+			},
+			{
+				fieldtype: "Data",
+				fieldname: "third_party_loader",
+				label: __("3rd Party Loader"),
+				default: data.third_party_loader,
+				depends_on: "eval:doc.third_party_loading",
+			},
+			{
+				fieldtype: "Data",
+				fieldname: "third_party_loading_location",
+				label: __("3rd Party Loading Location"),
+				default: data.third_party_loading_location,
+				depends_on: "eval:doc.third_party_loading",
+			},
+			{
+				fieldtype: "Small Text",
+				fieldname: "third_party_loading_notes",
+				label: __("3rd Party Loading Notes"),
+				default: data.third_party_loading_notes,
+				depends_on: "eval:doc.third_party_loading",
+			},
 		],
-		primary_action_label: __("Create Follow-up Transport"),
+		primary_action_label: __("Create Follow-up Trip & Issue DO"),
 		primary_action: (values) => {
 			d.disable_primary_action();
 			const args = { job_order: data.job_order };
 			[
 				"outward_type",
+				"quantity",
 				"scheduled_pickup_date",
 				"scheduled_delivery_date",
 				"pickup_location",
@@ -1903,6 +1958,10 @@ function openScheduleFollowupDialog(data, onSuccess) {
 				"assigned_vehicle",
 				"assigned_driver",
 				"driver_phone",
+				"third_party_loading",
+				"third_party_loader",
+				"third_party_loading_location",
+				"third_party_loading_notes",
 			].forEach((k) => {
 				if (values[k]) {
 					args[k] = values[k];
@@ -1910,14 +1969,28 @@ function openScheduleFollowupDialog(data, onSuccess) {
 			});
 
 			APCConsoleUI.callApi(
-				"apc_operations.transportation.api.create_partial_delivery_followup_transport",
+				"apc_operations.transportation.api.create_partial_delivery_followup_transport_and_issue_do",
 				args
 			)
 				.then((res) => {
-					frappe.show_alert({
-						message: __("Follow-up transport {0} created", [res.transport_schedule]),
-						indicator: "green",
-					});
+					const doRes = res.delivery_order_result;
+					if (doRes && doRes.delivery_order) {
+						frappe.show_alert({
+							message: __("Follow-up transport {0} created, Delivery Order {1} issued", [
+								res.transport_schedule,
+								doRes.delivery_order,
+							]),
+							indicator: "green",
+						});
+					} else {
+						frappe.show_alert({
+							message: __("Follow-up transport {0} created", [res.transport_schedule]),
+							indicator: "green",
+						});
+						if (res.delivery_order_error) {
+							frappe.msgprint(res.delivery_order_error);
+						}
+					}
 					d.hide();
 					onSuccess && onSuccess();
 					if (

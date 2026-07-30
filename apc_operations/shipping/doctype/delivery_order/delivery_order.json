@@ -32,6 +32,14 @@
   "issued_on",
   "auto_allocation_run",
   "operational_status",
+  "third_party_loading_section",
+  "third_party_loading",
+  "third_party_loader",
+  "column_break_do_3pl",
+  "third_party_batch",
+  "third_party_coa",
+  "third_party_qc_entered_by",
+  "third_party_qc_entered_on",
   "dispatch_section",
   "expected_dispatch_date",
   "planned_quantity",
@@ -241,6 +249,62 @@
    "in_standard_filter": 1,
    "label": "Operational Status",
    "options": "Draft\nIssued\nSent to Security\nTruck Arrived\nQC Pre-check Pending\nQC Pre-check Passed\nQC Pre-check Failed\nLoading Allowed\nLoading Started\nLoading Completed\nWeighment Completed\nWeight Variance Approval Pending\nQC Final Pending\nDelivery Note Generated\nReady for Gate Out\nGate Out Completed\nOn Hold\nCancelled"
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "eval:doc.third_party_loading",
+   "description": "Loading done by a third party outside APC's own checks. Security's inspection checklist is bypassed for this Delivery Order - QC records the batch/COA the third party supplied instead.",
+   "fieldname": "third_party_loading_section",
+   "fieldtype": "Section Break",
+   "label": "Third Party Loading"
+  },
+  {
+   "default": "0",
+   "fetch_from": "job_order.third_party_loading",
+   "fieldname": "third_party_loading",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Third Party Loading",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "job_order.third_party_loader",
+   "fieldname": "third_party_loader",
+   "fieldtype": "Data",
+   "label": "Third Party Loader",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_do_3pl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "QC selects the existing APC Batch that matches what the third party supplied, or creates a new one on the spot.",
+   "fieldname": "third_party_batch",
+   "fieldtype": "Link",
+   "label": "Third Party Batch",
+   "options": "APC Batch"
+  },
+  {
+   "description": "COA linked to the batch above - QC selects the batch's existing COA, or creates a new one.",
+   "fieldname": "third_party_coa",
+   "fieldtype": "Link",
+   "label": "Third Party COA",
+   "options": "APC COA"
+  },
+  {
+   "fieldname": "third_party_qc_entered_by",
+   "fieldtype": "Link",
+   "label": "Entered By (QC)",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "third_party_qc_entered_on",
+   "fieldtype": "Datetime",
+   "label": "Entered On (QC)",
+   "read_only": 1
   },
   {
    "collapsible": 1,

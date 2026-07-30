@@ -32,8 +32,34 @@ class ShippingBooking(Document):
         normalize_customer_field(self, "customer")
         self.validate_counterparty()
         self.validate_dates()
+        self.sync_container_rows()
         self.calculate_total_charges()
         self.validate_booking_completeness()
+
+    def sync_container_rows(self):
+        """Keep the per-container list (container_number + seal_number rows)
+        in step with Container Count.
+
+        Adds blank rows when the count goes up. When the count goes down,
+        only removes trailing rows that are still completely blank — a row
+        the user has already filled in with a container/seal number is never
+        silently discarded.
+        """
+        count = int(self.container_count or 0)
+        if count < 0:
+            count = 0
+
+        rows = self.containers or []
+        if len(rows) < count:
+            for _i in range(count - len(rows)):
+                self.append("containers", {})
+        elif len(rows) > count:
+            for row in list(reversed(rows)):
+                if len(self.containers) <= count:
+                    break
+                if row.container_number or row.seal_number:
+                    continue
+                self.containers.remove(row)
 
     def validate_counterparty(self):
         if self.job_order:
@@ -49,13 +75,11 @@ class ShippingBooking(Document):
             frappe.throw(_("Set Customer or Supplier on the Shipping Booking."))
 
     def validate_dates(self):
-        if self.vessel_date and self.cutoff_date:
-            if getdate(self.cutoff_date) > getdate(self.vessel_date):
-                frappe.throw(_("Cutoff Date cannot be after Vessel Date (ETD)"))
-
-        if self.pull_out_date and self.cutoff_date:
-            if getdate(self.pull_out_date) > getdate(self.cutoff_date):
-                frappe.throw(_("Pull Out Date cannot be after Cutoff Date"))
+        # Cutoff-vs-vessel and pull-out-vs-cutoff ordering used to be hard
+        # blocks here. Removed at the user's request — real bookings/test
+        # data don't always follow that strict sequence, and it was blocking
+        # saves outright with no way to override.
+        pass
 
     def _get_commercial_movement(self) -> str:
         movement = (self.commercial_movement or "").strip()

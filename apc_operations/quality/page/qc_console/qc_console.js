@@ -231,6 +231,24 @@ function buildQcScreen(kind) {
 				listApi: def.api,
 				searchPlaceholder: __("Search by DO / LDN / JO / Batch / Customer"),
 				toCard: (item) => {
+					if (item.third_party_loading) {
+						// Skips Security's Pre-Check Clearance entirely - no
+						// LDN/SDDN/COA exists yet for these, so the normal
+						// card shape below doesn't apply.
+						return {
+							title: item.delivery_order || item.name,
+							subtitle: item.customer_name || item.customer || "-",
+							body_html: `
+								<div class="apc-kv-label">${__("Job Order")}</div>
+								<div>${frappe.utils.escape_html(item.job_order_number || item.job_order || "-")}</div>
+								<div class="apc-kv-label">${__("Third Party Loader")}</div>
+								<div>${frappe.utils.escape_html(item.third_party_loader || "-")}</div>
+								${APCConsoleUI.productPackagingKvHtml(item)}
+							`,
+							badges: [APCConsoleUI.statusBadge(__("3rd Party Loading"), "warn")],
+							raw: item,
+						};
+					}
 					const jo =
 						item.job_order_number ||
 						item.job_order ||
@@ -268,10 +286,91 @@ function buildQcScreen(kind) {
 					};
 				},
 				onCardClick: (item) =>
-					openQcModal(item.raw, kind, () => router.refresh()),
+					item.raw.third_party_loading
+						? openThirdPartyQcModal(item.raw, () => router.refresh())
+						: openQcModal(item.raw, kind, () => router.refresh()),
 			});
 		},
 	};
+}
+
+// ---------------------------------------------------------------------------
+// Third Party Loading — QC just records the batch/COA the third party
+// supplied, then issues the DO straight to Security's Loading Bay. No
+// Security Inspection or COA-approval workflow applies here (see
+// third_party_loading_service.py). These DOs are merged into the standard
+// "New Delivery Orders" screen above (get_new_dos_without_qc), tagged with
+// third_party_loading so the card/click routing there detects them and
+// opens this modal instead of the normal QC modal.
+// ---------------------------------------------------------------------------
+
+function openThirdPartyQcModal(item, refresh) {
+	const d = new frappe.ui.Dialog({
+		title: `${__("3rd Party Loading")} — ${item.name}`,
+		fields: [
+			{
+				fieldtype: "HTML",
+				options: renderKvGrid(item, [
+					["Job Order", item.job_order_number || item.job_order],
+					["Customer", item.customer_name || item.customer],
+					["Third Party Loader", item.third_party_loader],
+					["Product", item.product_summary],
+					["Packaging", item.packaging_summary],
+				]),
+			},
+			{ fieldtype: "Section Break", label: __("Third Party Details") },
+			{
+				fieldtype: "Link",
+				fieldname: "batch",
+				label: __("Batch"),
+				options: "APC Batch",
+				reqd: 1,
+				description: __(
+					"Select the existing APC Batch that matches what the third party supplied, or type a new batch number to create one."
+				),
+				onchange: () => {
+					const batchVal = d.get_value("batch");
+					if (!batchVal) return;
+					frappe.db.get_value("APC Batch", batchVal, "linked_coa").then((r) => {
+						if (r.message && r.message.linked_coa) {
+							d.set_value("coa", r.message.linked_coa);
+						}
+					});
+				},
+			},
+			{
+				fieldtype: "Link",
+				fieldname: "coa",
+				label: __("COA"),
+				options: "APC COA",
+				reqd: 1,
+				description: __("Auto-filled from the batch's linked COA if it has one — otherwise select or create one."),
+				get_query: () => {
+					const batchVal = d.get_value("batch");
+					return batchVal ? { filters: { batch: batchVal } } : {};
+				},
+			},
+		],
+		primary_action_label: __("Issue to Security"),
+		primary_action: (values) => {
+			d.disable_primary_action();
+			APCConsoleUI.callApi("apc_operations.quality.api.submit_third_party_qc_entry", {
+				delivery_order: item.name,
+				batch: values.batch,
+				coa: values.coa,
+			})
+				.then(() => {
+					frappe.show_alert({
+						message: __("Issued to Security's Loading Bay"),
+						indicator: "green",
+					});
+					d.hide();
+					refresh && refresh();
+				})
+				.catch(() => d.enable_primary_action());
+		},
+	});
+	d.show();
 }
 
 function qcDefaultCoaFromDetail(data) {

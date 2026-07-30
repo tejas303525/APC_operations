@@ -68,6 +68,9 @@ def _do_row(do_name: str) -> dict[str, Any] | None:
 			"pre_check_clearance",
 			"planned_quantity",
 			"gate_entry_no",
+			"third_party_loading",
+			"third_party_batch",
+			"third_party_coa",
 		],
 		as_dict=True,
 	)
@@ -98,6 +101,8 @@ def _ldn_row(ldn_name: str) -> dict[str, Any] | None:
 			"loading_start_time",
 			"loading_end_time",
 			"weight_variance_status",
+			"weight_variance_method",
+			"package_variance_status",
 			"vehicle",
 			"driver",
 			"container_number",
@@ -321,16 +326,19 @@ def compute_weight_variance(
 
 
 def apply_weight_variance_to_ldn(ldn, do: dict[str, Any] | None = None) -> None:
-	"""Compute net weight and variance fields on an in-memory Loading Delivery Note."""
+	"""Compute net weight, weighbridge variance, and packaging variance fields
+	on an in-memory Loading Delivery Note.
+
+	Packaging variance must NOT sit behind the net_weight/planned-quantity
+	early returns below — a Package Count dispatch has no weighbridge
+	reading at all, so net_weight stays 0 and those returns would fire
+	before expected_packaging_qty/loaded_packaging_qty ever got computed.
+	"""
 	gross = flt(getattr(ldn, "gross_weight", 0))
 	tare = flt(getattr(ldn, "tare_weight", 0))
 	if gross > 0 and tare > 0 and gross >= tare:
 		if flt(ldn.net_weight) <= 0 or ldn.has_value_changed("gross_weight") or ldn.has_value_changed("tare_weight"):
 			ldn.net_weight = calculate_net_weight(gross, tare, throw=False)
-
-	net = flt(ldn.net_weight)
-	if net <= 0:
-		return
 
 	if do is None and ldn.get("transport_delivery_order"):
 		do = frappe.db.get_value(
@@ -347,18 +355,21 @@ def apply_weight_variance_to_ldn(ldn, do: dict[str, Any] | None = None) -> None:
 			as_dict=True,
 		)
 
-	planned = _planned_quantity(do, ldn)
-	if planned <= 0:
-		return
-
-	if planned > 0:
-		ldn.planned_quantity = planned
-
 	from apc_operations.shipping.services.packing_calculation_service import (
 		apply_packing_variance_to_ldn,
 	)
 
 	apply_packing_variance_to_ldn(ldn, do=do)
+
+	net = flt(ldn.net_weight)
+	if net <= 0:
+		return
+
+	planned = _planned_quantity(do, ldn)
+	if planned <= 0:
+		return
+
+	ldn.planned_quantity = planned
 
 	prev = ldn.get_doc_before_save() if not ldn.is_new() else None
 	prev_status = (getattr(prev, "weight_variance_status", None) or "").strip()
@@ -510,7 +521,11 @@ def validate_weight_capture(
 	tare_weight: float | None = None,
 	throw: bool = True,
 ) -> list[str]:
-	"""Tare and gross weights must be captured; gross must be >= tare."""
+	"""Tare and gross weights must be captured; gross must be >= tare.
+
+	Skipped when the Loading DN's weight_variance_method is "Package Count" —
+	that method gates on package counts instead (see validate_package_count).
+	"""
 	errors: list[str] = []
 	ldn = None
 	si = None
@@ -520,6 +535,9 @@ def validate_weight_capture(
 	elif do_name:
 		ldn = _ldn_row(resolve_ldn_for_do(do_name))
 		si = _si_row(resolve_security_inspection_for_do(do_name))
+
+	if (ldn or {}).get("weight_variance_method") == "Package Count":
+		return []
 
 	tare = flt(tare_weight) if tare_weight is not None else flt((ldn or {}).get("tare_weight") or (si or {}).get("tare_weight"))
 	gross = flt(gross_weight) if gross_weight is not None else flt((ldn or {}).get("gross_weight") or (si or {}).get("gross_weight"))
@@ -533,6 +551,34 @@ def validate_weight_capture(
 
 	if not errors:
 		calculate_net_weight(gross, tare, throw=throw)
+	return _fail(errors, throw=throw)
+
+
+def validate_package_count(ldn_name: str, *, throw: bool = True) -> list[str]:
+	"""Package-count method: security's actual package count must match the
+	Job Order's expected packaging quantity. Only enforced when the Loading
+	DN's weight_variance_method is "Package Count"."""
+	errors: list[str] = []
+	ldn = _ldn_row(ldn_name)
+	if not ldn:
+		return _fail([_("Loading Delivery Note {0} was not found.").format(ldn_name)], throw=throw)
+
+	if ldn.get("weight_variance_method") != "Package Count":
+		return []
+
+	expected = frappe.db.get_value("Loading Delivery Note", ldn_name, "expected_packaging_qty")
+	loaded = frappe.db.get_value("Loading Delivery Note", ldn_name, "loaded_packaging_qty")
+
+	if not flt(expected):
+		errors.append(_("Expected packaging quantity (from Job Order) is not set."))
+	if not flt(loaded):
+		errors.append(_("Loaded packaging quantity has not been entered by Security."))
+	if flt(expected) and flt(loaded) and flt(expected) != flt(loaded):
+		errors.append(
+			_("Package count mismatch: Job Order expects {0}, Security recorded {1}.").format(
+				int(flt(expected)), int(flt(loaded))
+			)
+		)
 	return _fail(errors, throw=throw)
 
 
@@ -557,11 +603,23 @@ def validate_weight_variance(ldn_name: str, *, tolerance_pct: float | None = Non
 
 
 def validate_supervisor_approval(ldn_name: str, *, throw: bool = True) -> list[str]:
-	"""Weight variance must be within tolerance or explicitly approved."""
+	"""Weight variance must be within tolerance or explicitly approved.
+
+	When weight_variance_method is "Package Count", this gates on
+	package_variance_status instead — validate_package_count() is the one
+	that checks the counts actually match; this only checks the resulting
+	status, mirroring how the Weighbridge branch works below.
+	"""
 	errors: list[str] = []
 	ldn = _ldn_row(ldn_name)
 	if not ldn:
 		return _fail([_("Loading Delivery Note {0} was not found.").format(ldn_name)], throw=throw)
+
+	if ldn.get("weight_variance_method") == "Package Count":
+		pkg_status = (ldn.get("package_variance_status") or "").strip()
+		if pkg_status and pkg_status != "OK":
+			errors.append(_("Package count variance ({0}) must be resolved before dispatch.").format(pkg_status))
+		return _fail(errors, throw=throw)
 
 	status = (ldn.get("weight_variance_status") or "").strip()
 	if not status:
@@ -639,44 +697,63 @@ def validate_delivery_note_generation(ldn_name: str, *, throw: bool = True) -> l
 	if do_name and not si:
 		si = _si_row(resolve_security_inspection_for_do(do_name))
 
+	# Third-party loading: loading itself happened outside APC's own
+	# checks, so the weighbridge/package-count variance, FIFO batch
+	# allocation, COA-approval, and security-inspection checks below don't
+	# apply - QC records what the third party supplied instead (see
+	# third_party_loading_service.submit_third_party_qc_entry).
+	is_third_party = bool(do and do.get("third_party_loading"))
+
 	if (ldn.get("delivery_note_status") or "").strip() in INVALID_LDN_STATUSES:
 		errors.append(_("Loading Delivery Note {0} is in an invalid state.").format(ldn_name))
 
-	if not ldn.get("loading_end_time") and not (si or {}).get("loading_end_time"):
-		errors.append(_("Loading not completed. Loading end time is required before generating the Delivery Note."))
+	if is_third_party:
+		if not (do.get("third_party_batch") and do.get("third_party_coa")):
+			errors.append(
+				_("QC must enter the third party's batch number and COA number before dispatch.")
+			)
+	else:
+		if not ldn.get("loading_end_time") and not (si or {}).get("loading_end_time"):
+			errors.append(_("Loading not completed. Loading end time is required before generating the Delivery Note."))
 
-	loaded_qty = _loaded_quantity(ldn, si, do_name=do_name)
-	if loaded_qty <= 0:
-		errors.append(_("Loaded quantity is required before generating the Delivery Note."))
+		loaded_qty = _loaded_quantity(ldn, si, do_name=do_name)
+		if loaded_qty <= 0:
+			errors.append(_("Loaded quantity is required before generating the Delivery Note."))
 
 	batch_rows = frappe.get_all(
 		"Loading DN Batch",
 		filters={"parent": ldn_name, "parenttype": "Loading Delivery Note"},
 		fields=["name", "batch", "batch_number", "coa"],
 	)
-	if not batch_rows:
+	if not batch_rows and not is_third_party:
 		errors.append(_("No batch rows found. Run FIFO allocation before generating the Delivery Note."))
 
-	vehicle = _resolve_vehicle_for_validation(ldn, si, do_name)
-	driver = _resolve_driver_for_validation(ldn, si, do_name)
-	if not vehicle:
-		errors.append(_("Vehicle details are missing."))
-	if not driver:
-		errors.append(_("Driver details are missing."))
+	if not is_third_party:
+		vehicle = _resolve_vehicle_for_validation(ldn, si, do_name)
+		driver = _resolve_driver_for_validation(ldn, si, do_name)
+		if not vehicle:
+			errors.append(_("Vehicle details are missing."))
+		if not driver:
+			errors.append(_("Driver details are missing."))
 
-	errors.extend(validate_weight_capture(ldn_name=ldn_name, throw=False))
-	errors.extend(validate_supervisor_approval(ldn_name, throw=False))
+		errors.extend(validate_weight_capture(ldn_name=ldn_name, throw=False))
+		errors.extend(validate_package_count(ldn_name, throw=False))
+		errors.extend(validate_supervisor_approval(ldn_name, throw=False))
 
-	for row in batch_rows:
-		if not row.get("batch"):
-			errors.append(_("A batch allocation row is missing a batch reference."))
-			continue
-		errors.extend(validate_coa_approved(row["batch"], throw=False))
+		for row in batch_rows:
+			if not row.get("batch"):
+				errors.append(_("A batch allocation row is missing a batch reference."))
+				continue
+			errors.extend(validate_coa_approved(row["batch"], throw=False))
 
 	if do and _is_do_cancelled(do):
 		errors.append(_("Delivery Order {0} has been cancelled.").format(do_name))
 
-	errors.extend(_validate_qc_and_security_signoff(ldn, si, do_name=do_name, throw=False))
+	errors.extend(
+		_validate_qc_and_security_signoff(
+			ldn, si, do_name=do_name, throw=False, is_third_party=is_third_party
+		)
+	)
 
 	return _fail(errors, throw=throw)
 
@@ -687,10 +764,19 @@ def _validate_qc_and_security_signoff(
 	*,
 	do_name: str | None = None,
 	throw: bool = False,
+	is_third_party: bool = False,
 ) -> list[str]:
-	"""QC clearance, COA, and security final check required before dispatch confirm."""
+	"""QC clearance, COA, and security final check required before dispatch confirm.
+
+	Skipped for third-party loading - APC's own QC/security teams never
+	touched the goods, so there is nothing for them to sign off on beyond
+	the batch/COA reference QC already recorded.
+	"""
 	errors: list[str] = []
 	if not ldn:
+		return errors
+
+	if is_third_party:
 		return errors
 
 	if not ldn.get("final_qc_clearance"):

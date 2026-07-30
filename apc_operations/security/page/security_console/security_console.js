@@ -593,6 +593,7 @@ function buildPendingSddnsScreen() {
 					title: sddn.sddn,
 					subtitle: sddn.customer_name || sddn.customer || sddn.job_order_number || sddn.job_order || "-",
 					body_html: `
+						${APCConsoleUI.productPackagingKvHtml(sddn)}
 						<div class="apc-kv-label">${__("JO")}</div>
 						<div>${frappe.utils.escape_html(sddn.job_order_number || sddn.job_order || "-")}</div>
 						<div class="apc-kv-label">${__("Truck")}</div>
@@ -622,6 +623,7 @@ function buildVerifiedSddnsScreen() {
 					title: sddn.sddn,
 					subtitle: sddn.customer_name || sddn.customer || sddn.job_order_number || sddn.job_order || "-",
 					body_html: `
+						${APCConsoleUI.productPackagingKvHtml(sddn)}
 						<div class="apc-kv-label">${__("JO")}</div>
 						<div>${frappe.utils.escape_html(sddn.job_order_number || sddn.job_order || "-")}</div>
 						<div class="apc-kv-label">${__("Truck")}</div>
@@ -948,6 +950,9 @@ function loadingBayItemToCard(row) {
 	const badges = [
 		APCConsoleUI.statusBadge(row.operational_status, row.operational_status_tone),
 	];
+	if (row.third_party_loading) {
+		badges.push(APCConsoleUI.statusBadge(__("3rd Party Loading"), "warn"));
+	}
 	if (row.qc_cleared) {
 		badges.push(APCConsoleUI.statusBadge(__("QC Cleared"), "success"));
 	} else {
@@ -964,6 +969,7 @@ function loadingBayItemToCard(row) {
 			<div>${frappe.utils.escape_html(row.driver_name || "-")} ${row.driver_contact ? "(" + frappe.utils.escape_html(row.driver_contact) + ")" : ""}</div>
 			<div class="apc-kv-label">${__("Product")}</div>
 			<div>${frappe.utils.escape_html(row.product || "-")}</div>
+			${row.packaging_summary ? `<div class="apc-kv-label">${__("Packaging")}</div><div>${frappe.utils.escape_html(row.packaging_summary)}</div>` : ""}
 			<div class="apc-kv-label">${__("Qty to Load")}</div>
 			<div>${frappe.utils.escape_html(qtyLabel)}</div>
 			<div class="apc-kv-label">${__("LDN")}</div>
@@ -979,31 +985,58 @@ function loadingBayItemToCard(row) {
 }
 
 function openLoadingBayModal(row, refresh) {
+	const isThirdParty = !!row.third_party_loading;
+	const summaryRows = isThirdParty
+		? [
+				["Delivery Order", row.delivery_order],
+				["Customer", row.customer_name || row.customer],
+				["Truck Number", row.truck_number || "—"],
+				["Driver Name", row.driver_name || "—"],
+				["Driver Number", row.driver_contact || "—"],
+				["Product", row.product || "—"],
+				["Qty to Load", _formatQtyWithUom(row.quantity_to_load, row.uom)],
+				["Third Party Loader", row.third_party_loader || "—"],
+				["Loading DN", row.loading_delivery_note || "—"],
+				["Pipeline", row.operational_status || "—"],
+		  ]
+		: [
+				["Delivery Order", row.delivery_order],
+				["Customer", row.customer_name || row.customer],
+				["Truck Number", row.truck_number || "—"],
+				["Driver Name", row.driver_name || "—"],
+				["Driver Number", row.driver_contact || "—"],
+				["Product", row.product || "—"],
+				["Qty to Load", _formatQtyWithUom(row.quantity_to_load, row.uom)],
+				["Loading DN", row.loading_delivery_note || "—"],
+				["QC Report", row.qc_report_request || "—"],
+				["QC Report Status", row.qc_report_status || row.qc_status || "—"],
+				["LDN QC Status", row.qc_status || "—"],
+				["Gross Weight", row.gross_weight || "—"],
+				["Tare Weight", row.tare_weight || "—"],
+				["Net Weight", row.net_weight || "—"],
+				["Variance", row.weight_variance_status || "—"],
+				["Pipeline", row.operational_status || "—"],
+		  ];
+
 	const d = new frappe.ui.Dialog({
-		title: `${__("Loading Bay")} — ${row.delivery_order}`,
+		title: `${isThirdParty ? "⚠ " : ""}${__("Loading Bay")} — ${row.delivery_order}`,
 		size: "large",
 		fields: [
+			...(isThirdParty
+				? [
+						{
+							fieldname: "third_party_banner",
+							fieldtype: "HTML",
+							options: `<div class="apc-status-badge apc-status-warn" style="display:inline-block;margin-bottom:8px;">${__(
+								"3rd Party Loading — Security checks bypassed. Issue the Delivery Note directly."
+							)}</div>`,
+						},
+				  ]
+				: []),
 			{
 				fieldname: "summary_html",
 				fieldtype: "HTML",
-				options: renderKvGrid(row, [
-					["Delivery Order", row.delivery_order],
-					["Customer", row.customer_name || row.customer],
-					["Truck Number", row.truck_number || "—"],
-					["Driver Name", row.driver_name || "—"],
-					["Driver Number", row.driver_contact || "—"],
-					["Product", row.product || "—"],
-					["Qty to Load", _formatQtyWithUom(row.quantity_to_load, row.uom)],
-					["Loading DN", row.loading_delivery_note || "—"],
-					["QC Report", row.qc_report_request || "—"],
-					["QC Report Status", row.qc_report_status || row.qc_status || "—"],
-					["LDN QC Status", row.qc_status || "—"],
-					["Gross Weight", row.gross_weight || "—"],
-					["Tare Weight", row.tare_weight || "—"],
-					["Net Weight", row.net_weight || "—"],
-					["Variance", row.weight_variance_status || "—"],
-					["Pipeline", row.operational_status || "—"],
-				]),
+				options: renderKvGrid(row, summaryRows),
 			},
 			{
 				fieldname: "readiness_html",
@@ -1077,89 +1110,158 @@ function _bindLoadingBayActions(d, row, refresh, reloadReadiness) {
 		}, __("Links"));
 	}
 
-	addAction(__("Sync Batch & COA from QC"), () => {
-		APCConsoleUI.callApi("apc_operations.security.api.sync_ldn_dispatch_prep", {
-			delivery_order: row.delivery_order,
-		}).then(() => {
-			frappe.show_alert({ message: __("Batch and COA synced from QC"), indicator: "green" });
-			reloadReadiness().then(() => refresh && refresh());
+	// Third-party loading: the goods were loaded and inspected outside APC
+	// entirely - QC already recorded the batch/COA the third party
+	// supplied, so none of the normal batch-sync / loading / weighbridge /
+	// package-count actions apply. Security just issues the Delivery Note.
+	if (!row.third_party_loading) {
+		addAction(__("Sync Batch & COA from QC"), () => {
+			APCConsoleUI.callApi("apc_operations.security.api.sync_ldn_dispatch_prep", {
+				delivery_order: row.delivery_order,
+			}).then(() => {
+				frappe.show_alert({ message: __("Batch and COA synced from QC"), indicator: "green" });
+				reloadReadiness().then(() => refresh && refresh());
+			});
 		});
-	});
 
-	addAction(__("Complete Loading"), () => {
-		frappe.prompt(
-			[
-				{
-					fieldname: "loaded_quantity",
-					fieldtype: "Float",
-					label: __("Loaded Quantity"),
-					reqd: 1,
-					default: row.quantity_to_load || 0,
+		addAction(__("Complete Loading"), () => {
+			frappe.prompt(
+				[
+					{
+						fieldname: "loaded_quantity",
+						fieldtype: "Float",
+						label: __("Loaded Quantity"),
+						reqd: 1,
+						default: row.quantity_to_load || 0,
+					},
+				],
+				(values) => {
+					APCConsoleUI.callApi("apc_operations.security.api.complete_loading", {
+						delivery_order: row.delivery_order,
+						loaded_quantity: values.loaded_quantity,
+					}).then(() => {
+						frappe.show_alert({ message: __("Loading completed"), indicator: "green" });
+						reloadReadiness().then(() => refresh && refresh());
+					});
 				},
-			],
-			(values) => {
-				APCConsoleUI.callApi("apc_operations.security.api.complete_loading", {
-					delivery_order: row.delivery_order,
-					loaded_quantity: values.loaded_quantity,
-				}).then(() => {
-					frappe.show_alert({ message: __("Loading completed"), indicator: "green" });
-					reloadReadiness().then(() => refresh && refresh());
-				});
-			},
-			__("Complete Loading"),
-			__("Save")
-		);
-	});
+				__("Complete Loading"),
+				__("Save")
+			);
+		});
 
-	addAction(__("Record Tare Weight"), () => {
-		frappe.prompt(
-			[
-				{
-					fieldname: "tare_weight",
-					fieldtype: "Float",
-					label: __("Tare Weight (KG)"),
-					reqd: 1,
-					default: row.tare_weight || 0,
-				},
-			],
-			(values) => {
-				APCConsoleUI.callApi("apc_operations.security.api.record_tare_weight", {
-					delivery_order: row.delivery_order,
-					tare_weight: values.tare_weight,
-				}).then(() => {
-					frappe.show_alert({ message: __("Tare weight recorded"), indicator: "green" });
-					reloadReadiness().then(() => refresh && refresh());
-				});
-			},
-			__("Tare Weight"),
-			__("Save")
-		);
-	});
+		const varianceMethod = (row.dispatch_readiness || {}).weight_variance_method || "Weighbridge";
 
-	addAction(__("Record Gross Weight"), () => {
-		frappe.prompt(
-			[
-				{
-					fieldname: "gross_weight",
-					fieldtype: "Float",
-					label: __("Gross Weight (KG)"),
-					reqd: 1,
-					default: row.gross_weight || 0,
+		if (varianceMethod === "Package Count") {
+			addAction(__("Record Package Count"), () => {
+				frappe.prompt(
+					[
+						{
+							fieldname: "loaded_packaging_qty",
+							fieldtype: "Int",
+							label: __("Loaded Packaging Qty"),
+							reqd: 1,
+							default: row.loaded_packaging_qty || 0,
+						},
+					],
+					(values) => {
+						APCConsoleUI.callApi("apc_operations.security.api.record_package_count", {
+							delivery_order: row.delivery_order,
+							loaded_packaging_qty: values.loaded_packaging_qty,
+						}).then(() => {
+							frappe.show_alert({ message: __("Package count recorded"), indicator: "green" });
+							reloadReadiness().then(() => refresh && refresh());
+						});
+					},
+					__("Package Count"),
+					__("Save")
+				);
+			});
+		} else {
+			addAction(__("Record Tare Weight"), () => {
+				frappe.prompt(
+					[
+						{
+							fieldname: "tare_weight",
+							fieldtype: "Float",
+							label: __("Tare Weight (KG)"),
+							reqd: 1,
+							default: row.tare_weight || 0,
+						},
+					],
+					(values) => {
+						APCConsoleUI.callApi("apc_operations.security.api.record_tare_weight", {
+							delivery_order: row.delivery_order,
+							tare_weight: values.tare_weight,
+						}).then(() => {
+							frappe.show_alert({ message: __("Tare weight recorded"), indicator: "green" });
+							reloadReadiness().then(() => refresh && refresh());
+						});
+					},
+					__("Tare Weight"),
+					__("Save")
+				);
+			});
+
+			addAction(__("Record Gross Weight"), () => {
+				frappe.prompt(
+					[
+						{
+							fieldname: "gross_weight",
+							fieldtype: "Float",
+							label: __("Gross Weight (KG)"),
+							reqd: 1,
+							default: row.gross_weight || 0,
+						},
+					],
+					(values) => {
+						APCConsoleUI.callApi("apc_operations.security.api.record_gross_weight", {
+							delivery_order: row.delivery_order,
+							gross_weight: values.gross_weight,
+						}).then(() => {
+							frappe.show_alert({ message: __("Gross weight recorded"), indicator: "green" });
+							reloadReadiness().then(() => refresh && refresh());
+						});
+					},
+					__("Gross Weight"),
+					__("Save")
+				);
+			});
+		}
+	} else {
+		addAction(__("Correct Batch / COA"), () => {
+			frappe.prompt(
+				[
+					{
+						fieldname: "batch",
+						fieldtype: "Link",
+						options: "APC Batch",
+						label: __("Batch"),
+						reqd: 1,
+					},
+					{
+						fieldname: "coa",
+						fieldtype: "Link",
+						options: "APC COA",
+						label: __("COA"),
+					},
+				],
+				(values) => {
+					APCConsoleUI.callApi(
+						"apc_operations.quality.api.submit_third_party_qc_entry",
+						{
+							delivery_order: row.delivery_order,
+							batch: values.batch,
+							coa: values.coa || null,
+						}
+					).then(() => {
+						reloadReadiness().then(() => refresh && refresh());
+					});
 				},
-			],
-			(values) => {
-				APCConsoleUI.callApi("apc_operations.security.api.record_gross_weight", {
-					delivery_order: row.delivery_order,
-					gross_weight: values.gross_weight,
-				}).then(() => {
-					frappe.show_alert({ message: __("Gross weight recorded"), indicator: "green" });
-					reloadReadiness().then(() => refresh && refresh());
-				});
-			},
-			__("Gross Weight"),
-			__("Save")
-		);
-	});
+				__("Correct Third-Party Batch / COA"),
+				__("Save")
+			);
+		});
+	}
 
 	addAction(__("Issue Delivery Note"), () => {
 		frappe.confirm(

@@ -4,6 +4,7 @@
 frappe.ui.form.on('Loading Delivery Note', {
 	refresh(frm) {
 		_set_status_indicator(frm);
+		_set_batch_query(frm);
 
 		if (!frm.is_new()) {
 			frm.add_custom_button(__('Print Loading Delivery Note'), () => {
@@ -34,6 +35,15 @@ frappe.ui.form.on('Loading Delivery Note', {
 		if (frm.doc.qc_report_request) {
 			frm.add_custom_button(__('View QC Request'), () => {
 				frappe.set_route('Form', 'QC Report Request', frm.doc.qc_report_request);
+			}, __('View'));
+		}
+
+		if (frm.doc.erpnext_delivery_note) {
+			// The stock module's own Delivery Note - auto-created as a
+			// side effect of confirm_dispatch_and_deduct_stock(), but had
+			// no visible link back to it anywhere in the UI.
+			frm.add_custom_button(__('View Stock Delivery Note'), () => {
+				frappe.set_route('Form', 'Delivery Note', frm.doc.erpnext_delivery_note);
 			}, __('View'));
 		}
 
@@ -274,6 +284,19 @@ function _recalc_net_weight(frm) {
 	if (gross > 0 && tare > 0 && gross >= tare) {
 		frm.set_value('net_weight', gross - tare);
 	}
+}
+
+function _set_batch_query(frm) {
+	// Loading DN Batch is istable:1, so its own .js never loads (Frappe skips
+	// add_code() for child-table doctypes) — the Link query must live here.
+	frm.set_query('batch', 'batch_allocations', () => ({
+		filters: {
+			batch_status: ['in', ['Active', 'On Hold']],
+			quality_status: ['in', ['Approved', 'QC Cleared']],
+			available_quantity: ['>', 0],
+		},
+		order_by: 'manufacturing_date asc, creation asc',
+	}));
 }
 
 function _set_status_indicator(frm) {

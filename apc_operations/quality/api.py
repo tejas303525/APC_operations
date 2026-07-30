@@ -327,10 +327,24 @@ def get_rejected_qc_items() -> list[dict[str, Any]]:
 
 @frappe.whitelist()
 def get_new_dos_without_qc() -> list[dict[str, Any]]:
-	"""DOs reported to QC — awaiting QC intake (Path B console cards)."""
-	from apc_operations.services.delivery_order_service import get_qc_new_dos
+	"""DOs reported to QC — awaiting QC intake (Path B console cards).
 
-	return get_qc_new_dos()
+	Also includes third-party-loading DOs pending QC's batch/COA entry —
+	these skip Security's Pre-Check Clearance entirely (see
+	third_party_loading_service.py), so get_qc_new_dos()'s normal
+	Security-Inspection-based logic never picks them up on its own.
+	"""
+	from apc_operations.services.delivery_order_service import get_qc_new_dos
+	from apc_operations.shipping.services.third_party_loading_service import (
+		get_third_party_pending_qc,
+	)
+
+	rows = get_qc_new_dos()
+	for row in get_third_party_pending_qc():
+		row.setdefault("delivery_order", row.get("name"))
+		row["third_party_loading"] = 1
+		rows.append(row)
+	return rows
 
 
 @frappe.whitelist()
@@ -927,3 +941,21 @@ def qc_manager_approve_dispatch(loading_delivery_note):
 	from apc_operations.quality.dispatch_workflow import qc_manager_approve_dispatch as _approve
 
 	return _dispatch_workflow_response(_approve(loading_delivery_note))
+
+
+@frappe.whitelist()
+def get_third_party_pending_qc():
+	from apc_operations.shipping.services.third_party_loading_service import (
+		get_third_party_pending_qc as _get,
+	)
+
+	return _get()
+
+
+@frappe.whitelist()
+def submit_third_party_qc_entry(delivery_order, batch, coa=None):
+	from apc_operations.shipping.services.third_party_loading_service import (
+		submit_third_party_qc_entry as _submit,
+	)
+
+	return _submit(delivery_order, batch=batch, coa=coa)

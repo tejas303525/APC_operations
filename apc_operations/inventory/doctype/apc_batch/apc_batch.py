@@ -34,13 +34,21 @@ class APCBatch(Document):
                 frappe.throw(_("Batch Number {0} already exists").format(self.batch_number))
 
     def calculate_available_quantity(self):
-        """Calculate available quantity based on batch quantity minus allocated."""
+        """Calculate available quantity based on batch quantity minus allocated
+        minus dispatched.
+
+        Must account for dispatched_quantity too, not just allocated_quantity —
+        otherwise any full document save (as opposed to the db_set() calls
+        deduct_dispatch_qty() uses) silently un-deducts already-dispatched
+        stock back into available_quantity, letting the same batch be
+        allocated and dispatched again without limit.
+        """
         if not self.allocated_quantity:
             self.allocated_quantity = 0
 
-        available = flt(self.batch_quantity) - flt(self.allocated_quantity)
+        available = flt(self.batch_quantity) - flt(self.allocated_quantity) - flt(self.dispatched_quantity)
         if available < 0:
-            frappe.throw(_("Allocated quantity cannot exceed batch quantity"))
+            frappe.throw(_("Allocated + dispatched quantity cannot exceed batch quantity"))
 
         self.available_quantity = available
 
@@ -246,6 +254,13 @@ class APCBatch(Document):
 
         new_allocated = flt(self.allocated_quantity) - flt(quantity)
         new_dispatched = flt(self.dispatched_quantity) + flt(quantity)
+        if new_allocated + new_dispatched > flt(self.batch_quantity) + 0.0001:
+            frappe.throw(
+                _(
+                    "Dispatching {0} would take batch {1}'s allocated+dispatched total to {2}, "
+                    "exceeding its batch quantity of {3}."
+                ).format(quantity, self.name, new_allocated + new_dispatched, self.batch_quantity)
+            )
         new_available = flt(self.available_quantity)
 
         self.db_set("allocated_quantity", new_allocated, update_modified=False)

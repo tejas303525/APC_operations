@@ -131,6 +131,69 @@ def _sum_loading_entry_kg(security_inspection: str | None) -> float:
 	return sum(flt(r.actual_weight_kg) for r in rows)
 
 
+def _resolve_shipping_booking_containers(job_order: str | None) -> tuple[str | None, list[dict[str, Any]]]:
+	"""(container_summary, [{container_number, seal_number}, ...]) from the
+	Job Order's Shipping Booking - Container Number/Seal Number used to live
+	nowhere on the LDN itself, so the print silently showed "-" for both."""
+	if not job_order:
+		return None, []
+	sb_name = frappe.db.get_value("Job Order", job_order, "shipping_booking")
+	if not sb_name:
+		return None, []
+
+	rows = frappe.get_all(
+		"Shipping Booking Container",
+		filters={"parent": sb_name, "parenttype": "Shipping Booking"},
+		fields=["container_number", "seal_number"],
+		order_by="idx asc",
+	)
+	if not rows:
+		container_number = frappe.db.get_value("Shipping Booking", sb_name, "container_number")
+		if not container_number:
+			return None, []
+		return container_number, [{"container_number": container_number, "seal_number": None}]
+
+	summary = ", ".join(r.container_number for r in rows if r.container_number) or None
+	return summary, rows
+
+
+def _print_rows_from_batches(
+	ldn, *, jo_packaging: dict[str, str], default_packaging: str, container_rows: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+	"""One print row per dispatched batch - the real Allocated Batch -> Linked
+	COA -> Dispatch COA traceability (CLAUDE.md), instead of the Delivery
+	Order's static per-item quantities copied from the Job Order at DO
+	generation time (which don't reflect what was actually loaded/allocated)."""
+	rows = []
+	for idx, batch_row in enumerate(ldn.get("batch_allocations") or []):
+		qty = flt(batch_row.dispatched_qty) or flt(batch_row.allocated_qty)
+		if qty <= 0:
+			continue
+		row_uom = batch_row.uom or ldn.uom or ""
+		line: dict[str, Any] = {
+			"description": batch_row.product_name or batch_row.product or ldn.material_description or "-",
+			"qty": qty,
+			"uom": row_uom,
+			"qty_display": f"{qty:g} {row_uom}".strip(),
+			"packaging": jo_packaging.get(batch_row.product) or default_packaging,
+			"batch_lines": [
+				{
+					"batch": batch_row.batch_number or batch_row.batch,
+					"coa": batch_row.coa_number or batch_row.coa,
+					"qty": qty,
+					"uom": row_uom,
+					"qty_kg": quantity_to_kg(qty, row_uom),
+				}
+			],
+		}
+		container = container_rows[idx] if idx < len(container_rows) else (container_rows[0] if container_rows else None)
+		if container:
+			line["container_number"] = container.get("container_number")
+			line["seal_number"] = container.get("seal_number")
+		rows.append(line)
+	return rows
+
+
 def _batch_lines(ldn) -> list[dict[str, Any]]:
 	lines = []
 	for row in ldn.get("batch_allocations") or []:
@@ -270,11 +333,25 @@ def get_print_context(ldn_name: str) -> dict[str, Any]:
 	for item in do_items:
 		item["packaging"] = jo_packaging.get(item.get("item_code")) or default_packaging
 
+	container_summary, container_rows = _resolve_shipping_booking_containers(ldn.job_order)
+	print_rows = _print_rows_from_batches(
+		ldn,
+		jo_packaging=jo_packaging,
+		default_packaging=default_packaging,
+		container_rows=container_rows,
+	)
+
 	buyer_party = resolve_buyer_party(
 		buyer=ldn.buyer,
 		customer=ldn.customer,
 		customer_name=ldn.customer_name,
 	)
+
+	jo_row = None
+	if ldn.job_order and frappe.db.exists("Job Order", ldn.job_order):
+		jo_row = frappe.db.get_value(
+			"Job Order", ldn.job_order, ["date", "payment_terms"], as_dict=True
+		)
 
 	return {
 		"is_bulk": bulk,
@@ -289,7 +366,48 @@ def get_print_context(ldn_name: str) -> dict[str, Any]:
 		"no_and_kind_of_packages": no_and_kind,
 		"batch_lines": batch_lines,
 		"do_items": do_items,
+		# Actual dispatched-batch rows (Allocated Batch -> Linked COA ->
+		# Dispatch COA) - the print template prefers this over do_items
+		# whenever there's real batch_allocations data to show.
+		"print_rows": print_rows,
+		"container_summary": container_summary,
 		"packaging_type": packaging_type,
 		"buyer_name": buyer_party["buyer_name"],
 		"buyer_address": buyer_party["buyer_address"],
+		# Header/party fields the LDN's own doc carries directly, but a
+		# non-LDN document printing through this same context (e.g. the
+		# linked ERPNext stock Delivery Note - see
+		# get_print_context_for_erpnext_dn) has none of - returned here so
+		# one print format template works for both source doctypes.
+		"delivery_note_no": ldn.name,
+		"job_order": ldn.job_order,
+		"security_inspection": ldn.security_inspection,
+		"security_draft_delivery_note": ldn.security_draft_delivery_note,
+		"terms_of_delivery": ldn.get("terms_of_delivery"),
+		"material_description": material,
+		"loading_date": ldn.loading_date,
+		"job_order_date": jo_row.date if jo_row else None,
+		"payment_terms": (jo_row.payment_terms if jo_row else None) or ldn.get("payment_terms"),
+		"other_reference": ldn.get("other_reference") or ldn.security_draft_delivery_note,
+		"supplier_ref": ldn.get("supplier_ref") or ldn.security_draft_delivery_note,
+		"company_trn": ldn.get("company_trn"),
+		"emirate": ldn.get("emirate"),
+		"country": ldn.get("country"),
+		"trn": ldn.get("trn"),
+		"place_of_supply": ldn.get("place_of_supply"),
+		"vat_text": ldn.get("vat_text"),
 	}
+
+
+@frappe.whitelist()
+def get_print_context_for_erpnext_dn(erpnext_dn_name: str) -> dict[str, Any]:
+	"""Same context as get_print_context(), resolved from the linked
+	ERPNext stock Delivery Note instead of the Loading Delivery Note
+	directly - lets the "Standard Delivery Note (Stock)" print format
+	reuse the exact same branded template and data."""
+	ldn_name = frappe.db.get_value(
+		"Loading Delivery Note", {"erpnext_delivery_note": erpnext_dn_name}, "name"
+	)
+	if not ldn_name:
+		return {}
+	return get_print_context(ldn_name)

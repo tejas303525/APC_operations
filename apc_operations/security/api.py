@@ -132,6 +132,8 @@ def _sddn_card(row: dict[str, Any]) -> dict[str, Any]:
 		"security_status_tone": console_status.sddn_status_tone(row.get("security_status")),
 		"raw_security_status": row.get("security_status"),
 		"gate_out_status": row.get("gate_out_status"),
+		"product_summary": row.get("product_summary"),
+		"packaging_summary": row.get("packaging_summary"),
 	}
 	)
 
@@ -366,6 +368,11 @@ def get_pending_security_delivery_draft_notes():
 		order_by="modified desc",
 		limit=400,
 	)
+	from apc_operations.shipping.services.job_order_sync_service import (
+		attach_job_order_product_summary,
+	)
+
+	attach_job_order_product_summary(rows)
 	return enrich_and_sort_console_queue([_sddn_card(r) for r in rows])
 
 
@@ -378,6 +385,11 @@ def get_verified_security_delivery_draft_notes():
 		order_by="modified desc",
 		limit=400,
 	)
+	from apc_operations.shipping.services.job_order_sync_service import (
+		attach_job_order_product_summary,
+	)
+
+	attach_job_order_product_summary(rows)
 	# Annotate with LDN status
 	out = []
 	for r in rows:
@@ -1673,6 +1685,18 @@ def record_gross_weight(delivery_order, gross_weight, gross_weight_time=None):
 			delivery_order,
 			gross_weight=gross_weight,
 			gross_weight_time=gross_weight_time,
+		)
+	)
+
+
+@frappe.whitelist()
+def record_package_count(delivery_order, loaded_packaging_qty):
+	from apc_operations.security.dispatch_workflow import record_package_count as _record
+
+	return _workflow_response(
+		_record(
+			delivery_order,
+			loaded_packaging_qty=loaded_packaging_qty,
 		)
 	)
 
