@@ -94,7 +94,7 @@
         <table class="money-table">
           <tr><th>Charge</th><th style="text-align:right;">Amount</th></tr>
           <tr><td>Transport Charges</td><td style="text-align:right;">{{ frappe.utils.fmt_money(po.transport_charges or 0, currency=ccy) }}</td></tr>
-          <tr><td>Fuel Cost</td><td style="text-align:right;">{{ frappe.utils.fmt_money(po.fuel_cost or 0, currency=ccy) }}</td></tr>
+          <tr><td>Toll Cost</td><td style="text-align:right;">{{ frappe.utils.fmt_money(po.fuel_cost or 0, currency=ccy) }}</td></tr>
           <tr><td>Additional Charges</td><td style="text-align:right;">{{ frappe.utils.fmt_money(po.additional_charges or 0, currency=ccy) }}</td></tr>
           <tr><td class="money-total">Total</td><td style="text-align:right;" class="money-total">{{ frappe.utils.fmt_money(po.total_cost or 0, currency=ccy) }}</td></tr>
         </table>

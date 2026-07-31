@@ -151,7 +151,7 @@
    "fetch_from": "transport_schedule.fuel_cost",
    "fieldname": "fuel_cost",
    "fieldtype": "Currency",
-   "label": "Fuel Cost",
+   "label": "Toll Cost",
    "read_only": 1
   },
   {

@@ -1711,6 +1711,8 @@ _BOOKING_DETAIL_FIELDS = [
 	"assigned_vehicle",
 	"assigned_driver",
 	"driver_phone",
+	"pickup_location",
+	"delivery_location",
 	"transport_charges",
 	"fuel_cost",
 	"additional_charges",
@@ -1775,6 +1777,8 @@ def get_transport_schedule_booking_detail(name: str) -> dict[str, Any]:
 		"assigned_driver": ts.get("assigned_driver"),
 		"driver_name": vd["driver_name"],
 		"driver_phone": ts.get("driver_phone"),
+		"pickup_location": ts.get("pickup_location"),
+		"delivery_location": ts.get("delivery_location"),
 		"shipping_booking": sb_name,
 		"si_cutoff": sb_si_cutoff,
 		"gate_cutoff": ts.get("gate_cutoff") or sb_gate_cutoff,
@@ -1808,6 +1812,8 @@ def book_transport_schedule(
 	assigned_vehicle: str | None = None,
 	assigned_driver: str | None = None,
 	driver_phone: str | None = None,
+	pickup_location: str | None = None,
+	delivery_location: str | None = None,
 	transport_charges: float | None = None,
 	fuel_cost: float | None = None,
 	additional_charges: float | None = None,
@@ -1891,6 +1897,10 @@ def book_transport_schedule(
 	}
 	if driver_phone is not None:
 		provided["driver_phone"] = driver_phone
+	if pickup_location is not None and str(pickup_location).strip() != "":
+		provided["pickup_location"] = pickup_location
+	if delivery_location is not None and str(delivery_location).strip() != "":
+		provided["delivery_location"] = delivery_location
 	if gate_cutoff is not None and str(gate_cutoff).strip() != "":
 		provided["gate_cutoff"] = gate_cutoff
 	if qty_to_load is not None and flt(qty_to_load) > 0:
