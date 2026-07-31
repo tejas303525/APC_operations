@@ -572,6 +572,19 @@ class TransportSchedule(Document):
                 self.db_set("transport_po_request", existing, update_modified=False)
             if self.payables_status in [None, "", "Not Required"]:
                 self.db_set("payables_status", "Pending Payables", update_modified=False)
+            frappe.db.set_value(
+                "Transport PO Request",
+                existing,
+                {
+                    "transporter": self.transporter,
+                    "vehicle": self.assigned_vehicle,
+                    "driver": self.assigned_driver,
+                    "scheduled_date": self.scheduled_pickup_date,
+                    "pickup_location": self.pickup_location,
+                    "delivery_location": self.delivery_location,
+                },
+                update_modified=False,
+            )
             self.sync_transport_po_request_charges(existing)
             return existing
 
