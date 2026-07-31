@@ -39,7 +39,7 @@ class COATemplate(Document):
             if row.max_value is None:
                 row.max_value = optional_spec_float(parameter.default_max_value)
 
-            row.standard_value = row.standard_value or parameter.default_standard_value
+            row.specification = row.specification or parameter.default_specification
             row.mandatory = row.mandatory or parameter.mandatory_by_default
             row.sequence = row.sequence or idx
 

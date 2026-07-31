@@ -11,10 +11,10 @@
   "value_type",
   "min_value",
   "max_value",
-  "standard_value",
+  "specification",
   "mandatory",
   "sequence",
-  "remarks"
+  "method"
  ],
  "fields": [
   {
@@ -59,10 +59,11 @@
    "label": "Max Value"
   },
   {
-   "fieldname": "standard_value",
+   "fetch_from": "parameter.default_specification",
+   "fieldname": "specification",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Standard Value"
+   "label": "Specification"
   },
   {
    "fieldname": "mandatory",
@@ -77,15 +78,15 @@
    "label": "Sequence"
   },
   {
-   "fieldname": "remarks",
+   "fieldname": "method",
    "fieldtype": "Small Text",
-   "label": "Remarks"
+   "label": "Method"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-05-02 00:00:00.000000",
+ "modified": "2026-07-31 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Inventory",
  "name": "COA Template Parameter",

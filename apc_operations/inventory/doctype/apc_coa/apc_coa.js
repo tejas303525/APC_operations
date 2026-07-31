@@ -222,7 +222,7 @@ frappe.ui.form.on('COA Test Result', {
 				'value_type',
 				'default_min_value',
 				'default_max_value',
-				'default_standard_value',
+				'default_specification',
 				'mandatory_by_default',
 			],
 			(parameter) => {
@@ -244,7 +244,7 @@ frappe.ui.form.on('COA Test Result', {
 					'max_value',
 					apc_operations.inventory.qc_spec.optional_spec_value(parameter.default_max_value)
 				);
-				frappe.model.set_value(cdt, cdn, 'standard_value', parameter.default_standard_value);
+				frappe.model.set_value(cdt, cdn, 'specification', parameter.default_specification);
 				frappe.model.set_value(cdt, cdn, 'mandatory', parameter.mandatory_by_default);
 			}
 		);
@@ -290,7 +290,7 @@ function evaluate_result_row(frm, cdt, cdn) {
 		frappe.model.set_value(cdt, cdn, 'status', status);
 	} else {
 		const result = (row.text_result || row.result_value || '').trim();
-		const standard = (row.standard_value || '').trim();
+		const standard = (row.specification || '').trim();
 		if (!result) {
 			frappe.model.set_value(cdt, cdn, 'status', 'Not Checked');
 		} else if (standard) {

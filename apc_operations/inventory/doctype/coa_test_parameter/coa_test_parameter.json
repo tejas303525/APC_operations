@@ -10,20 +10,17 @@
  "field_order": [
   "parameter_section",
   "parameter_name",
-  "parameter_code",
   "product_group",
   "active",
   "column_break_1",
-  "test_type",
   "uom",
   "value_type",
   "defaults_section",
   "default_min_value",
   "default_max_value",
-  "default_standard_value",
-  "allowed_values",
+  "default_specification",
   "mandatory_by_default",
-  "description"
+  "method"
  ],
  "fields": [
   {
@@ -39,13 +36,6 @@
    "label": "Parameter Name",
    "reqd": 1,
    "unique": 1
-  },
-  {
-   "fieldname": "parameter_code",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Parameter Code",
-   "search_index": 1
   },
   {
    "fieldname": "product_group",
@@ -66,14 +56,6 @@
   {
    "fieldname": "column_break_1",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "test_type",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Test Type",
-   "options": "\nPhysical\nChemical\nVisual\nDocument"
   },
   {
    "fieldname": "uom",
@@ -107,14 +89,9 @@
    "label": "Default Max Value"
   },
   {
-   "fieldname": "default_standard_value",
+   "fieldname": "default_specification",
    "fieldtype": "Data",
    "label": "Specification"
-  },
-  {
-   "fieldname": "allowed_values",
-   "fieldtype": "Small Text",
-   "label": "Allowed Values"
   },
   {
    "default": "0",
@@ -123,14 +100,14 @@
    "label": "Mandatory by Default"
   },
   {
-   "fieldname": "description",
+   "fieldname": "method",
    "fieldtype": "Small Text",
    "label": "Method"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-07 09:17:08.550390",
+ "modified": "2026-07-31 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Inventory",
  "name": "COA Test Parameter",

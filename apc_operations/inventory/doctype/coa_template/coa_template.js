@@ -23,7 +23,7 @@ frappe.ui.form.on('COA Template Parameter', {
 				'value_type',
 				'default_min_value',
 				'default_max_value',
-				'default_standard_value',
+				'default_specification',
 				'mandatory_by_default',
 			],
 			(parameter) => {
@@ -46,7 +46,7 @@ frappe.ui.form.on('COA Template Parameter', {
 					'max_value',
 					apc_operations.inventory.qc_spec.optional_spec_value(parameter.default_max_value)
 				);
-				frappe.model.set_value(cdt, cdn, 'standard_value', parameter.default_standard_value);
+				frappe.model.set_value(cdt, cdn, 'specification', parameter.default_specification);
 				frappe.model.set_value(cdt, cdn, 'mandatory', parameter.mandatory_by_default);
 			}
 		);

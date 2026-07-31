@@ -155,7 +155,7 @@ class APCCOA(Document):
             return
 
         result = (row.text_result or row.result_value or "").strip()
-        standard = (row.standard_value or "").strip()
+        standard = (row.specification or "").strip()
 
         if not result:
             row.status = "Not Checked"
@@ -267,10 +267,10 @@ class APCCOA(Document):
                 "value_type": row.value_type,
                 "min_value": optional_spec_float(row.min_value),
                 "max_value": optional_spec_float(row.max_value),
-                "standard_value": row.standard_value,
+                "specification": row.specification,
                 "mandatory": row.mandatory,
                 "status": "Not Checked",
-                "remarks": row.remarks,
+                "method": row.method,
             })
 
         if self.status in {"Draft", "Passed", "Failed"}:
@@ -389,10 +389,10 @@ def get_template_parameters(coa_template):
             "value_type": row.value_type,
             "min_value": optional_spec_float(row.min_value),
             "max_value": optional_spec_float(row.max_value),
-            "standard_value": row.standard_value,
+            "specification": row.specification,
             "mandatory": row.mandatory,
             "status": "Not Checked",
-            "remarks": row.remarks,
+            "method": row.method,
         }
         for row in sorted(template.parameters, key=lambda item: item.sequence or item.idx)
     ]

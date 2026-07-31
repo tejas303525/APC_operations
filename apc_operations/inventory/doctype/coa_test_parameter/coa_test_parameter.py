@@ -16,6 +16,3 @@ class COATestParameter(Document):
         if self.default_min_value is not None and self.default_max_value is not None:
             if self.default_min_value > self.default_max_value:
                 frappe.throw(_("Default Min Value cannot be greater than Default Max Value"))
-
-        if self.value_type == "Select" and not self.allowed_values:
-            frappe.throw(_("Allowed Values are required when Value Type is Select"))
