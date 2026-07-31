@@ -1718,6 +1718,7 @@ _BOOKING_DETAIL_FIELDS = [
 	"total_cost",
 	"gate_cutoff",
 	"cutoff_date",
+	"cargo_weight",
 ]
 
 
@@ -1783,6 +1784,7 @@ def get_transport_schedule_booking_detail(name: str) -> dict[str, Any]:
 		"additional_charges": ts.get("additional_charges"),
 		"currency": ts.get("currency") or "USD",
 		"total_cost": ts.get("total_cost"),
+		"qty_to_load": ts.get("cargo_weight"),
 	}
 
 
@@ -1812,6 +1814,7 @@ def book_transport_schedule(
 	currency: str | None = None,
 	si_cutoff: str | None = None,
 	gate_cutoff: str | None = None,
+	qty_to_load: float | None = None,
 	third_party_loading: int | str | None = None,
 	third_party_loader: str | None = None,
 	third_party_loading_location: str | None = None,
@@ -1890,6 +1893,11 @@ def book_transport_schedule(
 		provided["driver_phone"] = driver_phone
 	if gate_cutoff is not None and str(gate_cutoff).strip() != "":
 		provided["gate_cutoff"] = gate_cutoff
+	if qty_to_load is not None and flt(qty_to_load) > 0:
+		# Reuse cargo_weight - already the established "how much this leg
+		# carries" field on the import partial-receipt-followup path, just
+		# never wired up for the primary/outward booking path until now.
+		provided["cargo_weight"] = flt(qty_to_load)
 
 	payload: dict[str, Any] = {}
 	for k, v in provided.items():

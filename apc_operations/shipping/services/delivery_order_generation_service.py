@@ -102,7 +102,7 @@ def _active_transport_row(job_order: str, movement: str) -> dict[str, Any]:
 			"transport_type": ttype,
 			"transport_status": ["!=", "Cancelled"],
 		},
-		fields=["name", "transport_status", "shipping_booking", "container_count"],
+		fields=["name", "transport_status", "shipping_booking", "container_count", "cargo_weight"],
 		order_by="modified desc",
 		limit=1,
 	)
@@ -256,6 +256,21 @@ def generate_delivery_order_for_job_order(
 				container_count=container_count,
 			)
 		]
+
+	# Cross-check the transporter-entered "Qty to Load" (Transport Schedule
+	# .cargo_weight, see book_transport_schedule) against the Job Order's
+	# full quantity. If it's genuinely less, scale the DO down to that
+	# amount instead of silently issuing it for the full quantity - once
+	# this DO's dispatch gets confirmed, the existing partial-dispatch
+	# tracking (get_partial_dispatch_summary, keyed off real confirmed
+	# quantity vs order quantity) will naturally surface the shortfall on
+	# the follow-up screens on its own, no separate wiring needed here.
+	cargo_weight = flt(ts.get("cargo_weight"))
+	if cargo_weight > 0:
+		full_qty = sum(flt(i.get("qty")) for i in items)
+		if full_qty > 0 and cargo_weight < full_qty - 0.0001:
+			items = _job_order_items_for_pending_quantity(job_order, cargo_weight)
+
 	for item in items:
 		do.append("items", item)
 
