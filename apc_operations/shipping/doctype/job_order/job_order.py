@@ -4,7 +4,7 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import today
+from frappe.utils import cint, today
 
 
 # Incoterms 2020 — responsibility matrix for OUTWARD (APC selling).
@@ -949,7 +949,7 @@ class JobOrder(Document):
         shipping_booking.port_of_discharge = self.port_of_discharge
         shipping_booking.cargo_description = self.get_material_description() or "To be updated from Job Order"
         shipping_booking.cargo_weight = 0
-        shipping_booking.container_count = 1
+        shipping_booking.container_count = cint(self.container_quantity) or 1
         shipping_booking.freight_rate = 0
         shipping_booking.notes = self.loading_remarks
         if self._is_import_movement():
