@@ -196,6 +196,12 @@ fixtures = [
     },
     {
         "dt": "Property Setter",
+    },
+    {
+        "dt": "Custom DocPerm",
+        "filters": [
+            ["parent", "in", ["Currency", "Vehicle", "Driver"]]
+        ]
     }
 ]
 
