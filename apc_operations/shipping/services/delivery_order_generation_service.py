@@ -30,6 +30,39 @@ from apc_operations.shipping.services.delivery_order_sync_service import (
 )
 
 
+def _notify_security_team(do_name: str, job_order: str) -> None:
+	from frappe.desk.doctype.notification_log.notification_log import (
+		enqueue_create_notification,
+	)
+
+	user_ids = frappe.get_all(
+		"Has Role",
+		filters={"parenttype": "User", "role": ["in", ["Security Manager", "Security User"]]},
+		fields=["parent"],
+		distinct=True,
+		pluck="parent",
+	)
+	if not user_ids:
+		return
+
+	jo_number = frappe.db.get_value("Job Order", job_order, "job_order_number") or job_order
+	try:
+		enqueue_create_notification(
+			user_ids,
+			{
+				"subject": _("Delivery Order {0} issued for {1} - ready for security review").format(
+					do_name, jo_number
+				),
+				"type": "Alert",
+				"document_type": "Delivery Order",
+				"document_name": do_name,
+				"from_user": frappe.session.user,
+			},
+		)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Security DO notification")
+
+
 def _fallback_do_item(*, cargo_description: str | None = None, container_count=None) -> dict:
 	"""Minimal DO line when Job Order has no item rows."""
 	item_code = frappe.db.get_value("Item", {}, "name")
@@ -295,6 +328,9 @@ def generate_delivery_order_for_job_order(
 		)
 
 		mark_do_sent_to_security(do.name, update_modified=True)
+
+	if not is_third_party:
+		_notify_security_team(do.name, job_order)
 
 	try:
 		frappe.get_doc(
