@@ -464,6 +464,33 @@ def calculate_free_stock(batch_name):
 
 
 @frappe.whitelist()
+def get_batch_allocation_rows(batch_name, limit=50):
+    """Return active APC Batch Allocation Detail rows for a batch.
+
+    APC Batch Allocation Detail is a child table (istable:1), so Frappe's
+    permission check for a direct frappe.db.get_list() on it always defers
+    to the parent doctype and requires an explicit parent_doctype - which
+    the standard frappe.client.get_list whitelisted endpoint has no way to
+    supply. That made the direct client-side query in apc_batch.js fail
+    with "Insufficient Permission" for every non-Administrator user
+    regardless of role. Routing through here checks read access on the
+    APC Batch itself (via get_doc) and then queries the child table with
+    ignore_permissions=True, since that access has already been verified.
+    """
+    frappe.get_doc("APC Batch", batch_name)
+    return frappe.get_all(
+        "APC Batch Allocation Detail",
+        filters={
+            "batch": batch_name,
+            "status": ["in", ["Allocated", "Partially Dispatched"]],
+        },
+        fields=["parent", "allocated_quantity", "dispatched_quantity", "remaining_quantity"],
+        limit=limit,
+        ignore_permissions=True,
+    )
+
+
+@frappe.whitelist()
 def create_coa_for_batch(batch_name):
     """Manually trigger COA creation for a batch that doesn't have one."""
     batch = frappe.get_doc("APC Batch", batch_name)

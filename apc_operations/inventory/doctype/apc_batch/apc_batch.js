@@ -155,27 +155,21 @@ frappe.ui.form.on('APC Batch', {
 		frm.dashboard.add_indicator(__('Status: {0}', [frm.doc.batch_status]), frm.doc.batch_status === 'Active' ? 'green' : 'orange');
 		frm.dashboard.add_indicator(__('Quality: {0}', [frm.doc.quality_status]), ['Approved', 'QC Cleared'].includes(frm.doc.quality_status) ? 'green' : 'orange');
 
-		frappe.db.get_list('APC Batch Allocation Detail', {
-			filters: {
-				batch: frm.doc.name,
-				status: ['in', ['Allocated', 'Partially Dispatched']],
-			},
-			fields: ['parent', 'allocated_quantity', 'dispatched_quantity', 'remaining_quantity'],
-			limit: 50,
-		}).then((rows) => {
-			frm._allocation_parents = [...new Set((rows || []).map(row => row.parent))];
+		frappe.call({
+			method: 'apc_operations.inventory.doctype.apc_batch.apc_batch.get_batch_allocation_rows',
+			args: { batch_name: frm.doc.name, limit: 50 },
+		}).then((r) => {
+			const rows = r.message || [];
+			frm._allocation_parents = [...new Set(rows.map(row => row.parent))];
 		});
 	},
 
 	show_release_allocation_dialog(frm) {
-		frappe.db.get_list('APC Batch Allocation Detail', {
-			filters: {
-				batch: frm.doc.name,
-				status: ['in', ['Allocated', 'Partially Dispatched']],
-			},
-			fields: ['parent', 'allocated_quantity', 'remaining_quantity'],
-			limit: 20,
-		}).then((rows) => {
+		frappe.call({
+			method: 'apc_operations.inventory.doctype.apc_batch.apc_batch.get_batch_allocation_rows',
+			args: { batch_name: frm.doc.name, limit: 20 },
+		}).then((r) => {
+			const rows = r.message || [];
 			if (!rows?.length) {
 				frappe.msgprint(__('No releasable allocations found for this batch.'));
 				return;
