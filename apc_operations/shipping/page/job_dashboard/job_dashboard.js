@@ -1,7 +1,7 @@
 frappe.pages['job-dashboard'].on_page_load = function (wrapper) {
 	const page = frappe.ui.make_app_page({
 		parent: wrapper,
-		title: __('Order fullfiment Dashboard'),
+		title: __('Order Management Page'),
 		single_column: true,
 	});
 
@@ -141,6 +141,16 @@ class JobDashboard {
 					</svg>
 				</div>
 				<div class="jd-filter-wrap">
+					<select class="jd-filter-select jd-movement-filter">
+						<option value="">${__('All Orders')}</option>
+						<option value="Outward">${__('Job Orders')}</option>
+						<option value="Import">${__('Purchase Orders')}</option>
+					</select>
+					<svg class="jd-select-caret" viewBox="0 0 10 6" fill="none">
+						<path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+					</svg>
+				</div>
+				<div class="jd-filter-wrap">
 					<select class="jd-filter-select jd-jobtype-filter">
 						<option value="">${__('Job Type')}</option>
 						<option value="Sea">${__('Sea')}</option>
@@ -179,7 +189,7 @@ class JobDashboard {
 		`);
 
 		this.$filters_bar.find('.jd-search-input').on('keyup', () => this._apply_filters());
-		this.$filters_bar.find('.jd-status-filter, .jd-jobtype-filter, .jd-date-from, .jd-date-to, .jd-assigned-filter').on('change', () => this._apply_filters());
+		this.$filters_bar.find('.jd-status-filter, .jd-movement-filter, .jd-jobtype-filter, .jd-date-from, .jd-date-to, .jd-assigned-filter').on('change', () => this._apply_filters());
 		this.$filters_bar.find('.jd-clear-btn').on('click', () => {
 			this.$filters_bar.find('.jd-search-input').val('');
 			this.$filters_bar.find('select').val('');
@@ -403,10 +413,15 @@ class JobDashboard {
 
 		const search    = (this.$filters_bar.find('.jd-search-input').val() || '').toLowerCase();
 		const status    = this.$filters_bar.find('.jd-status-filter').val();
+		const movement  = this.$filters_bar.find('.jd-movement-filter').val();
 		const job_type  = this.$filters_bar.find('.jd-jobtype-filter').val();
 		const date_from = this.$filters_bar.find('.jd-date-from').val();
 		const date_to   = this.$filters_bar.find('.jd-date-to').val();
 		const assigned  = this.$filters_bar.find('.jd-assigned-filter').val();
+
+		this.$table_card.find('.jd-table-title').text(
+			movement === 'Import' ? __('Purchase Orders') : __('Job Orders')
+		);
 
 		let rows = this._all_rows.filter(r => {
 			if (search) {
@@ -414,6 +429,7 @@ class JobDashboard {
 				if (!hay.includes(search)) return false;
 			}
 			if (status && r.status !== status) return false;
+			if (movement && (r.commercial_movement || 'Outward') !== movement) return false;
 			if (job_type) {
 				const jt = r.outward_type || r.mode_of_transport || '';
 				if (jt !== job_type) return false;

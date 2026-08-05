@@ -70,7 +70,7 @@ def get_job_dashboard_data():
             "name", "job_order_number", "customer", "customer_name", "mode_of_transport",
             "date", "status", "transport_requirement_status", "pi_number", "owner",
             "terms_of_delivery", "booking_requirement", "transport_status", "shipping_status",
-            "transport_schedule", "shipping_booking",
+            "transport_schedule", "shipping_booking", "commercial_movement",
         ],
         order_by="date desc, modified desc",
         limit=50,
