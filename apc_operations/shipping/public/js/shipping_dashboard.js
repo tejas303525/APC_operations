@@ -130,8 +130,8 @@ apc.shipping.Dashboard = class ShippingDashboard {
                 {
                     fieldname: 'container_type',
                     label: __('Container Type'),
-                    fieldtype: 'Select',
-                    options: '20FT Standard\n40FT Standard\n40FT High Cube\n20FT Reefer\n40FT Reefer',
+                    fieldtype: 'Link',
+                    options: 'APC Container Type',
                     reqd: 1
                 },
                 {

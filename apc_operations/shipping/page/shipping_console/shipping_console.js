@@ -245,13 +245,12 @@ function openBookingEditorModal(sb, refresh, opts) {
 				},
 				{ fieldtype: "Column Break" },
 				{
-					fieldtype: "Select",
+					fieldtype: "Link",
 					fieldname: "container_type",
 					label: __("Container Type"),
 					reqd: 1,
 					default: data.container_type,
-					options:
-						"\n20FT Standard\n40FT Standard\n40FT High Cube\n20FT Reefer\n40FT Reefer\n20FT Open Top\n40FT Open Top\n20FT Flat Rack\n40FT Flat Rack",
+					options: "APC Container Type",
 				},
 				{ fieldtype: "Column Break" },
 				{
