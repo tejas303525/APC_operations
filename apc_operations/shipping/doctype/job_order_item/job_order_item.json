@@ -89,12 +89,13 @@
    "read_only_depends_on": "eval:!!doc.sales_demand_item"
   },
   {
-   "description": "Suggestions come from the APC Packaging Type master; free text is still accepted.",
+   "description": "Options are limited to packaging types this item actually has a packing profile for.",
    "fetch_from": "sales_demand_item.packaging_type",
    "fieldname": "packaging_type",
-   "fieldtype": "Autocomplete",
+   "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Packaging Type",
+   "options": "APC Packaging Type",
    "read_only_depends_on": "eval:!!doc.sales_demand_item"
   },
   {

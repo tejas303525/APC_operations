@@ -15,6 +15,7 @@
   "hs_code",
   "origin",
   "column_break_product",
+  "packaging_type",
   "packing_material",
   "packing_unit_type",
   "active",
@@ -75,6 +76,16 @@
    "fieldtype": "Column Break"
   },
   {
+   "description": "Links this profile to one specific APC Packaging Type record, so the system knows exactly which profile to use when two profiles for this item share the same material/unit combo (e.g. two different drum fill weights) instead of guessing from the most recently modified one.",
+   "fieldname": "packaging_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Packaging Type",
+   "options": "APC Packaging Type"
+  },
+  {
+   "fetch_from": "packaging_type.packing_material",
    "fieldname": "packing_material",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -84,6 +95,7 @@
    "reqd": 1
   },
   {
+   "fetch_from": "packaging_type.packing_unit_type",
    "fieldname": "packing_unit_type",
    "fieldtype": "Select",
    "in_list_view": 1,

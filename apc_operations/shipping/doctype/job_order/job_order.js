@@ -113,38 +113,26 @@ function apc_set_autocomplete_options(grid_row, fieldname, options) {
 	}
 }
 
-function apc_refresh_packaging_type_options(frm) {
+// Packaging Type is a Link to APC Packaging Type; its dropdown is narrowed
+// server-side per row via get_query (see apc_wire_packaging_type_query
+// below) instead of a client-managed Autocomplete suggestion list.
+function apc_wire_packaging_type_query(frm) {
 	const grid = frm.fields_dict.items && frm.fields_dict.items.grid;
-	if (!grid) {
+	if (!grid || !grid.get_field) {
 		return;
 	}
-	frappe.db
-		.get_list("APC Packaging Type", {
-			filters: { active: 1 },
-			fields: ["name"],
-			order_by: "name asc",
-			limit: 0,
-		})
-		.then((rows) => {
-			const options = (rows || []).map((r) => r.name).join("\n");
-			grid.update_docfield_property("packaging_type", "options", options);
-			(grid.grid_rows || []).forEach((row) => {
-				apc_set_autocomplete_options(row, "packaging_type", options);
-			});
-		});
-}
-
-// Narrow each existing row's Packaging Type suggestions to what that row's
-// item actually has a packing profile for. Runs after the unfiltered
-// default above so rows with an item already set — e.g. on opening a saved
-// Job Order — get the filtered list too, not just rows where Item is
-// freshly picked.
-function apc_refresh_all_row_packaging_type_options(frm) {
-	(frm.doc.items || []).forEach((row) => {
-		if (row.item) {
-			apc_refresh_row_packaging_type_options(frm, row.doctype, row.name);
-		}
-	});
+	const field = grid.get_field("packaging_type");
+	if (!field) {
+		return;
+	}
+	field.get_query = (doc, cdt, cdn) => {
+		const row = locals[cdt][cdn];
+		return {
+			query:
+				"apc_operations.shipping.services.packing_calculation_service.query_packaging_types_for_item",
+			filters: { item: row.item },
+		};
+	};
 }
 
 // Container fields (Container Type/Quantity, Capacity Load Mode, Planned
@@ -214,27 +202,9 @@ function apc_recalc_job_order_item_packing(frm, cdt, cdn) {
 	});
 }
 
-function apc_refresh_row_packaging_type_options(frm, cdt, cdn) {
-	const row = locals[cdt][cdn];
-	const grid = frm.fields_dict.items && frm.fields_dict.items.grid;
-	const grid_row = grid && grid.grid_rows_by_docname[cdn];
-	if (!row || !row.item || !grid_row) {
-		return;
-	}
-	frappe.call({
-		method: "apc_operations.shipping.services.packing_calculation_service.get_packaging_type_options_for_item",
-		args: { item: row.item },
-		callback(r) {
-			const names = r.message || [];
-			apc_set_autocomplete_options(grid_row, "packaging_type", names.join("\n"));
-		},
-	});
-}
-
 frappe.ui.form.on("Job Order Item", {
 	item(frm, cdt, cdn) {
 		apc_recalc_job_order_item_packing(frm, cdt, cdn);
-		apc_refresh_row_packaging_type_options(frm, cdt, cdn);
 	},
 	packaging_type(frm, cdt, cdn) {
 		apc_recalc_job_order_item_packing(frm, cdt, cdn);
@@ -265,7 +235,7 @@ frappe.ui.form.on("Job Order Item", {
 	},
 	items_add(frm) {
 		apc_refresh_container_number_options(frm);
-		apc_refresh_packaging_type_options(frm);
+		apc_wire_packaging_type_query(frm);
 		frm.trigger("apc_refresh_container_capacity_summary");
 	},
 	items_remove(frm) {
@@ -283,8 +253,7 @@ frappe.ui.form.on("Job Order", {
 	onload(frm) {
 		apc_toggle_container_fields_for_shipment_type(frm);
 		apc_refresh_container_number_options(frm);
-		apc_refresh_packaging_type_options(frm);
-		apc_refresh_all_row_packaging_type_options(frm);
+		apc_wire_packaging_type_query(frm);
 	},
 
 	shipment_type(frm) {
@@ -315,8 +284,7 @@ frappe.ui.form.on("Job Order", {
 		toggle_counterparty_visibility(frm);
 		apc_toggle_container_fields_for_shipment_type(frm);
 		apc_refresh_container_number_options(frm);
-		apc_refresh_packaging_type_options(frm);
-		apc_refresh_all_row_packaging_type_options(frm);
+		apc_wire_packaging_type_query(frm);
 		renderJobOrderContainerCapacitySummary(frm);
 
 		const bank_account = (frm.doc.bank_account || "").trim();

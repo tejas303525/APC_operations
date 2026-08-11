@@ -9,7 +9,7 @@ import math
 from typing import Any
 
 import frappe
-from frappe.utils import flt
+from frappe.utils import cint, flt
 
 from apc_operations.shipping.services.uom_service import kg_to_commercial_quantity, quantity_to_kg
 
@@ -145,6 +145,32 @@ def get_packing_profile(
 ) -> dict[str, Any] | None:
 	if not item or not frappe.db.exists("DocType", "APC Product Packing Profile"):
 		return None
+
+	# Exact match first: if this profile is explicitly linked to the chosen
+	# APC Packaging Type, use it directly - no ambiguity even when two
+	# profiles for this item share the same material/unit combo (e.g. two
+	# different drum fill weights). Only falls through to the material/unit
+	# guess below for profiles that predate this field and were never linked.
+	if packaging_type and frappe.db.exists("APC Packaging Type", packaging_type):
+		rows = frappe.get_all(
+			"APC Product Packing Profile",
+			filters={"item": item, "packaging_type": packaging_type, "active": 1},
+			fields=[
+				"name",
+				"item",
+				"packing_material",
+				"packing_unit_type",
+				"product_fill_kg",
+				"ibc_fill_kg",
+				"flexi_fill_mt",
+				"empty_packaging_kg",
+				"unit_gross_kg",
+			],
+			order_by="modified desc",
+			limit=1,
+		)
+		if rows:
+			return rows[0]
 
 	unit = infer_packing_unit_type(packing_unit_type, packaging_type)
 	material = normalize_packing_material(packaging_type)
@@ -618,6 +644,22 @@ def get_packaging_type_options_for_item(item: str | None = None) -> list[str]:
 		names.update(frappe.get_all("APC Packaging Type", filters=filters, pluck="name"))
 
 	return sorted(names) if names else all_active
+
+
+@frappe.whitelist()
+def query_packaging_types_for_item(doctype, txt, searchfield, start, page_len, filters):
+	"""Link-field get_query for Job Order Item.packaging_type - narrows the
+	dropdown to packaging types this item actually has a packing profile for,
+	same scope as get_packaging_type_options_for_item() above."""
+	filters = frappe.parse_json(filters) if isinstance(filters, str) else (filters or {})
+	item = filters.get("item")
+	names = get_packaging_type_options_for_item(item)
+	if txt:
+		txt_lower = txt.lower()
+		names = [n for n in names if txt_lower in n.lower()]
+	start = cint(start)
+	page_len = cint(page_len) or 20
+	return [(n,) for n in names[start : start + page_len]]
 
 
 def get_tanker_fixed_capacity(packaging_type_name: str | None) -> float:
