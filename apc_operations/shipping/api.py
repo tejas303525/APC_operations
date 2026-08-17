@@ -1166,7 +1166,7 @@ def get_pending_bookings():
     """Shipping Bookings where vessel_name is not set (Section 7.3)."""
     rows = frappe.get_all(
         "Shipping Booking",
-        filters={"vessel_name": ["in", ["", None]], "docstatus": ["!=", 2]},
+        filters={"vessel_name": ["is", "not set"], "docstatus": ["!=", 2]},
         or_filters=None,
         fields=_booking_summary_fields(),
         order_by="modified desc",
@@ -1221,7 +1221,7 @@ def get_pending_cros():
     rows = frappe.get_all(
         "Shipping Booking",
         filters={
-            "vessel_name": ["not in", ["", None]],
+            "vessel_name": ["is", "set"],
             "cro_status": ["not in", ["Generated", "Issued", "Completed"]],
             "docstatus": ["!=", 2],
         },
