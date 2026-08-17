@@ -535,7 +535,7 @@ def apply_packing_variance_to_ldn(ldn, do: dict[str, Any] | None = None) -> None
 # packing profile a container-capacity lookup should use.
 _LOAD_MODE_UNIT_TYPES = {
 	"Palletised Drums": "Drum",
-	"Non-Palletised Drums": "Drum",
+	"Non-Pallet Drums": "Drum",
 	"IBC": "IBC",
 	"Flexi": "Flexi",
 	"Bags": "Bag",

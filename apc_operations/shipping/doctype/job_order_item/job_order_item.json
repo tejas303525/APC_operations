@@ -161,7 +161,7 @@
    "fieldname": "capacity_load_mode",
    "fieldtype": "Select",
    "label": "Capacity Load Mode",
-   "options": "\nPalletised Drums\nNon-Palletised Drums\nIBC\nFlexi\nBags\nBulk"
+   "options": "\nPalletised Drums\nNon-Pallet Drums\nIBC\nFlexi\nBags\nBulk"
   },
   {
    "description": "Product net weight per packing unit from matrix.",
