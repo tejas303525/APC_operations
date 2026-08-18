@@ -804,7 +804,7 @@ def get_export_container_detail(job_order: str) -> dict[str, Any]:
 		"gate_cutoff": sb.get("gate_cutoff"),
 		"pull_out_date": sb.get("pull_out_date"),
 		"container_number": ts.get("container_type"),
-		"container_type": ts.get("container_type"),
+		"container_type": ts.get("container_type") or sb.get("container_type"),
 		"transport_schedule": ts.get("name"),
 		"transport_status": ts.get("transport_status"),
 		"transport_booking_label": console_status.transport_booking_label(ts.get("transport_status")),
