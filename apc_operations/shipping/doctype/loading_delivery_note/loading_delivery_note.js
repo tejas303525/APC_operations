@@ -289,13 +289,20 @@ function _recalc_net_weight(frm) {
 function _set_batch_query(frm) {
 	// Loading DN Batch is istable:1, so its own .js never loads (Frappe skips
 	// add_code() for child-table doctypes) — the Link query must live here.
+	//
+	// NOTE: Frappe's standard Link dropdown search has no 'order_by' param —
+	// an order_by placed here would be silently ignored and the dropdown
+	// would fall back to sorting by link-reference count (idx desc), which
+	// can put a newer batch above an older one. Routed through a custom
+	// query (batch_allocation.query_batches_fifo) instead, which sorts by
+	// manufacturing_date asc server-side for true FIFO order.
 	frm.set_query('batch', 'batch_allocations', () => ({
+		query: 'apc_operations.services.batch_allocation.query_batches_fifo',
 		filters: {
 			batch_status: ['in', ['Active', 'On Hold']],
 			quality_status: ['in', ['Approved', 'QC Cleared']],
 			available_quantity: ['>', 0],
 		},
-		order_by: 'manufacturing_date asc, creation asc',
 	}));
 }
 

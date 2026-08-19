@@ -2,7 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
-from frappe.utils import flt, today, getdate, now
+from frappe.utils import flt, cint, today, getdate, now
 from frappe import _
 
 
@@ -79,6 +79,39 @@ def get_available_batches(product, grade=None, specification=None, packaging_typ
     )
 
     return batches
+
+
+@frappe.whitelist()
+def query_batches_fifo(doctype, txt, searchfield, start, page_len, filters):
+    """Custom Link-field search for APC Batch, sorted true-FIFO (oldest
+    manufacturing date first).
+
+    Frappe's standard Link dropdown search (search_widget in
+    frappe/desk/search.py) has no 'order_by' parameter at all - any
+    order_by placed in the object returned by frm.set_query() is silently
+    dropped. It instead sorts by `idx` (global link-reference count)
+    first, then the target doctype's own sort_field - so a
+    frequently-referenced newer batch can outrank an older, untouched one
+    even though APC Batch.sort_field is manufacturing_date ASC. Routing
+    the Batch field through this custom query (same pattern as
+    packing_calculation_service.query_packaging_types_for_item) bypasses
+    that default entirely.
+    """
+    filters = frappe.parse_json(filters) if isinstance(filters, str) else (filters or {})
+    filters = dict(filters)
+
+    if txt:
+        filters[searchfield or "name"] = ["like", f"%{txt}%"]
+
+    rows = frappe.get_all(
+        "APC Batch",
+        filters=filters,
+        fields=["name"],
+        order_by="manufacturing_date asc, creation asc, name asc",
+        limit_start=cint(start),
+        limit_page_length=cint(page_len) or 20,
+    )
+    return [(r.name,) for r in rows]
 
 
 def calculate_free_stock(batch_name):
