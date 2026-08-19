@@ -399,6 +399,29 @@ def get_template_parameters(coa_template):
 
 
 @frappe.whitelist()
+def find_matching_coa_template(product_name: str | None = None, product_group: str | None = None) -> str | None:
+    """Standard test-parameter template for this product, if one has been set
+    up - Product Name + Product Group is the intended match; falls back to
+    Product Name alone so a template created before a group was settled on
+    still gets picked up."""
+    if not product_name:
+        return None
+
+    if product_group:
+        name = frappe.db.get_value(
+            "COA Template",
+            {"product_name": product_name, "product_group": product_group, "active": 1},
+            "name",
+        )
+        if name:
+            return name
+
+    return frappe.db.get_value(
+        "COA Template", {"product_name": product_name, "active": 1}, "name"
+    )
+
+
+@frappe.whitelist()
 def get_coa_for_batch(batch):
     """Get the approved COA for a batch."""
     return frappe.db.get_value(

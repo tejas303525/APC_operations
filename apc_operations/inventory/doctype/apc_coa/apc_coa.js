@@ -111,6 +111,14 @@ frappe.ui.form.on('APC COA', {
 		});
 	},
 
+	product_name(frm) {
+		apc_try_autoload_coa_template(frm);
+	},
+
+	product_group(frm) {
+		apc_try_autoload_coa_template(frm);
+	},
+
 	coa_template(frm) {
 		if (!frm.doc.coa_template) {
 			return;
@@ -332,6 +340,31 @@ function normalize_product_group(itemGroup) {
 	const normalized = itemGroup.toLowerCase();
 	const allowed = ['Solvent', 'Oil', 'Lubricant', 'Plasticizer', 'White Oil', 'Petroleum Jelly', 'Other'];
 	return allowed.find((group) => normalized.includes(group.toLowerCase())) || '';
+}
+
+// Auto-detect a standard COA Template for this product (by Product Name +
+// Product Group, matching a template someone has already set up) and load
+// its parameters - same effect as manually picking one via the "Load
+// Template" button, just without having to remember to do it every time.
+// Never overrides a template the user already picked, and never clobbers
+// test results that are already on the form.
+function apc_try_autoload_coa_template(frm) {
+	if (frm.doc.coa_template || !frm.doc.product_name || (frm.doc.test_results || []).length) {
+		return;
+	}
+
+	frappe.call({
+		method: 'apc_operations.inventory.doctype.apc_coa.apc_coa.find_matching_coa_template',
+		args: {
+			product_name: frm.doc.product_name,
+			product_group: frm.doc.product_group,
+		},
+		callback(r) {
+			if (r.message && !frm.doc.coa_template) {
+				frm.set_value('coa_template', r.message);
+			}
+		},
+	});
 }
 
 function _set_status_color(frm) {
