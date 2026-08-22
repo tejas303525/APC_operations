@@ -107,3 +107,36 @@ def on_update_production_requirement(doc, method):
     """Hook handler for APC Production Requirement on_update event."""
     # Sync WIP to demand item
     doc.sync_to_demand_item()
+    _ensure_production_order(doc)
+
+
+def _ensure_production_order(doc):
+    """Auto-create the matching Production Order the moment a requirement is
+    raised, so Production sees it on their dashboard without someone having
+    to remember to convert it by hand. production_order/production_requirement
+    are already cross-linked fields on both doctypes - this just wires the
+    creation step, doesn't invent new schema."""
+    if doc.production_order or doc.status in ("Completed", "Cancelled"):
+        return
+    if flt(doc.remaining_quantity) <= 0:
+        return
+
+    po = frappe.new_doc("Production Order")
+    po.item = doc.item
+    po.item_name = doc.item_name
+    po.item_description = doc.item_name
+    po.planned_date = doc.required_date or doc.planned_date
+    po.status = "Draft"
+    po.required_quantity = doc.remaining_quantity
+    po.uom = doc.uom
+    po.grade = doc.grade
+    po.specification = doc.specification
+    po.packaging_type = doc.packaging_type
+    po.warehouse = doc.warehouse
+    po.production_requirement = doc.name
+    po.insert(ignore_permissions=True)
+
+    frappe.db.set_value(
+        "APC Production Requirement", doc.name, "production_order", po.name,
+        update_modified=False,
+    )

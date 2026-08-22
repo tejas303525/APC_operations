@@ -234,6 +234,152 @@ def create_production_requirement_if_shortage(sales_demand):
     }
 
 
+def reserve_stock_for_job_order(job_order_name):
+    """Reserve stock the moment a Job Order is submitted, so two orders can't
+    both count on the same free stock. Product-only FIFO match (no grade/
+    packaging strictness, per design decision) - reserves what's available,
+    and routes any shortfall by the item's item_group: APC Manufacturing
+    Products gets a real APC Production Requirement (which auto-converts to
+    a Production Order); everything else just gets flagged as a shortage,
+    since procurement for those runs through Zoho Books, not this system.
+
+    Silently creates a backing APC Sales Demand if the Job Order doesn't
+    already have one, purely so the existing FIFO/allocation/release
+    machinery (all built around Sales Demand) has something to attach to -
+    no new screen for staff, they never need to look at it directly.
+    """
+    jo = frappe.get_doc("Job Order", job_order_name)
+    if not jo.items:
+        return
+
+    if jo.sales_demand:
+        sd = frappe.get_doc("APC Sales Demand", jo.sales_demand)
+        if len(sd.items) != len(jo.items):
+            frappe.log_error(
+                f"Job Order {jo.name} already has Sales Demand {sd.name} with a "
+                f"mismatched item count - skipping auto stock reservation.",
+                "reserve_stock_for_job_order",
+            )
+            return
+    else:
+        sd = frappe.new_doc("APC Sales Demand")
+        sd.customer = jo.customer
+        sd.customer_name = jo.customer_name
+        sd.sales_order_date = jo.date
+        sd.required_dispatch_date = jo.date
+        sd.status = "Confirmed"
+        for row in jo.items:
+            sd.append("items", {
+                "item": row.item,
+                "item_name": row.item_name,
+                "grade": row.grade,
+                "specification": row.specification,
+                "packaging_type": row.packaging_type,
+                "uom": row.uom,
+                "warehouse": row.warehouse,
+                "demand_quantity": flt(row.quantity),
+            })
+        sd.insert(ignore_permissions=True)
+        jo.db_set("sales_demand", sd.name, update_modified=False)
+
+    for jo_row, sd_row in zip(jo.items, sd.items):
+        if not jo_row.sales_demand_item:
+            jo_row.db_set("sales_demand_item", sd_row.name, update_modified=False)
+
+        remaining = flt(jo_row.quantity)
+
+        # Product-only match - deliberately no grade/specification/packaging_type
+        # filter here, so "any batch of this product" is eligible.
+        batches = get_available_batches(product=jo_row.item)
+
+        for batch in batches:
+            if remaining <= 0:
+                break
+
+            free = calculate_free_stock(batch.name)
+            if free <= 0:
+                continue
+
+            take = min(remaining, free)
+
+            _ensure_batch_allocation_detail(
+                sales_demand=sd.name,
+                sales_demand_item=sd_row.name,
+                batch=batch,
+                allocated_qty=take,
+                fifo_sequence=0,
+            )
+
+            batch_doc = frappe.get_doc("APC Batch", batch.name)
+            batch_doc.allocate_quantity(take)
+
+            remaining -= take
+
+        if remaining > 0:
+            _route_shortfall(jo, jo_row, sd_row, remaining)
+
+    sd.reload()
+    sd.calculate_totals()
+    sd.update_item_status()
+    sd.update_status()
+    sd.save(ignore_permissions=True)
+
+
+def _route_shortfall(jo, jo_row, sd_row, shortfall_qty):
+    """Manufacturing items get a real Production Requirement (feeds the
+    Production module). Everything else (Trading Products, Raw Material -
+    anything APC doesn't manufacture in-house) just gets flagged: procurement
+    for those already has a home in Zoho Books, this system doesn't need a
+    parallel purchasing workflow for them."""
+    item_group = frappe.db.get_value("Item", jo_row.item, "item_group")
+
+    sd_row.db_set("production_required_quantity", shortfall_qty, update_modified=False)
+
+    if item_group == "APC Manufacturing Products":
+        existing = frappe.db.exists(
+            "APC Production Requirement",
+            {"sales_demand_item": sd_row.name, "status": ["not in", ["Completed", "Cancelled"]]},
+        )
+        if existing:
+            frappe.db.set_value(
+                "APC Production Requirement", existing, "required_quantity", shortfall_qty,
+                update_modified=False,
+            )
+            return
+
+        req = frappe.new_doc("APC Production Requirement")
+        req.sales_demand = sd_row.parent
+        req.sales_demand_item = sd_row.name
+        req.customer = jo.customer
+        req.item = jo_row.item
+        req.item_name = jo_row.item_name
+        req.grade = jo_row.grade
+        req.specification = jo_row.specification
+        req.packaging_type = jo_row.packaging_type
+        req.uom = jo_row.uom
+        req.warehouse = jo_row.warehouse
+        req.required_quantity = shortfall_qty
+        req.required_date = jo.date
+        req.status = "Draft"
+        req.insert(ignore_permissions=True)
+    else:
+        jo.add_comment(
+            "Comment",
+            _(
+                "Stock shortage on submit: short by {0} {1} for {2}. Not a "
+                "manufactured item - procure via Zoho Books."
+            ).format(shortfall_qty, jo_row.uom or "", jo_row.item),
+        )
+        frappe.msgprint(
+            _(
+                "Insufficient stock for {0}: short by {1} {2}. This item is not "
+                "manufactured in-house - raise a purchase in Zoho Books."
+            ).format(jo_row.item, shortfall_qty, jo_row.uom or ""),
+            indicator="orange",
+            alert=True,
+        )
+
+
 @frappe.whitelist()
 def allocate_batches_fifo(sales_demand, items=None):
     """
@@ -1219,6 +1365,24 @@ def confirm_dispatch_and_deduct_stock(loading_dn_name):
     loading_dn.db_set("dispatch_confirmed_on", frappe_now(), update_modified=False)
     loading_dn.db_set("dispatch_confirmed_by", frappe.session.user, update_modified=False)
     loading_dn.db_set("delivery_note_status", "Dispatch Confirmed", update_modified=False)
+
+    # Dispatch confirmed = transit starts for the outward leg. Nothing
+    # previously set Transport Status automatically (it was a manual
+    # dropdown); this is the mirror of the inward GRN-received sync in
+    # ImportGRN._sync_transport_status_on_receipt.
+    if loading_dn.job_order:
+        transport_schedule = frappe.db.get_value(
+            "Job Order", loading_dn.job_order, "transport_schedule"
+        )
+        if transport_schedule:
+            current_status = frappe.db.get_value(
+                "Transport Schedule", transport_schedule, "transport_status"
+            )
+            if current_status not in ("Delivered", "Completed", "Cancelled"):
+                frappe.db.set_value(
+                    "Transport Schedule", transport_schedule, "transport_status", "Dispatched",
+                    update_modified=False,
+                )
 
     # Side-effect: create the ERPNext Delivery Note for tax/compliance.
     # Failure here must NOT block the APC Loading DN; mark sync as Failed

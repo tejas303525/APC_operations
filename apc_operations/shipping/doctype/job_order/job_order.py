@@ -1026,3 +1026,35 @@ def refresh_container_capacity_summary_api(job_order: str):
 def on_submit_job_order(doc, method):
     """Hook handler for Job Order on_submit event."""
     doc.create_or_link_operational_booking()
+
+    from apc_operations.services.batch_allocation import reserve_stock_for_job_order
+
+    reserve_stock_for_job_order(doc.name)
+
+
+def on_cancel_job_order(doc, method):
+    """Release any stock reserved by reserve_stock_for_job_order() back to
+    free stock. release_allocation() itself already refuses to release an
+    allocation that's been partially/fully dispatched, so this is safe even
+    if the Job Order is cancelled after some (but not all) of it shipped."""
+    if not doc.sales_demand:
+        return
+
+    from apc_operations.services.batch_allocation import release_allocation
+
+    allocations = frappe.get_all(
+        "APC Batch Allocation",
+        filters={
+            "sales_demand": doc.sales_demand,
+            "allocation_status": ["not in", ["Released", "Cancelled"]],
+        },
+        pluck="name",
+    )
+    for allocation_name in allocations:
+        try:
+            release_allocation(allocation_name)
+        except Exception:
+            frappe.log_error(
+                frappe.get_traceback(),
+                f"Job Order {doc.name} cancel: failed to release allocation {allocation_name}",
+            )

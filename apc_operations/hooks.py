@@ -47,6 +47,7 @@ doc_events = {
     "Job Order": {
         "validate": "apc_operations.shipping.doctype.job_order.job_order.validate_job_order",
         "on_submit": "apc_operations.shipping.doctype.job_order.job_order.on_submit_job_order",
+        "on_cancel": "apc_operations.shipping.doctype.job_order.job_order.on_cancel_job_order",
     },
     "Shipping Booking": {
         "on_update": "apc_operations.shipping.shipping_booking_events.on_booking_update",

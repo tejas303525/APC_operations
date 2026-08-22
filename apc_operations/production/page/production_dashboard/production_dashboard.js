@@ -323,6 +323,7 @@ class ProductionDashboard {
 						<th>${__("Category")}</th>
 						<th class="num">${__("Amount")}</th>
 						<th>${__("Status")}</th>
+						<th>${__("Dispatch")}</th>
 					</tr>
 				</thead>
 				<tbody></tbody>
@@ -331,6 +332,9 @@ class ProductionDashboard {
 
 		const $tbody = $table.find("tbody");
 		orders.forEach((o) => {
+			const dispatch_cell = o.loading_delivery_note
+				? `<a href="/app/loading-delivery-note/${encodeURIComponent(o.loading_delivery_note)}">${frappe.utils.escape_html(o.delivery_note_status || o.loading_delivery_note)}</a>`
+				: `<span class="pd-empty small">${__("Not shipped")}</span>`;
 			$tbody.append(`
 				<tr>
 					<td>${o.planned_date ? frappe.datetime.str_to_user(o.planned_date) : "—"}</td>
@@ -339,6 +343,7 @@ class ProductionDashboard {
 					<td>${frappe.utils.escape_html(o.production_capacity_category || "—")}</td>
 					<td class="num">${this._format_qty(o.capacity_quantity || o.required_quantity, o.capacity_uom || o.uom)}</td>
 					<td><span class="pd-badge ${this._status_class(o.status, o.capacity_status)}">${frappe.utils.escape_html(o.status || "Draft")}</span></td>
+					<td>${dispatch_cell}</td>
 				</tr>
 			`);
 		});

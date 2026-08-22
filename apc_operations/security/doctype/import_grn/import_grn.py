@@ -27,6 +27,33 @@ class ImportGRN(Document):
 		if not self.posting_date:
 			self.posting_date = today()
 
+	def on_update(self):
+		self._sync_transport_status_on_receipt()
+
+	def _sync_transport_status_on_receipt(self):
+		"""Goods received (GRN Approved/Posted) means transit ended for the
+		inbound leg - mirrors the outward side, where dispatch confirmation
+		sets Transport Status to Dispatched. Neither side of this was ever
+		automatic before; both were manually-set dropdowns nobody reliably
+		updated."""
+		if self.grn_status not in _COMPLETED_GRN_STATUSES:
+			return
+		if not self.job_order:
+			return
+
+		transport_schedule = frappe.db.get_value("Job Order", self.job_order, "transport_schedule")
+		if not transport_schedule:
+			return
+
+		current_status = frappe.db.get_value("Transport Schedule", transport_schedule, "transport_status")
+		if current_status in ("Delivered", "Completed", "Cancelled"):
+			return
+
+		frappe.db.set_value(
+			"Transport Schedule", transport_schedule, "transport_status", "Delivered",
+			update_modified=False,
+		)
+
 	def _sync_receipt_totals(self):
 		line_expected = 0.0
 		line_arrived = 0.0

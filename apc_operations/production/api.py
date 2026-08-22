@@ -98,11 +98,12 @@ def get_production_dashboard_data():
         fields=[
             "name", "production_order_number", "item_description", "planned_date",
             "status", "production_capacity_category", "capacity_quantity", "capacity_uom",
-            "capacity_status", "required_quantity", "uom",
+            "capacity_status", "required_quantity", "uom", "apc_batch",
         ],
         order_by="planned_date desc, modified desc",
         limit=20,
     )
+    _attach_dispatch_info(recent_orders)
 
     return {
         "active_rules": active_rules,
@@ -557,3 +558,63 @@ def evaluate_production_order(name):
         "production_capacity_category": doc.production_capacity_category,
         "capacity_quantity": doc.capacity_quantity,
     }
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Dispatch visibility - lets Production see when their output actually
+# shipped, not just when a Production Order was raised for it.
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def _attach_dispatch_info(orders):
+    """Bulk-attach loading_delivery_note / delivery_note_status onto a list
+    of Production Order rows that carry an apc_batch, in one query rather
+    than one per row."""
+    batch_names = [row.apc_batch for row in orders if row.get("apc_batch")]
+    if not batch_names:
+        for row in orders:
+            row["loading_delivery_note"] = None
+            row["delivery_note_status"] = None
+        return
+
+    rows = frappe.db.sql(
+        """
+        SELECT ldb.batch, ldn.name AS loading_delivery_note, ldn.delivery_note_status
+        FROM `tabLoading DN Batch` ldb
+        INNER JOIN `tabLoading Delivery Note` ldn ON ldn.name = ldb.parent
+        WHERE ldb.batch IN %(batches)s
+        ORDER BY ldn.modified DESC
+        """,
+        {"batches": batch_names},
+        as_dict=True,
+    )
+    by_batch = {}
+    for r in rows:
+        by_batch.setdefault(r.batch, r)  # first hit wins - most recently modified, per ORDER BY
+
+    for row in orders:
+        info = by_batch.get(row.get("apc_batch"))
+        row["loading_delivery_note"] = info.loading_delivery_note if info else None
+        row["delivery_note_status"] = info.delivery_note_status if info else None
+
+
+@frappe.whitelist()
+def get_loading_delivery_notes_for_production_order(production_order):
+    """All Loading Delivery Notes that have dispatched (or are dispatching)
+    the batch this Production Order fed, most recent first."""
+    apc_batch = frappe.db.get_value("Production Order", production_order, "apc_batch")
+    if not apc_batch:
+        return []
+
+    return frappe.db.sql(
+        """
+        SELECT ldn.name, ldn.delivery_note_status, ldn.dispatch_confirmed,
+               ldn.job_order, ldb.allocated_qty, ldb.dispatched_qty
+        FROM `tabLoading DN Batch` ldb
+        INNER JOIN `tabLoading Delivery Note` ldn ON ldn.name = ldb.parent
+        WHERE ldb.batch = %s
+        ORDER BY ldn.modified DESC
+        """,
+        (apc_batch,),
+        as_dict=True,
+    )

@@ -22,6 +22,38 @@ frappe.ui.form.on("Production Order", {
 				"green",
 			);
 		}
+
+		if (frm.doc.apc_batch && !frm.is_new()) {
+			frm.add_custom_button(__("View Loading Delivery Notes"), () => {
+				frappe.call({
+					method: "apc_operations.production.api.get_loading_delivery_notes_for_production_order",
+					args: { production_order: frm.doc.name },
+					callback(r) {
+						const rows = r.message || [];
+						if (!rows.length) {
+							frappe.msgprint(__("This batch hasn't been dispatched on any Loading Delivery Note yet."));
+							return;
+						}
+						if (rows.length === 1) {
+							frappe.set_route("Form", "Loading Delivery Note", rows[0].name);
+							return;
+						}
+						const html = rows.map((row) => `
+							<div style="padding:6px 0;border-bottom:1px solid var(--border-color);">
+								<a href="/app/loading-delivery-note/${row.name}"><b>${row.name}</b></a>
+								&nbsp;-&nbsp;${frappe.utils.escape_html(row.delivery_note_status || "-")}
+								&nbsp;(${row.dispatched_qty || 0} / ${row.allocated_qty || 0} dispatched)
+							</div>
+						`).join("");
+						frappe.msgprint({
+							title: __("Loading Delivery Notes for this batch"),
+							message: html,
+							wide: true,
+						});
+					},
+				});
+			});
+		}
 	},
 
 	planned_date(frm) {
