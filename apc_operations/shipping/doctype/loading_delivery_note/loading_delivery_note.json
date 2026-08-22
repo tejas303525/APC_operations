@@ -681,8 +681,9 @@
   },
   {
    "fieldname": "invoice_reference",
-   "fieldtype": "Data",
-   "label": "Invoice Reference"
+   "fieldtype": "Link",
+   "label": "Invoice Reference",
+   "options": "APC Invoice"
   },
   {
    "fieldname": "payment_status",

@@ -1,0 +1,453 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "INV-.YYYY.-.#####.",
+ "creation": "2026-08-22 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "invoice_section",
+  "invoice_type",
+  "column_break_head",
+  "status",
+  "mainland_uae_sale",
+  "reference_section",
+  "job_order",
+  "loading_delivery_note",
+  "column_break_ref",
+  "customer",
+  "customer_name",
+  "details_section",
+  "invoice_date",
+  "delivery_note_ref",
+  "delivery_note_date",
+  "column_break_details",
+  "supplier_ref",
+  "supplier_ref_date",
+  "buyers_order_no",
+  "buyers_order_date",
+  "other_reference",
+  "mode_of_payment",
+  "terms_of_delivery",
+  "shipping_section",
+  "despatch_document_no",
+  "despatched_through",
+  "column_break_ship1",
+  "destination",
+  "vessel_flight_no",
+  "place_of_receipt",
+  "column_break_ship2",
+  "port_of_loading",
+  "port_of_discharge",
+  "consignee_section",
+  "consignee_name",
+  "consignee_address",
+  "column_break_consignee",
+  "consignee_phone",
+  "consignee_fax",
+  "buyer_section",
+  "buyer_name",
+  "buyer_address",
+  "column_break_buyer",
+  "buyer_phone",
+  "buyer_fax",
+  "buyer_emirate",
+  "buyer_country",
+  "place_of_supply",
+  "items_section",
+  "items",
+  "totals_section",
+  "currency",
+  "column_break_totals1",
+  "taxable_value",
+  "vat_percentage",
+  "vat_amount",
+  "grand_total",
+  "column_break_totals2",
+  "amount_in_words",
+  "vat_amount_in_words"
+ ],
+ "fields": [
+  {
+   "fieldname": "invoice_section",
+   "fieldtype": "Section Break",
+   "label": "Invoice"
+  },
+  {
+   "fieldname": "invoice_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Invoice Type",
+   "options": "Tax Invoice\nInternational Invoice",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nIssued\nCancelled"
+  },
+  {
+   "default": "0",
+   "fieldname": "mainland_uae_sale",
+   "fieldtype": "Check",
+   "label": "Mainland UAE Sale (VAT Applicable)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reference_section",
+   "fieldtype": "Section Break",
+   "label": "Reference"
+  },
+  {
+   "fieldname": "job_order",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Job Order",
+   "options": "Job Order",
+   "reqd": 1
+  },
+  {
+   "fieldname": "loading_delivery_note",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Loading Delivery Note",
+   "options": "Loading Delivery Note",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_ref",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Customer",
+   "options": "Customer",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "customer.customer_name",
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "Customer Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "details_section",
+   "fieldtype": "Section Break",
+   "label": "Invoice Details"
+  },
+  {
+   "default": "Today",
+   "fieldname": "invoice_date",
+   "fieldtype": "Date",
+   "label": "Dated",
+   "reqd": 1
+  },
+  {
+   "fieldname": "delivery_note_ref",
+   "fieldtype": "Data",
+   "label": "Delivery Note"
+  },
+  {
+   "fieldname": "delivery_note_date",
+   "fieldtype": "Date",
+   "label": "Delivery Note Date"
+  },
+  {
+   "fieldname": "column_break_details",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Customer PI / order reference",
+   "fieldname": "supplier_ref",
+   "fieldtype": "Data",
+   "label": "Supplier's Ref."
+  },
+  {
+   "fieldname": "supplier_ref_date",
+   "fieldtype": "Date",
+   "label": "Supplier's Ref. Date"
+  },
+  {
+   "fieldname": "buyers_order_no",
+   "fieldtype": "Data",
+   "label": "Buyer's Order No."
+  },
+  {
+   "fieldname": "buyers_order_date",
+   "fieldtype": "Date",
+   "label": "Buyer's Order Date"
+  },
+  {
+   "fieldname": "other_reference",
+   "fieldtype": "Data",
+   "label": "Other Reference(s)"
+  },
+  {
+   "fieldname": "mode_of_payment",
+   "fieldtype": "Data",
+   "label": "Mode/Terms of Payment"
+  },
+  {
+   "fieldname": "terms_of_delivery",
+   "fieldtype": "Data",
+   "label": "Terms of Delivery"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "shipping_section",
+   "fieldtype": "Section Break",
+   "label": "Shipping Details"
+  },
+  {
+   "fieldname": "despatch_document_no",
+   "fieldtype": "Data",
+   "label": "Despatch Document No."
+  },
+  {
+   "fieldname": "despatched_through",
+   "fieldtype": "Data",
+   "label": "Despatched Through"
+  },
+  {
+   "fieldname": "column_break_ship1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "destination",
+   "fieldtype": "Data",
+   "label": "Destination"
+  },
+  {
+   "fieldname": "vessel_flight_no",
+   "fieldtype": "Data",
+   "label": "Vessel/Flight No."
+  },
+  {
+   "fieldname": "place_of_receipt",
+   "fieldtype": "Data",
+   "label": "Place of Receipt by Shipper"
+  },
+  {
+   "fieldname": "column_break_ship2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "port_of_loading",
+   "fieldtype": "Data",
+   "label": "City/Port of Loading"
+  },
+  {
+   "fieldname": "port_of_discharge",
+   "fieldtype": "Data",
+   "label": "City/Port of Discharge"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "consignee_section",
+   "fieldtype": "Section Break",
+   "label": "Consignee"
+  },
+  {
+   "fieldname": "consignee_name",
+   "fieldtype": "Data",
+   "label": "Consignee Name"
+  },
+  {
+   "fieldname": "consignee_address",
+   "fieldtype": "Small Text",
+   "label": "Consignee Address"
+  },
+  {
+   "fieldname": "column_break_consignee",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "consignee_phone",
+   "fieldtype": "Data",
+   "label": "Consignee Phone"
+  },
+  {
+   "fieldname": "consignee_fax",
+   "fieldtype": "Data",
+   "label": "Consignee Fax"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "buyer_section",
+   "fieldtype": "Section Break",
+   "label": "Buyer"
+  },
+  {
+   "fieldname": "buyer_name",
+   "fieldtype": "Data",
+   "label": "Buyer Name"
+  },
+  {
+   "fieldname": "buyer_address",
+   "fieldtype": "Small Text",
+   "label": "Buyer Address"
+  },
+  {
+   "fieldname": "column_break_buyer",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "buyer_phone",
+   "fieldtype": "Data",
+   "label": "Buyer Phone"
+  },
+  {
+   "fieldname": "buyer_fax",
+   "fieldtype": "Data",
+   "label": "Buyer Fax"
+  },
+  {
+   "fieldname": "buyer_emirate",
+   "fieldtype": "Data",
+   "label": "Emirate"
+  },
+  {
+   "default": "UAE",
+   "fieldname": "buyer_country",
+   "fieldtype": "Data",
+   "label": "Country"
+  },
+  {
+   "fieldname": "place_of_supply",
+   "fieldtype": "Data",
+   "label": "Place of Supply"
+  },
+  {
+   "fieldname": "items_section",
+   "fieldtype": "Section Break",
+   "label": "Items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "options": "APC Invoice Item"
+  },
+  {
+   "fieldname": "totals_section",
+   "fieldtype": "Section Break",
+   "label": "Totals"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Data",
+   "label": "Currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_totals1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "taxable_value",
+   "fieldtype": "Currency",
+   "label": "Taxable Value",
+   "read_only": 1
+  },
+  {
+   "default": "5",
+   "fieldname": "vat_percentage",
+   "fieldtype": "Percent",
+   "label": "VAT %"
+  },
+  {
+   "fieldname": "vat_amount",
+   "fieldtype": "Currency",
+   "label": "VAT Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "grand_total",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Invoice Total",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_totals2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "amount_in_words",
+   "fieldtype": "Small Text",
+   "label": "Amount Chargeable (in words)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vat_amount_in_words",
+   "fieldtype": "Small Text",
+   "label": "VAT Amount (in words)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-08-22 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Shipping",
+ "name": "APC Invoice",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Shipping Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Shipping User",
+   "share": 1,
+   "write": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

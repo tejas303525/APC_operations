@@ -1235,6 +1235,21 @@ def confirm_dispatch_and_deduct_stock(loading_dn_name):
         )
         loading_dn.db_set("erpnext_dn_sync_status", "Failed", update_modified=False)
 
+    # Side-effect: generate the APC Invoice (Tax Invoice for mainland UAE
+    # sales, International Invoice otherwise). Failure here must NOT block
+    # the dispatch confirmation - staff can regenerate manually.
+    try:
+        from apc_operations.shipping.services.invoice_service import (
+            generate_invoice_for_loading_dn,
+        )
+
+        generate_invoice_for_loading_dn(loading_dn.name)
+    except Exception:
+        frappe.log_error(
+            frappe.get_traceback(),
+            f"Loading DN {loading_dn_name}: invoice generation failed",
+        )
+
     if is_third_party:
         frappe.msgprint(
             _("Dispatch confirmed for {0} (third-party loading).").format(loading_dn_name),

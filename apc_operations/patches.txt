@@ -51,3 +51,4 @@ apc_operations.patches.v0_8.add_packing_matrix_schema
 apc_operations.patches.v0_8.seed_packaging_tare_defaults
 apc_operations.patches.v0_8.import_product_packing_matrix
 apc_operations.patches.v0_8.resync_job_order_and_import_po_print_formats
+apc_operations.patches.v0_8.replace_custom_apc_invoice_doctype
