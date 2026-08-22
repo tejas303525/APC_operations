@@ -19,6 +19,22 @@ def _stock_console_permission_check():
 		frappe.throw(_("Not permitted to view the Stock Console."), frappe.PermissionError)
 
 
+_MT_UOMS = {"metric ton", "mt", "ton"}
+
+
+def _to_kg(qty, uom):
+	"""Normalize to a KG-equivalent for summing across products - the
+	catalog mixes KG and Metric Ton stock_uom (110 vs 12 items), and
+	adding raw quantities across those without converting first produces
+	a meaningless number (e.g. 12.21 MT + 13120 KG summed as if both were
+	the same unit). Only used for the aggregate KPI totals; per-product
+	rows keep displaying in the item's own native unit, paired with its
+	uom, so nothing here changes what a row itself shows."""
+	if (uom or "").strip().lower() in _MT_UOMS:
+		return flt(qty) * 1000
+	return flt(qty)
+
+
 @frappe.whitelist()
 def get_stock_console_data():
 	"""Dashboard KPIs + per-product stock summary for the Stock Console page."""
@@ -29,13 +45,14 @@ def get_stock_console_data():
 		SELECT
 			item.name AS product,
 			item.item_name,
+			item.stock_uom AS uom,
 			IFNULL(SUM(b.batch_quantity - IFNULL(b.dispatched_quantity, 0)), 0) AS stock_in_hand,
 			IFNULL(SUM(b.allocated_quantity), 0) AS reserved_qty,
 			IFNULL(SUM(b.available_quantity), 0) AS free_qty
 		FROM `tabItem` item
 		LEFT JOIN `tabAPC Batch` b ON b.product = item.name AND b.batch_status != 'Cancelled'
 		WHERE item.disabled = 0 AND item.is_sales_item = 1
-		GROUP BY item.name
+		GROUP BY item.name, item.stock_uom
 		ORDER BY item.item_name
 		""",
 		as_dict=True,
@@ -62,10 +79,10 @@ def get_stock_console_data():
 
 	kpis = {
 		"total_products": len(rows),
-		"total_stock_in_hand": sum(flt(r.stock_in_hand) for r in rows),
-		"total_reserved": sum(flt(r.reserved_qty) for r in rows),
-		"total_free": sum(flt(r.free_qty) for r in rows),
-		"total_in_transit": sum(flt(r.get("in_transit")) for r in rows),
+		"total_stock_in_hand": sum(_to_kg(r.stock_in_hand, r.uom) for r in rows),
+		"total_reserved": sum(_to_kg(r.reserved_qty, r.uom) for r in rows),
+		"total_free": sum(_to_kg(r.free_qty, r.uom) for r in rows),
+		"total_in_transit": sum(_to_kg(r.get("in_transit"), r.uom) for r in rows),
 	}
 
 	return {"kpis": kpis, "products": rows}

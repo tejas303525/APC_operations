@@ -77,10 +77,10 @@ class StockConsole {
 		const $strip = this.$root.find(".sc-kpi-strip").empty();
 		const cards = [
 			{ label: __("Products in Stock"), value: kpis.total_products || 0 },
-			{ label: __("Stock In Hand"), value: this._fmt(kpis.total_stock_in_hand) },
-			{ label: __("Reserved"), value: this._fmt(kpis.total_reserved) },
-			{ label: __("Free / Excess"), value: this._fmt(kpis.total_free) },
-			{ label: __("In Transit"), value: this._fmt(kpis.total_in_transit) },
+			{ label: __("Stock In Hand (KG)"), value: this._fmt(kpis.total_stock_in_hand) },
+			{ label: __("Reserved (KG)"), value: this._fmt(kpis.total_reserved) },
+			{ label: __("Free / Excess (KG)"), value: this._fmt(kpis.total_free) },
+			{ label: __("In Transit (KG)"), value: this._fmt(kpis.total_in_transit) },
 		];
 		cards.forEach((c) => {
 			$strip.append(`
@@ -105,10 +105,10 @@ class StockConsole {
 				<tr class="sc-product-row" data-product="${frappe.utils.escape_html(p.product)}">
 					<td><span class="sc-caret">&#9656;</span></td>
 					<td>${frappe.utils.escape_html(p.item_name || p.product)}</td>
-					<td class="num">${this._fmt(p.stock_in_hand)}</td>
-					<td class="num">${this._fmt(p.reserved_qty)}</td>
-					<td class="num">${this._fmt(p.free_qty)}</td>
-					<td class="num">${this._fmt(p.in_transit)}</td>
+					<td class="num">${this._fmt(p.stock_in_hand)} <span class="sc-uom">${frappe.utils.escape_html(p.uom || "")}</span></td>
+					<td class="num">${this._fmt(p.reserved_qty)} <span class="sc-uom">${frappe.utils.escape_html(p.uom || "")}</span></td>
+					<td class="num">${this._fmt(p.free_qty)} <span class="sc-uom">${frappe.utils.escape_html(p.uom || "")}</span></td>
+					<td class="num">${this._fmt(p.in_transit)} <span class="sc-uom">${frappe.utils.escape_html(p.uom || "")}</span></td>
 				</tr>
 				<tr class="sc-detail-row" style="display:none;"><td colspan="6"></td></tr>
 			`);
