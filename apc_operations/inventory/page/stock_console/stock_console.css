@@ -1,0 +1,167 @@
+.stock-console {
+	padding: 0;
+}
+
+.sc-hero {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	padding: 16px 20px;
+	border-bottom: 1px solid var(--border-color);
+}
+
+.sc-hero h2 {
+	margin: 0 0 4px;
+}
+
+.sc-hero p {
+	margin: 0;
+	color: var(--text-muted);
+}
+
+.sc-kpi-strip {
+	display: grid;
+	grid-template-columns: repeat(5, 1fr);
+	gap: 12px;
+	padding: 16px 20px;
+}
+
+.sc-kpi-card {
+	border: 1px solid var(--border-color);
+	border-radius: var(--border-radius);
+	padding: 12px 14px;
+	background: var(--card-bg, var(--fg-color));
+}
+
+.sc-kpi-card .sc-kpi-label {
+	font-size: 12px;
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+}
+
+.sc-kpi-card .sc-kpi-value {
+	font-size: 22px;
+	font-weight: 600;
+	margin-top: 4px;
+}
+
+.sc-body {
+	padding: 0 20px 24px;
+}
+
+table.sc-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+table.sc-table th,
+table.sc-table td {
+	padding: 8px 10px;
+	border-bottom: 1px solid var(--border-color);
+	text-align: left;
+	font-size: 13px;
+}
+
+table.sc-table th {
+	color: var(--text-muted);
+	font-weight: 500;
+	text-transform: uppercase;
+	font-size: 11px;
+	letter-spacing: 0.03em;
+}
+
+table.sc-table td.num,
+table.sc-table th.num {
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+
+tr.sc-product-row {
+	cursor: pointer;
+}
+
+tr.sc-product-row:hover {
+	background: var(--control-bg);
+}
+
+tr.sc-product-row .sc-caret {
+	display: inline-block;
+	width: 12px;
+	transition: transform 0.15s;
+}
+
+tr.sc-product-row.expanded .sc-caret {
+	transform: rotate(90deg);
+}
+
+tr.sc-detail-row td {
+	padding: 0;
+	background: var(--subtle-fg, #fafafa);
+}
+
+.sc-batch-wrap {
+	padding: 10px 10px 14px 34px;
+}
+
+.sc-batch-card {
+	border: 1px solid var(--border-color);
+	border-radius: var(--border-radius);
+	padding: 10px 12px;
+	margin-bottom: 8px;
+	background: var(--card-bg, #fff);
+}
+
+.sc-batch-head {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.sc-batch-head .sc-batch-name {
+	font-weight: 600;
+}
+
+.sc-batch-meta {
+	color: var(--text-muted);
+	font-size: 12px;
+	margin-top: 2px;
+}
+
+.sc-batch-nums {
+	display: flex;
+	gap: 16px;
+	margin-top: 8px;
+	font-size: 12px;
+}
+
+.sc-batch-nums span b {
+	display: block;
+	font-size: 14px;
+	font-variant-numeric: tabular-nums;
+}
+
+.sc-reservations {
+	margin-top: 8px;
+	border-top: 1px dashed var(--border-color);
+	padding-top: 6px;
+}
+
+.sc-reservation-row {
+	display: flex;
+	justify-content: space-between;
+	font-size: 12px;
+	padding: 2px 0;
+}
+
+.sc-empty {
+	color: var(--text-muted);
+	font-size: 12px;
+	padding: 8px 0;
+}
+
+.sc-loading {
+	padding: 12px;
+	color: var(--text-muted);
+	font-size: 12px;
+}
