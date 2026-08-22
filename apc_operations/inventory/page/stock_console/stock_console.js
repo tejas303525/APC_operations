@@ -140,12 +140,23 @@ class StockConsole {
 			args: { product },
 			callback: (r) => {
 				const batches = r.message || [];
+
+				const $wrap = $('<div class="sc-batch-wrap"></div>');
+				const $addBar = $(`
+					<div class="sc-batch-head" style="margin-bottom:8px;">
+						<div></div>
+						<button class="btn btn-xs btn-primary sc-add-stock-btn">${__("+ Add Stock")}</button>
+					</div>
+				`);
+				$addBar.find(".sc-add-stock-btn").on("click", () => this._open_add_stock_dialog(product, $target));
+				$wrap.append($addBar);
+
 				if (!batches.length) {
-					$target.html(`<div class="sc-batch-wrap"><div class="sc-empty">${__("No batches for this product.")}</div></div>`);
+					$wrap.append(`<div class="sc-empty">${__("No batches for this product yet. Add stock to create one.")}</div>`);
+					$target.empty().append($wrap);
 					return;
 				}
 
-				const $wrap = $('<div class="sc-batch-wrap"></div>');
 				batches.forEach((b) => {
 					const $card = $(`
 						<div class="sc-batch-card" data-batch="${frappe.utils.escape_html(b.name)}">
@@ -230,6 +241,55 @@ class StockConsole {
 			},
 			__("Adjust Stock - {0}", [batch.batch_number || batch.name]),
 			__("Apply")
+		);
+	}
+
+	_open_add_stock_dialog(product) {
+		frappe.prompt(
+			[
+				{
+					fieldname: "quantity",
+					fieldtype: "Float",
+					label: __("Quantity"),
+					reqd: 1,
+				},
+				{
+					fieldname: "warehouse",
+					fieldtype: "Link",
+					options: "Warehouse",
+					label: __("Warehouse"),
+				},
+				{
+					fieldname: "manufacturing_date",
+					fieldtype: "Date",
+					label: __("Manufacturing / Stock-take Date"),
+					default: frappe.datetime.get_today(),
+				},
+				{
+					fieldname: "remarks",
+					fieldtype: "Small Text",
+					label: __("Remarks"),
+				},
+			],
+			(values) => {
+				frappe.call({
+					method: "apc_operations.inventory.api.add_opening_stock",
+					args: {
+						product,
+						quantity: values.quantity,
+						warehouse: values.warehouse,
+						manufacturing_date: values.manufacturing_date,
+						remarks: values.remarks,
+					},
+					freeze: true,
+					callback: () => {
+						frappe.show_alert({ message: __("Stock added"), indicator: "green" });
+						this.refresh();
+					},
+				});
+			},
+			__("Add Stock"),
+			__("Add")
 		);
 	}
 

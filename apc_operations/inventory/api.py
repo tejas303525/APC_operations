@@ -27,15 +27,15 @@ def get_stock_console_data():
 	rows = frappe.db.sql(
 		"""
 		SELECT
-			b.product,
+			item.name AS product,
 			item.item_name,
-			SUM(b.batch_quantity - IFNULL(b.dispatched_quantity, 0)) AS stock_in_hand,
-			SUM(b.allocated_quantity) AS reserved_qty,
-			SUM(b.available_quantity) AS free_qty
-		FROM `tabAPC Batch` b
-		LEFT JOIN `tabItem` item ON item.name = b.product
-		WHERE b.batch_status != 'Cancelled'
-		GROUP BY b.product
+			IFNULL(SUM(b.batch_quantity - IFNULL(b.dispatched_quantity, 0)), 0) AS stock_in_hand,
+			IFNULL(SUM(b.allocated_quantity), 0) AS reserved_qty,
+			IFNULL(SUM(b.available_quantity), 0) AS free_qty
+		FROM `tabItem` item
+		LEFT JOIN `tabAPC Batch` b ON b.product = item.name AND b.batch_status != 'Cancelled'
+		WHERE item.disabled = 0 AND item.is_sales_item = 1
+		GROUP BY item.name
 		ORDER BY item.item_name
 		""",
 		as_dict=True,
@@ -176,3 +176,45 @@ def adjust_batch_stock(batch, adjustment_qty, reason):
 		"new_batch_quantity": new_batch_qty,
 		"new_available_quantity": new_available_qty,
 	}
+
+
+@frappe.whitelist()
+def add_opening_stock(product, quantity, warehouse=None, manufacturing_date=None, remarks=None):
+	"""Seed real stock for a product that has no batch tracked yet - creates
+	a new APC Batch on the spot rather than requiring staff to go through
+	Production or understand batch mechanics just to enter a stock-take
+	number. Marked Approved/Available immediately (this is verified physical
+	count, not something awaiting QC), so it's usable by FIFO reservation
+	right away. Same role restriction as adjust_batch_stock - this is
+	still a quantity-altering action."""
+	roles = set(frappe.get_roles(frappe.session.user))
+	if not roles.intersection(_ADJUST_ROLES):
+		frappe.throw(
+			_("Only a Shipping Manager or System Manager can add opening stock."),
+			frappe.PermissionError,
+		)
+
+	quantity = flt(quantity)
+	if quantity <= 0:
+		frappe.throw(_("Quantity must be greater than zero."))
+
+	batch = frappe.new_doc("APC Batch")
+	batch.product = product
+	batch.batch_quantity = quantity
+	batch.available_quantity = quantity
+	batch.allocated_quantity = 0
+	batch.manufacturing_date = manufacturing_date or frappe.utils.today()
+	batch.warehouse = warehouse
+	batch.batch_status = "Active"
+	batch.quality_status = "Approved"
+	batch.stock_status = "Available"
+	batch.insert(ignore_permissions=True)
+
+	batch.add_comment(
+		"Comment",
+		_("Opening stock entered by {0}: {1}{2}").format(
+			frappe.session.user, quantity, f" - {remarks}" if remarks else ""
+		),
+	)
+
+	return {"batch": batch.name, "available_quantity": quantity}
