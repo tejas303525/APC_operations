@@ -9,13 +9,9 @@ import frappe
 from frappe import _
 from frappe.utils import flt
 
-_ADJUST_ROLES = {
-	"Shipping Manager",
-	"System Manager",
-	"Production Manager",
-	"Transportation Manager",
-	"Transportation User",
-}
+from apc_operations.shipping.doctype.apc_operations_settings.apc_operations_settings import (
+	stock_adjust_roles,
+)
 
 
 def _stock_console_permission_check():
@@ -154,14 +150,15 @@ def get_batch_detail_for_product(product):
 @frappe.whitelist()
 def adjust_batch_stock(batch, adjustment_qty, reason):
 	"""Manual +/- correction to a batch's quantity (found extra stock,
-	wastage, damage, physical count reconciliation). Restricted to
-	Shipping Manager / System Manager - a plain Shipping User can view
-	reservations but not alter quantities. Logged as a comment on the
-	batch for an audit trail rather than a silent field update."""
+	wastage, damage, physical count reconciliation). Restricted to the
+	roles configured in APC Operations Settings > Stock Console - a plain
+	Shipping User can view reservations but not alter quantities unless
+	granted there. Logged as a comment on the batch for an audit trail
+	rather than a silent field update."""
 	roles = set(frappe.get_roles(frappe.session.user))
-	if not roles.intersection(_ADJUST_ROLES):
+	if not roles.intersection(stock_adjust_roles()):
 		frappe.throw(
-			_("Only a Shipping Manager or System Manager can adjust batch quantities."),
+			_("You don't have a role permitted to adjust batch quantities. See APC Operations Settings > Stock Console."),
 			frappe.PermissionError,
 		)
 
@@ -211,9 +208,9 @@ def add_opening_stock(product, quantity, warehouse=None, manufacturing_date=None
 	right away. Same role restriction as adjust_batch_stock - this is
 	still a quantity-altering action."""
 	roles = set(frappe.get_roles(frappe.session.user))
-	if not roles.intersection(_ADJUST_ROLES):
+	if not roles.intersection(stock_adjust_roles()):
 		frappe.throw(
-			_("Only a Shipping Manager or System Manager can add opening stock."),
+			_("You don't have a role permitted to add opening stock. See APC Operations Settings > Stock Console."),
 			frappe.PermissionError,
 		)
 
