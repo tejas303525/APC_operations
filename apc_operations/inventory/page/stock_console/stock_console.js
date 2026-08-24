@@ -22,6 +22,7 @@ class StockConsole {
 		this.wrapper = wrapper;
 		this.expanded = {};
 		this.batch_cache = {};
+		this.filters = { search: "", stock: "all", min: null, max: null };
 		this._build_layout();
 		this.refresh();
 	}
@@ -39,6 +40,22 @@ class StockConsole {
 				</div>
 			</div>
 			<div class="sc-kpi-strip"></div>
+			<div class="sc-toolbar">
+				<input type="text" class="sc-search-input form-control" placeholder="${__("Search by product name or code...")}">
+				<select class="sc-stock-filter form-control">
+					<option value="all">${__("All Stock Levels")}</option>
+					<option value="in_stock">${__("In Stock (> 0)")}</option>
+					<option value="out_of_stock">${__("Out of Stock (0)")}</option>
+					<option value="custom">${__("Custom Range...")}</option>
+				</select>
+				<div class="sc-custom-range" style="display:none;">
+					<input type="number" class="sc-min-qty form-control" placeholder="${__("Min")}">
+					<span>${__("to")}</span>
+					<input type="number" class="sc-max-qty form-control" placeholder="${__("Max")}">
+					<button class="btn btn-xs btn-default sc-apply-range">${__("Apply")}</button>
+				</div>
+				<span class="sc-result-count"></span>
+			</div>
 			<div class="sc-body">
 				<table class="sc-table">
 					<thead>
@@ -55,6 +72,39 @@ class StockConsole {
 				</table>
 			</div>
 		`);
+
+		this._bind_toolbar();
+	}
+
+	_bind_toolbar() {
+		const $toolbar = this.$root.find(".sc-toolbar");
+
+		$toolbar.find(".sc-search-input").on("input", (e) => {
+			this.filters.search = (e.target.value || "").trim().toLowerCase();
+			this._apply_filters();
+		});
+
+		$toolbar.find(".sc-stock-filter").on("change", (e) => {
+			this.filters.stock = e.target.value;
+			$toolbar.find(".sc-custom-range").toggle(this.filters.stock === "custom");
+			if (this.filters.stock !== "custom") {
+				this.filters.min = null;
+				this.filters.max = null;
+				this._apply_filters();
+			}
+		});
+
+		const apply_range = () => {
+			const min = $toolbar.find(".sc-min-qty").val();
+			const max = $toolbar.find(".sc-max-qty").val();
+			this.filters.min = min === "" ? null : flt(min);
+			this.filters.max = max === "" ? null : flt(max);
+			this._apply_filters();
+		};
+		$toolbar.find(".sc-apply-range").on("click", apply_range);
+		$toolbar.find(".sc-min-qty, .sc-max-qty").on("keydown", (e) => {
+			if (e.key === "Enter") apply_range();
+		});
 	}
 
 	refresh() {
@@ -70,7 +120,34 @@ class StockConsole {
 
 	_render() {
 		this._render_kpis(this.data.kpis || {});
-		this._render_products(this.data.products || []);
+		this._apply_filters();
+	}
+
+	_apply_filters() {
+		const all_products = this.data.products || [];
+		const { search, stock, min, max } = this.filters;
+
+		const filtered = all_products.filter((p) => {
+			if (search) {
+				const haystack = `${p.product || ""} ${p.item_name || ""}`.toLowerCase();
+				if (!haystack.includes(search)) return false;
+			}
+
+			const qty = flt(p.stock_in_hand);
+			if (stock === "in_stock" && !(qty > 0)) return false;
+			if (stock === "out_of_stock" && !(qty <= 0)) return false;
+			if (stock === "custom") {
+				if (min !== null && qty < min) return false;
+				if (max !== null && qty > max) return false;
+			}
+
+			return true;
+		});
+
+		this.$root.find(".sc-result-count").text(
+			__("{0} of {1} products", [filtered.length, all_products.length])
+		);
+		this._render_products(filtered);
 	}
 
 	_render_kpis(kpis) {
@@ -96,7 +173,11 @@ class StockConsole {
 		const $body = this.$root.find(".sc-product-body").empty();
 
 		if (!products.length) {
-			$body.append(`<tr><td colspan="6" class="sc-empty">${__("No batches recorded yet.")}</td></tr>`);
+			const has_active_filter = this.filters.search || this.filters.stock !== "all";
+			const message = has_active_filter
+				? __("No products match the current search/filter.")
+				: __("No batches recorded yet.");
+			$body.append(`<tr><td colspan="6" class="sc-empty">${message}</td></tr>`);
 			return;
 		}
 
