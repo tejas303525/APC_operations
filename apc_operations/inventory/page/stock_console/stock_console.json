@@ -4,20 +4,7 @@
  "module": "Inventory",
  "name": "stock-console",
  "page_name": "stock-console",
- "roles": [
-  {
-   "role": "System Manager"
-  },
-  {
-   "role": "Shipping Manager"
-  },
-  {
-   "role": "Shipping User"
-  },
-  {
-   "role": "Shipping Coordinator"
-  }
- ],
+ "roles": [],
  "standard": "Yes",
  "system_page": 0,
  "title": "Stock Console"
