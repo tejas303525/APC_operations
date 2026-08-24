@@ -9,7 +9,13 @@ import frappe
 from frappe import _
 from frappe.utils import flt
 
-_ADJUST_ROLES = {"Shipping Manager", "System Manager"}
+_ADJUST_ROLES = {
+	"Shipping Manager",
+	"System Manager",
+	"Production Manager",
+	"Transportation Manager",
+	"Transportation User",
+}
 
 
 def _stock_console_permission_check():
