@@ -12,7 +12,9 @@
   "default_import_do_customer",
   "section_qc",
   "qc_manager_role",
-  "loading_quantity_tolerance_pct"
+  "loading_quantity_tolerance_pct",
+  "section_stock_console",
+  "stock_console_view_roles"
  ],
  "fields": [
   {
@@ -74,6 +76,18 @@
    "fieldtype": "Float",
    "label": "Loading Quantity Tolerance (%)",
    "description": "Allowed discrepancy between allocated and actual loaded quantity when reconciling Loading Entries against Batch Allocations."
+  },
+  {
+   "fieldname": "section_stock_console",
+   "fieldtype": "Section Break",
+   "label": "Stock Console"
+  },
+  {
+   "fieldname": "stock_console_view_roles",
+   "fieldtype": "Table MultiSelect",
+   "label": "Stock Console Viewer Roles",
+   "options": "Has Role",
+   "description": "Roles allowed to open the Stock Console page. Leave empty to use the built-in default (Shipping Manager, Shipping User, Shipping Coordinator, System Manager)."
   }
  ],
  "index_web_pages_for_search": 0,

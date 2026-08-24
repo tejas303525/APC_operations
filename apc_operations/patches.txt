@@ -52,3 +52,6 @@ apc_operations.patches.v0_8.seed_packaging_tare_defaults
 apc_operations.patches.v0_8.import_product_packing_matrix
 apc_operations.patches.v0_8.resync_job_order_and_import_po_print_formats
 apc_operations.patches.v0_8.replace_custom_apc_invoice_doctype
+
+[post_model_sync]
+apc_operations.patches.v0_9.seed_stock_console_view_roles

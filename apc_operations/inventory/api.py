@@ -9,6 +9,10 @@ import frappe
 from frappe import _
 from frappe.utils import flt
 
+from apc_operations.shipping.doctype.apc_operations_settings.apc_operations_settings import (
+	stock_console_view_roles,
+)
+
 _ADJUST_ROLES = {
 	"Shipping Manager",
 	"System Manager",
@@ -20,7 +24,7 @@ _ADJUST_ROLES = {
 
 def _stock_console_permission_check():
 	roles = set(frappe.get_roles(frappe.session.user))
-	allowed = {"Shipping Manager", "Shipping User", "Shipping Coordinator", "System Manager"}
+	allowed = set(stock_console_view_roles())
 	if not roles.intersection(allowed):
 		frappe.throw(_("Not permitted to view the Stock Console."), frappe.PermissionError)
 

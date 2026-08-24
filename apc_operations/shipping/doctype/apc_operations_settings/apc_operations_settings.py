@@ -33,3 +33,16 @@ def qc_manager_role() -> str:
 def loading_quantity_tolerance_pct() -> float:
 	value = frappe.db.get_single_value("APC Operations Settings", "loading_quantity_tolerance_pct")
 	return float(value) if value else 1.0
+
+
+_DEFAULT_STOCK_CONSOLE_VIEW_ROLES = ["Shipping Manager", "Shipping User", "Shipping Coordinator", "System Manager"]
+
+
+def stock_console_view_roles() -> list[str]:
+	"""Roles allowed to open the Stock Console. Reads the GUI-editable
+	settings table; falls back to the original hardcoded roles if the
+	admin hasn't customized it (or the row list is empty), so this can
+	never leave Stock Console inaccessible."""
+	settings = frappe.get_cached_doc("APC Operations Settings")
+	roles = [d.role for d in settings.get("stock_console_view_roles") or [] if d.role]
+	return roles or _DEFAULT_STOCK_CONSOLE_VIEW_ROLES
