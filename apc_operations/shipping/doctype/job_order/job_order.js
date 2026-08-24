@@ -166,6 +166,25 @@ function apc_toggle_container_fields_for_shipment_type(frm) {
 // Child-table row handlers have to live in the parent doctype's own JS file
 // to actually load, so all Job Order Item logic is defined here instead.
 
+function apc_set_default_uom_from_item(frm, cdt, cdn) {
+	// Job Order Item.uom is a plain Link with no fetch_from - staff could
+	// pick any unit regardless of what the product is actually tracked in
+	// (the catalog mixes KG and Metric Ton). Defaults it to the item's own
+	// stock_uom the moment it's selected; apc_recalc_job_order_item_packing
+	// (called right after) may still refine it further once a packaging
+	// profile is matched, which stays intentional - this just closes the
+	// gap where no packaging profile applies yet and uom is left blank.
+	const row = locals[cdt][cdn];
+	if (!row.item) {
+		return;
+	}
+	frappe.db.get_value("Item", row.item, "stock_uom", (r) => {
+		if (r && r.stock_uom) {
+			frappe.model.set_value(cdt, cdn, "uom", r.stock_uom);
+		}
+	});
+}
+
 function apc_recalc_job_order_item_packing(frm, cdt, cdn) {
 	const row = locals[cdt][cdn];
 	if (!row.item) {
@@ -204,6 +223,7 @@ function apc_recalc_job_order_item_packing(frm, cdt, cdn) {
 
 frappe.ui.form.on("Job Order Item", {
 	item(frm, cdt, cdn) {
+		apc_set_default_uom_from_item(frm, cdt, cdn);
 		apc_recalc_job_order_item_packing(frm, cdt, cdn);
 	},
 	packaging_type(frm, cdt, cdn) {
