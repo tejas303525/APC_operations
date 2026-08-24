@@ -33,16 +33,3 @@ def qc_manager_role() -> str:
 def loading_quantity_tolerance_pct() -> float:
 	value = frappe.db.get_single_value("APC Operations Settings", "loading_quantity_tolerance_pct")
 	return float(value) if value else 1.0
-
-
-def stock_adjust_roles() -> set[str]:
-	"""Roles allowed to use Add Stock / Adjust Stock on the Stock Console.
-	GUI-editable via APC Operations Settings > Stock Console section -
-	falls back to a safe default if the list is ever left empty (e.g. right
-	after migrate, before anyone has saved the settings form)."""
-	roles = frappe.get_all(
-		"APC Settings Role",
-		filters={"parent": "APC Operations Settings", "parentfield": "stock_adjust_roles"},
-		pluck="role",
-	)
-	return set(roles) if roles else {"Shipping Manager", "System Manager"}

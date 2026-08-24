@@ -12,9 +12,7 @@
   "default_import_do_customer",
   "section_qc",
   "qc_manager_role",
-  "loading_quantity_tolerance_pct",
-  "section_stock",
-  "stock_adjust_roles"
+  "loading_quantity_tolerance_pct"
  ],
  "fields": [
   {
@@ -76,18 +74,6 @@
    "fieldtype": "Float",
    "label": "Loading Quantity Tolerance (%)",
    "description": "Allowed discrepancy between allocated and actual loaded quantity when reconciling Loading Entries against Batch Allocations."
-  },
-  {
-   "fieldname": "section_stock",
-   "fieldtype": "Section Break",
-   "label": "Stock Console"
-  },
-  {
-   "fieldname": "stock_adjust_roles",
-   "fieldtype": "Table MultiSelect",
-   "label": "Roles Allowed to Adjust/Add Stock",
-   "options": "APC Settings Role",
-   "description": "Roles that can use \"Add Stock\" and \"Adjust Stock\" on the Stock Console. Falls back to Shipping Manager + System Manager if left empty."
   }
  ],
  "index_web_pages_for_search": 0,
