@@ -77,7 +77,8 @@
   "section_logistics_costs",
   "logistics_cost_html",
   "section_documents",
-  "documents_required"
+  "documents_required",
+  "amended_from"
  ],
  "fields": [
   {
@@ -564,9 +565,19 @@
    "fieldname": "documents_required",
    "fieldtype": "Text Editor",
    "label": "Documents Required"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Job Order",
+   "print_hide": 1,
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [
   {
    "group": "Related",
@@ -596,6 +607,7 @@
    "report": 1,
    "role": "Shipping Manager",
    "share": 1,
+   "submit": 1,
    "write": 1
   },
   {
