@@ -387,6 +387,9 @@ class APCBatch(Document):
         if new_allocated == 0 and self.batch_status == "Depleted":
             self.db_set("batch_status", "Active", update_modified=False)
 
+        if new_allocated == 0 and self.stock_status == "Reserved":
+            self.db_set("stock_status", "Available", update_modified=False)
+
         return True
 
     def get_free_stock(self):
