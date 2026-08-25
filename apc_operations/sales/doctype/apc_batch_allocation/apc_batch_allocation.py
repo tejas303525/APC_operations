@@ -24,8 +24,18 @@ class APCBatchAllocation(Document):
             self.db_set("allocation_number", self.name, update_modified=False)
 
     def validate_allocation_quantities(self):
-        """Validate that allocated quantities don't exceed batch availability."""
+        """Validate that allocated quantities don't exceed batch availability.
+
+        Only checked for newly-added rows. An existing row's allocated_quantity
+        was already deducted from the batch's available_quantity by
+        APC Batch.allocate_quantity() when it was first added - re-checking it
+        against that same (now correctly reduced) available_quantity on every
+        later save of this parent (e.g. when a sibling item's row is appended)
+        would always look like an over-allocation once the batch reaches zero
+        free stock, even though that's the expected, correct end state."""
         for detail in self.allocation_details:
+            if not detail.is_new():
+                continue
             if detail.batch:
                 batch = frappe.get_cached_doc("APC Batch", detail.batch)
                 if detail.allocated_quantity > batch.available_quantity:
