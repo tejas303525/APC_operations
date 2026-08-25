@@ -302,6 +302,8 @@ def reserve_stock_for_job_order(job_order_name):
         # filter here, so "any batch of this product" is eligible.
         batches = get_available_batches(product=jo_row.item)
 
+        allocated_for_item = 0.0
+
         for batch in batches:
             if remaining <= 0:
                 break
@@ -324,6 +326,15 @@ def reserve_stock_for_job_order(job_order_name):
             batch_doc.allocate_quantity(take)
 
             remaining -= take
+            allocated_for_item += take
+
+        # _route_shortfall already persists production_required_quantity on
+        # the shortfall side - this is the missing success-side counterpart,
+        # without which sd_row.allocated_quantity (and everything derived
+        # from it: item status, allocation_status) stayed 0 even when the
+        # batch allocation itself succeeded correctly.
+        if allocated_for_item > 0:
+            sd_row.db_set("allocated_quantity", allocated_for_item, update_modified=False)
 
         if remaining > 0:
             _route_shortfall(jo, jo_row, sd_row, remaining)
