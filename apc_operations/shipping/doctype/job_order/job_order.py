@@ -560,7 +560,11 @@ class JobOrder(Document):
 
         duplicate = frappe.db.exists(
             "Job Order",
-            {"job_order_number": self.job_order_number, "name": ["!=", self.name]},
+            {
+                "job_order_number": self.job_order_number,
+                "name": ["!=", self.name],
+                "docstatus": ["!=", 2],
+            },
         )
         if duplicate:
             frappe.throw(
