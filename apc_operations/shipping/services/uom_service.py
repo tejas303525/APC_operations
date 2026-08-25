@@ -55,6 +55,21 @@ def quantity_to_kg(quantity: float, uom: str | None) -> float:
 	return qty
 
 
+def commercial_qty_to_stock_uom(quantity: float, from_uom: str | None, stock_uom: str | None) -> float:
+	"""Convert a commercial quantity into an item's own stock UOM basis.
+
+	Not every item is tracked in kg - roughly a dozen APC products (Base
+	oil, LABSA, Vaseline, etc.) have Metric Ton as their stock UOM. Composes
+	the existing kg round-trip helpers so mass units convert correctly
+	regardless of which side (commercial or stock) is kg vs Metric Ton,
+	rather than assuming every item's stock UOM is kg.
+	"""
+	kg = quantity_to_kg(quantity, from_uom)
+	if not stock_uom or is_kg_uom(stock_uom):
+		return kg
+	return kg_to_commercial_quantity(kg, stock_uom)
+
+
 def kg_to_commercial_quantity(kg: float, uom: str | None) -> float:
 	"""Convert weighbridge kilograms into the batch/LDN commercial UOM."""
 	weight_kg = flt(kg)

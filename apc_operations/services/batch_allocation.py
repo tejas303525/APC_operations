@@ -5,6 +5,8 @@ import frappe
 from frappe.utils import flt, cint, today, getdate, now
 from frappe import _
 
+from apc_operations.shipping.services.uom_service import commercial_qty_to_stock_uom
+
 
 def _coa_number(coa_name):
     """COA Number for a Loading DN Batch row - coa_number is a fetch_from
@@ -269,15 +271,20 @@ def reserve_stock_for_job_order(job_order_name):
         sd.required_dispatch_date = jo.date
         sd.status = "Confirmed"
         for row in jo.items:
+            stock_uom = frappe.get_cached_value("Item", row.item, "stock_uom")
             sd.append("items", {
                 "item": row.item,
                 "item_name": row.item_name,
                 "grade": row.grade,
                 "specification": row.specification,
                 "packaging_type": row.packaging_type,
-                "uom": row.uom,
+                "uom": stock_uom or row.uom,
                 "warehouse": row.warehouse,
-                "demand_quantity": flt(row.quantity),
+                # Job Order Item's commercial UOM can differ from the item's
+                # stock UOM (e.g. sold by Metric Ton, tracked in KG) - convert
+                # so demand_quantity is always in the same basis batches are
+                # reserved against, not a raw un-converted commercial figure.
+                "demand_quantity": commercial_qty_to_stock_uom(row.quantity, row.uom, stock_uom),
             })
         sd.insert(ignore_permissions=True)
         jo.db_set("sales_demand", sd.name, update_modified=False)
@@ -286,7 +293,10 @@ def reserve_stock_for_job_order(job_order_name):
         if not jo_row.sales_demand_item:
             jo_row.db_set("sales_demand_item", sd_row.name, update_modified=False)
 
-        remaining = flt(jo_row.quantity)
+        # jo_row.quantity is a commercial figure (e.g. sold by Metric Ton) that
+        # can differ from the item's own stock UOM the batch is tracked in -
+        # convert before comparing/deducting against batch available_quantity.
+        remaining = commercial_qty_to_stock_uom(jo_row.quantity, jo_row.uom, sd_row.uom)
 
         # Product-only match - deliberately no grade/specification/packaging_type
         # filter here, so "any batch of this product" is eligible.
