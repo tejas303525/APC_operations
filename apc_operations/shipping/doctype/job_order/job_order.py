@@ -1027,8 +1027,28 @@ def refresh_container_capacity_summary_api(job_order: str):
     return {"html": get_container_capacity_html_for_job_order(job_order)}
 
 
+def relink_amended_job_order_references(old_name, new_name):
+    """Cancel -> Amend gives a Job Order a brand new document name, but every
+    other document that already linked to the cancelled original (Transport
+    Schedule, Shipping Booking, Delivery Order, Loading DN, Gate Pass, APC
+    Invoice, etc.) keeps pointing at that now-cancelled name - Frappe doesn't
+    cascade this automatically the way rename_doc does for a plain rename.
+
+    Reuses Frappe's own rename_doc link-field reflection (the same mechanism
+    it uses to cascade a rename) rather than hardcoding a doctype list, so
+    this covers every current and future doctype with a Job Order link.
+    """
+    from frappe.model.rename_doc import get_link_fields, update_link_field_values
+
+    link_fields = get_link_fields("Job Order")
+    update_link_field_values(link_fields, old_name, new_name, "Job Order")
+
+
 def on_submit_job_order(doc, method):
     """Hook handler for Job Order on_submit event."""
+    if doc.amended_from:
+        relink_amended_job_order_references(doc.amended_from, doc.name)
+
     doc.create_or_link_operational_booking()
 
     from apc_operations.services.batch_allocation import reserve_stock_for_job_order
