@@ -57,6 +57,7 @@ apc_operations.patches.v0_9.sync_standard_qc_report_request_print_format
 apc_operations.patches.v0_9.sync_apc_coa_standard_certificate_print_format
 apc_operations.patches.v0_9.sync_standard_invoice_print_format
 apc_operations.patches.v0_9.resync_loading_delivery_note_print_title
+apc_operations.patches.v0_9.resync_ldn_and_invoice_single_page_fit
 
 [post_model_sync]
 apc_operations.patches.v0_9.seed_stock_console_view_roles
