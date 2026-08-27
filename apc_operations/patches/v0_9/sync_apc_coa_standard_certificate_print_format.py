@@ -21,4 +21,7 @@ def execute():
 	)
 	if not os.path.exists(path):
 		return
-	frappe.reload_doc("shipping", "print_format", "apc_coa_standard_certificate")
+	# force=True: reload_doc silently no-ops on an already-existing record
+	# unless forced (confirmed live - the sibling standard_invoice patch
+	# below ran without error but wrote nothing until force=True was added).
+	frappe.reload_doc("shipping", "print_format", "apc_coa_standard_certificate", force=True)

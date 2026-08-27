@@ -22,4 +22,8 @@ def execute():
 	)
 	if not os.path.exists(path):
 		return
-	frappe.reload_doc("shipping", "print_format", "standard_invoice")
+	# force=True: reload_doc silently no-ops on an already-existing record
+	# unless forced - discovered live when this patch ran without error
+	# but the Destination-field removal and column-width fix never
+	# actually landed in the DB until force-reloaded manually.
+	frappe.reload_doc("shipping", "print_format", "standard_invoice", force=True)

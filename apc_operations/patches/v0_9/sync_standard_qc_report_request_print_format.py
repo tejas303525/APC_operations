@@ -16,4 +16,7 @@ def execute():
 	)
 	if not os.path.exists(path):
 		return
-	frappe.reload_doc("shipping", "print_format", "standard_qc_report_request")
+	# force=True: reload_doc silently no-ops on an already-existing record
+	# unless forced - harmless here (first-ever sync) but keeps this patch
+	# correct if it's ever copied as a template for a re-sync patch.
+	frappe.reload_doc("shipping", "print_format", "standard_qc_report_request", force=True)

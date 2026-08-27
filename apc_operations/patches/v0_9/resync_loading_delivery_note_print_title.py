@@ -20,4 +20,7 @@ def execute():
 	)
 	if not os.path.exists(path):
 		return
-	frappe.reload_doc("shipping", "print_format", "standard_loading_delivery_note")
+	# force=True: reload_doc silently no-ops on an already-existing record
+	# unless forced - without it, this patch "executes" cleanly but writes
+	# nothing, exactly like sync_standard_invoice_print_format did.
+	frappe.reload_doc("shipping", "print_format", "standard_loading_delivery_note", force=True)
