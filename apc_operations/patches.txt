@@ -54,6 +54,7 @@ apc_operations.patches.v0_8.import_product_packing_matrix
 apc_operations.patches.v0_8.resync_job_order_and_import_po_print_formats
 apc_operations.patches.v0_8.replace_custom_apc_invoice_doctype
 apc_operations.patches.v0_9.sync_standard_qc_report_request_print_format
+apc_operations.patches.v0_9.sync_apc_coa_standard_certificate_print_format
 
 [post_model_sync]
 apc_operations.patches.v0_9.seed_stock_console_view_roles

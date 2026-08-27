@@ -114,7 +114,18 @@ def resolve_commercial_quantity(
 	sddn_name: str | None = None,
 	ldn_name: str | None = None,
 ) -> dict[str, Any]:
-	"""Resolve commercial qty/UOM from Job Order → SDDN → DO → LDN (first hit with qty)."""
+	"""Resolve commercial qty/UOM, preferring the most specific document for
+	*this* dispatch - SDDN -> DO -> LDN - over the Job Order's full order
+	total, which is now only the last-resort fallback.
+
+	A Delivery Order's planned_quantity/total_qty already reflects any
+	partial-dispatch scaling applied at DO-generation time (see
+	delivery_order_generation_service's cargo_weight cross-check against
+	the transporter-entered "Qty to Load"). Checking the Job Order's raw
+	total first - as this used to - short-circuited before that scaled-down
+	DO quantity was ever consulted, so a genuine partial load (e.g. 30 MT
+	out of a 100 MT order) still showed the full 100 MT on the Loading
+	Delivery Note and its print, discarding the scaling entirely."""
 	if not job_order and do_name:
 		job_order = frappe.db.get_value("Delivery Order", do_name, "job_order")
 	if not job_order and ldn_name:
@@ -123,10 +134,6 @@ def resolve_commercial_quantity(
 		job_order = frappe.db.get_value(
 			"Security Draft Delivery Note", sddn_name, "job_order"
 		)
-
-	ctx = _job_order_commercial(job_order)
-	if ctx.get("quantity"):
-		return ctx
 
 	if sddn_name and frappe.db.exists("Security Draft Delivery Note", sddn_name):
 		row = frappe.db.get_value(
@@ -162,6 +169,10 @@ def resolve_commercial_quantity(
 			qty = flt(row.planned_quantity) or flt(row.quantity)
 			if qty > 0:
 				return {"quantity": qty, "uom": row.uom}
+
+	ctx = _job_order_commercial(job_order)
+	if ctx.get("quantity"):
+		return ctx
 
 	return {"quantity": 0.0, "uom": None}
 
