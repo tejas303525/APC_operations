@@ -59,6 +59,7 @@ apc_operations.patches.v0_9.sync_standard_invoice_print_format
 apc_operations.patches.v0_9.resync_loading_delivery_note_print_title
 apc_operations.patches.v0_9.resync_ldn_and_invoice_single_page_fit
 apc_operations.patches.v0_9.resync_invoice_design_and_unlock_gui_edit
+apc_operations.patches.v0_9.resync_invoice_new_layout
 
 [post_model_sync]
 apc_operations.patches.v0_9.seed_stock_console_view_roles
