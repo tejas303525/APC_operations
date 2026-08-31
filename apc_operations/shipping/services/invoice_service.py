@@ -12,21 +12,41 @@ import frappe
 from frappe.utils import flt, today
 
 
-def _customer_address_block(customer):
-	"""Best-effort address/phone/fax text from the customer's primary address.
-	Returns a dict of blanks if no address is linked - invoice generation
-	must never fail just because address master data is incomplete."""
+def get_customer_address_block(customer):
+	"""Best-effort address/phone/fax/TRN text for a customer, read live from
+	master data (Customer.customer_primary_address, falling back to any
+	Address linked to the customer if no primary address is set).
+
+	Returns a dict of blanks if no address is linked - callers must never
+	fail just because address master data is incomplete. This is called
+	fresh every time (invoice/LDN before_print) rather than cached on the
+	document, so a document always reflects the customer's current address
+	instead of a stale one-time snapshot."""
 	blank = {
 		"address_line": "",
 		"phone": "",
 		"fax": "",
 		"emirate": "",
 		"country": "UAE",
+		"trn": "",
 	}
+
+	if not customer:
+		return blank
+
+	trn = frappe.db.get_value("Customer", customer, "tax_id") or ""
 
 	address_name = frappe.db.get_value("Customer", customer, "customer_primary_address")
 	if not address_name:
-		return blank
+		address_name = frappe.db.get_value(
+			"Dynamic Link",
+			{"link_doctype": "Customer", "link_name": customer, "parenttype": "Address"},
+			"parent",
+			order_by="modified desc",
+		)
+
+	if not address_name:
+		return {**blank, "trn": trn}
 
 	addr = frappe.db.get_value(
 		"Address",
@@ -35,7 +55,7 @@ def _customer_address_block(customer):
 		as_dict=True,
 	)
 	if not addr:
-		return blank
+		return {**blank, "trn": trn}
 
 	line_parts = [p for p in [addr.address_line1, addr.address_line2, addr.city] if p]
 	return {
@@ -44,6 +64,7 @@ def _customer_address_block(customer):
 		"fax": addr.fax or "",
 		"emirate": addr.state or "",
 		"country": addr.country or "UAE",
+		"trn": trn,
 	}
 
 
@@ -79,7 +100,7 @@ def generate_invoice_for_loading_dn(loading_dn_name: str) -> str:
 	if jo.port_of_discharge:
 		port_of_discharge = frappe.db.get_value("Port", jo.port_of_discharge, "port_name") or jo.port_of_discharge
 
-	addr = _customer_address_block(jo.customer)
+	addr = get_customer_address_block(jo.customer)
 
 	inv = frappe.new_doc("APC Invoice")
 	inv.invoice_type = invoice_type

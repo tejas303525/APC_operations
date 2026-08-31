@@ -9,6 +9,39 @@ class APCInvoice(Document):
 		self.calculate_totals()
 		self.set_amounts_in_words()
 
+	def before_print(self, print_settings=None):
+		"""Re-read the customer's current address every time this invoice is
+		printed, instead of trusting whatever was captured once at invoice
+		generation time. consignee_name/buyer_name are left untouched since
+		those may have been corrected manually on the invoice; only the
+		address/phone/fax/emirate/country/place_of_supply fields are
+		refreshed, and only when live data is actually found (never wipe an
+		existing value with a blank)."""
+		self.refresh_address_from_customer()
+
+	def refresh_address_from_customer(self):
+		if not self.customer:
+			return
+
+		from apc_operations.shipping.services.invoice_service import get_customer_address_block
+
+		addr = get_customer_address_block(self.customer)
+
+		if addr["address_line"]:
+			self.consignee_address = addr["address_line"]
+			self.buyer_address = addr["address_line"]
+		if addr["phone"]:
+			self.consignee_phone = addr["phone"]
+			self.buyer_phone = addr["phone"]
+		if addr["fax"]:
+			self.consignee_fax = addr["fax"]
+			self.buyer_fax = addr["fax"]
+		if addr["emirate"]:
+			self.buyer_emirate = addr["emirate"]
+			self.place_of_supply = f"UAE, {addr['emirate']}"
+		if addr["country"]:
+			self.buyer_country = addr["country"]
+
 	def calculate_totals(self):
 		taxable_value = 0.0
 		vat_amount = 0.0

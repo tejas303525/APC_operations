@@ -17,6 +17,34 @@ class LoadingDeliveryNote(Document):
         self.validate_dispatch_confirmation()
         self.validate_fifo_override_rows()
 
+    def before_print(self, print_settings=None):
+        """Refresh consignee/buyer address from master data every time this
+        document is printed, so the print format always reflects the
+        customer's current address instead of whatever was on file (or
+        missing) when the document was created."""
+        self.refresh_consignee_details()
+
+    def refresh_consignee_details(self):
+        from apc_operations.shipping.services.invoice_service import get_customer_address_block
+
+        if self.customer:
+            addr = get_customer_address_block(self.customer)
+            if addr["address_line"]:
+                self.consignee_address = addr["address_line"]
+            if addr["emirate"]:
+                self.emirate = addr["emirate"]
+                self.place_of_supply = f"UAE, {addr['emirate']}"
+            if addr["country"]:
+                self.country = addr["country"]
+            if addr["trn"]:
+                self.trn = addr["trn"]
+
+        buyer = self.buyer or self.customer
+        if buyer:
+            buyer_addr = get_customer_address_block(buyer)
+            if buyer_addr["address_line"]:
+                self.buyer_address = buyer_addr["address_line"]
+
     def compute_net_and_weight_variance(self):
         from apc_operations.shipping.services.dispatch_validation_service import (
             apply_weight_variance_to_ldn,

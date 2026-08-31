@@ -19,6 +19,14 @@
   "buyer",
   "customer_name",
   "terms_of_delivery",
+  "consignee_address_section",
+  "consignee_address",
+  "buyer_address",
+  "column_break_consignee_addr",
+  "emirate",
+  "country",
+  "trn",
+  "place_of_supply",
   "loading_details_section",
   "loading_date",
   "loading_time",
@@ -184,6 +192,53 @@
    "fieldname": "terms_of_delivery",
    "fieldtype": "Data",
    "label": "Terms of Delivery",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "consignee_address_section",
+   "fieldtype": "Section Break",
+   "label": "Consignee / Buyer Address"
+  },
+  {
+   "description": "Refreshed automatically from the customer's address each time this document is printed.",
+   "fieldname": "consignee_address",
+   "fieldtype": "Small Text",
+   "label": "Consignee Address",
+   "read_only": 1
+  },
+  {
+   "fieldname": "buyer_address",
+   "fieldtype": "Small Text",
+   "label": "Buyer Address",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_consignee_addr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "emirate",
+   "fieldtype": "Data",
+   "label": "Emirate",
+   "read_only": 1
+  },
+  {
+   "fieldname": "country",
+   "fieldtype": "Data",
+   "label": "Country",
+   "read_only": 1
+  },
+  {
+   "fieldname": "trn",
+   "fieldtype": "Data",
+   "label": "TRN",
+   "read_only": 1
+  },
+  {
+   "fieldname": "place_of_supply",
+   "fieldtype": "Data",
+   "label": "Place of Supply",
    "read_only": 1
   },
   {
