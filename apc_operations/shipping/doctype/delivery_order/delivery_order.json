@@ -77,6 +77,9 @@
   "total_gross_weight",
   "notes_section",
   "remarks",
+  "print_display_section",
+  "marks_and_nos",
+  "no_and_kind_of_packages",
   "amended_from"
  ],
  "fields": [
@@ -516,6 +519,25 @@
    "fieldname": "remarks",
    "fieldtype": "Text",
    "label": "Remarks"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "print_display_section",
+   "fieldtype": "Section Break",
+   "label": "Print Display"
+  },
+  {
+   "description": "Refreshed automatically from container/transport/item data each time this document is printed.",
+   "fieldname": "marks_and_nos",
+   "fieldtype": "Data",
+   "label": "Marks & Nos./Container No.",
+   "read_only": 1
+  },
+  {
+   "fieldname": "no_and_kind_of_packages",
+   "fieldtype": "Data",
+   "label": "No. & Kind of Packages",
+   "read_only": 1
   },
   {
    "fieldname": "amended_from",

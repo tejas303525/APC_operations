@@ -14,6 +14,31 @@ class DeliveryOrder(Document):
 		self.calculate_totals()
 		self.sync_do_status_default()
 
+	def before_print(self, print_settings=None):
+		"""Fill Marks & Nos./Container No. and No. & Kind of Packages from the
+		same container/transport/item resolution logic already used to build
+		the print context (delivery_order_print_service.get_print_context),
+		rather than leaving those two print columns permanently blank. Never
+		let a resolution failure block printing."""
+		self.refresh_packaging_display()
+
+	def refresh_packaging_display(self):
+		from apc_operations.shipping.services.delivery_order_print_service import get_print_context
+
+		try:
+			ctx = get_print_context(self.name)
+		except Exception:
+			frappe.log_error(
+				title="Delivery Order print context failed",
+				message=frappe.get_traceback(),
+			)
+			return
+
+		if ctx.get("marks_and_nos"):
+			self.marks_and_nos = ctx["marks_and_nos"]
+		if ctx.get("no_and_kind_of_packages"):
+			self.no_and_kind_of_packages = ctx["no_and_kind_of_packages"]
+
 	def sync_from_job_order(self, *, force_items: bool = False) -> None:
 		"""Pull header (and optionally items) from the linked Job Order."""
 		from apc_operations.shipping.services.delivery_order_sync_service import (
