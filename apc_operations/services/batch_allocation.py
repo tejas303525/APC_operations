@@ -119,20 +119,21 @@ def query_batches_fifo(doctype, txt, searchfield, start, page_len, filters):
 def calculate_free_stock(batch_name):
     """
     Calculate free stock for a batch.
-    Free stock = available_quantity - any pending reservations
+
+    available_quantity IS the free stock - APC Batch.allocate_quantity()/
+    release_allocation() already maintain it as batch_quantity minus every
+    live allocation. Every APC Batch Allocation Detail row is created in
+    the same call as an allocate_quantity() call (see
+    _ensure_batch_allocation_detail's two call sites), so a batch's
+    'Allocated'/'Partially Dispatched' detail rows are already netted into
+    available_quantity - subtracting their remaining_quantity again here
+    double-counted the same reservation and could drive this deeply
+    negative for any batch with allocation history (confirmed: -12,480 for
+    a batch whose real free stock was 320), silently hiding real free
+    stock from FIFO. Matches APC Batch.get_free_stock().
     """
     batch = frappe.get_cached_doc("APC Batch", batch_name)
-
-    # Get pending allocations (not yet dispatched)
-    pending = frappe.db.sql("""
-        SELECT SUM(remaining_quantity)
-        FROM `tabAPC Batch Allocation Detail`
-        WHERE batch = %s
-        AND status IN ('Allocated', 'Partially Dispatched')
-        AND docstatus < 2
-    """, (batch_name,))[0][0] or 0
-
-    return flt(batch.available_quantity) - flt(pending)
+    return flt(batch.available_quantity)
 
 
 def calculate_production_requirement(sales_demand_item, consider_wip=True):
