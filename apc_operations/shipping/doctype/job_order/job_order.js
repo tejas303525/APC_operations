@@ -355,6 +355,32 @@ frappe.ui.form.on("Job Order", {
 				frappe.set_route("batch-allocation-dashboard");
 			}, __("View"));
 
+			if (frm.doc.docstatus === 1) {
+				frm.add_custom_button(__("Run Reservation Sync"), () => {
+					frappe.call({
+						method: "apc_operations.services.batch_allocation.run_reservation_sync",
+						args: { job_order_name: frm.doc.name },
+						freeze: true,
+						freeze_message: __("Re-checking stock reservation..."),
+						callback(r) {
+							const items = (r.message && r.message.items) || [];
+							const still_short = items.filter((row) => flt(row.production_required_quantity) > 0);
+							if (!items.length) {
+								frappe.show_alert({ message: __("No demand items to reserve against."), indicator: "orange" });
+							} else if (still_short.length) {
+								frappe.show_alert({
+									message: __("Reservation re-run: {0} of {1} item(s) still short.", [still_short.length, items.length]),
+									indicator: "orange",
+								});
+							} else {
+								frappe.show_alert({ message: __("Reservation re-run: all items fully allocated."), indicator: "green" });
+							}
+							frm.reload_doc();
+						},
+					});
+				}, __("Actions"));
+			}
+
 			if (frm.doc.sales_demand) {
 				frm.add_custom_button(__("Sales Demand"), () => {
 					frappe.set_route("Form", "APC Sales Demand", frm.doc.sales_demand);

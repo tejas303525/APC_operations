@@ -296,13 +296,23 @@ def reserve_stock_for_job_order(job_order_name):
         # jo_row.quantity is a commercial figure (e.g. sold by Metric Ton) that
         # can differ from the item's own stock UOM the batch is tracked in -
         # convert before comparing/deducting against batch available_quantity.
-        remaining = commercial_qty_to_stock_uom(jo_row.quantity, jo_row.uom, sd_row.uom)
+        total_required = commercial_qty_to_stock_uom(jo_row.quantity, jo_row.uom, sd_row.uom)
+
+        # Safe to call repeatedly (e.g. from the "Run Reservation Sync" button
+        # on Job Order, or if reservation is retried after new stock arrives)
+        # - only the still-unmet gap is (re-)attempted, never the full demand
+        # again, so an item that already has partial allocation is not
+        # double-reserved on a second run.
+        already_allocated = flt(sd_row.allocated_quantity)
+        remaining = total_required - already_allocated
+        if remaining <= 0:
+            continue
 
         # Product-only match - deliberately no grade/specification/packaging_type
         # filter here, so "any batch of this product" is eligible.
         batches = get_available_batches(product=jo_row.item)
 
-        allocated_for_item = 0.0
+        allocated_this_run = 0.0
 
         for batch in batches:
             if remaining <= 0:
@@ -326,18 +336,24 @@ def reserve_stock_for_job_order(job_order_name):
             batch_doc.allocate_quantity(take)
 
             remaining -= take
-            allocated_for_item += take
+            allocated_this_run += take
 
         # _route_shortfall already persists production_required_quantity on
         # the shortfall side - this is the missing success-side counterpart,
         # without which sd_row.allocated_quantity (and everything derived
         # from it: item status, allocation_status) stayed 0 even when the
         # batch allocation itself succeeded correctly.
-        if allocated_for_item > 0:
-            sd_row.db_set("allocated_quantity", allocated_for_item, update_modified=False)
+        if allocated_this_run > 0:
+            sd_row.db_set(
+                "allocated_quantity", already_allocated + allocated_this_run, update_modified=False
+            )
 
         if remaining > 0:
             _route_shortfall(jo, jo_row, sd_row, remaining)
+        elif flt(sd_row.production_required_quantity) > 0:
+            # Fully covered on this run - clear a stale shortfall flag left
+            # over from an earlier attempt instead of leaving it dangling.
+            sd_row.db_set("production_required_quantity", 0, update_modified=False)
 
     sd.reload()
     sd.calculate_totals()
@@ -346,12 +362,54 @@ def reserve_stock_for_job_order(job_order_name):
     sd.save(ignore_permissions=True)
 
 
+@frappe.whitelist()
+def run_reservation_sync(job_order_name):
+    """Re-run stock reservation for an already-submitted Job Order.
+
+    Backs the "Run Reservation Sync" button on the Job Order form. Safe to
+    call any number of times - reserve_stock_for_job_order() only ever
+    attempts to cover the gap between demand and what is already allocated,
+    so re-running does not double-reserve stock a previous run already
+    secured. Useful whenever stock frees up after a Job Order first came up
+    short (a reservation elsewhere is released, a new batch is added, a
+    stock_status correction, etc.) and the shortfall needs to be re-checked
+    without waiting for the next full submit.
+    """
+    if not frappe.has_permission("Job Order", "write", doc=job_order_name):
+        frappe.throw(_("Not permitted to run reservation sync on this Job Order."), frappe.PermissionError)
+
+    jo = frappe.get_doc("Job Order", job_order_name)
+    if jo.docstatus != 1:
+        frappe.throw(_("Job Order must be submitted before stock can be reserved."))
+
+    reserve_stock_for_job_order(job_order_name)
+
+    if not jo.sales_demand:
+        return {"sales_demand": None, "items": []}
+
+    items = frappe.db.sql(
+        """select item, item_name, uom, demand_quantity, allocated_quantity,
+                  production_required_quantity
+           from `tabAPC Sales Demand Item` where parent=%s""",
+        (jo.sales_demand,), as_dict=True,
+    )
+    return {"sales_demand": jo.sales_demand, "items": items}
+
+
 def _route_shortfall(jo, jo_row, sd_row, shortfall_qty):
     """Manufacturing items get a real Production Requirement (feeds the
     Production module). Everything else (Trading Products, Raw Material -
     anything APC doesn't manufacture in-house) just gets flagged: procurement
     for those already has a home in Zoho Books, this system doesn't need a
-    parallel purchasing workflow for them."""
+    parallel purchasing workflow for them.
+
+    shortfall_qty is always in the item's stock UOM (sd_row.uom) - the same
+    basis batches are reserved against - which does not necessarily match
+    the Job Order's commercial UOM (jo_row.uom, e.g. Metric Ton for an item
+    stocked in kg). Anywhere the figure is shown to a user it must either be
+    paired with sd_row.uom, or converted into jo_row.uom first - never
+    stamped with jo_row.uom as-is, which understates/overstates the number
+    by whatever the conversion factor is (e.g. 1000x for MT vs kg)."""
     item_group = frappe.db.get_value("Item", jo_row.item, "item_group")
 
     sd_row.db_set("production_required_quantity", shortfall_qty, update_modified=False)
@@ -377,25 +435,33 @@ def _route_shortfall(jo, jo_row, sd_row, shortfall_qty):
         req.grade = jo_row.grade
         req.specification = jo_row.specification
         req.packaging_type = jo_row.packaging_type
-        req.uom = jo_row.uom
+        # sd_row.uom (the item's stock UOM), not jo_row.uom (the JO's
+        # commercial UOM) - shortfall_qty is expressed in the former.
+        req.uom = sd_row.uom
         req.warehouse = jo_row.warehouse
         req.required_quantity = shortfall_qty
         req.required_date = jo.date
         req.status = "Draft"
         req.insert(ignore_permissions=True)
     else:
+        # Re-express the shortfall in the Job Order's own commercial UOM for
+        # the human-facing message, so "short by 4625 Kg" (sales-order-sized
+        # figure) doesn't get shown mislabeled as "4625 Metric Ton".
+        display_qty = commercial_qty_to_stock_uom(shortfall_qty, sd_row.uom, jo_row.uom)
+        display_uom = jo_row.uom or sd_row.uom or ""
+
         jo.add_comment(
             "Comment",
             _(
                 "Stock shortage on submit: short by {0} {1} for {2}. Not a "
                 "manufactured item - procure via Zoho Books."
-            ).format(shortfall_qty, jo_row.uom or "", jo_row.item),
+            ).format(display_qty, display_uom, jo_row.item),
         )
         frappe.msgprint(
             _(
                 "Insufficient stock for {0}: short by {1} {2}. This item is not "
                 "manufactured in-house - raise a purchase in Zoho Books."
-            ).format(jo_row.item, shortfall_qty, jo_row.uom or ""),
+            ).format(jo_row.item, display_qty, display_uom),
             indicator="orange",
             alert=True,
         )

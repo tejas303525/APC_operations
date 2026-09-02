@@ -240,9 +240,15 @@ class APCBatch(Document):
             ).format(quantity, self.available_quantity))
 
         new_allocated = flt(self.allocated_quantity) + flt(quantity)
+        new_available = flt(self.batch_quantity) - new_allocated
         self.db_set("allocated_quantity", new_allocated, update_modified=False)
-        self.db_set("available_quantity", flt(self.batch_quantity) - new_allocated, update_modified=False)
-        if self.stock_status == "Available":
+        self.db_set("available_quantity", new_available, update_modified=False)
+        # Only mark the batch Reserved once it is actually fully allocated -
+        # a partial allocation still has free stock left and must stay
+        # visible to get_available_batches() (which hard-filters on
+        # stock_status == "Available"), or the remainder becomes invisible
+        # to FIFO until the batch is released all the way back to zero.
+        if new_available <= 0 and self.stock_status == "Available":
             self.db_set("stock_status", "Reserved", update_modified=False)
 
         return True
@@ -381,13 +387,17 @@ class APCBatch(Document):
             frappe.throw(_("Cannot release more than allocated quantity"))
 
         new_allocated = flt(self.allocated_quantity) - flt(quantity)
+        new_available = flt(self.batch_quantity) - new_allocated
         self.db_set("allocated_quantity", new_allocated, update_modified=False)
-        self.db_set("available_quantity", flt(self.batch_quantity) - new_allocated, update_modified=False)
+        self.db_set("available_quantity", new_available, update_modified=False)
 
         if new_allocated == 0 and self.batch_status == "Depleted":
             self.db_set("batch_status", "Active", update_modified=False)
 
-        if new_allocated == 0 and self.stock_status == "Reserved":
+        # Mirror of the allocate_quantity() fix: any free stock at all should
+        # make the batch visible to FIFO again, not only a full release back
+        # to zero allocated.
+        if new_available > 0 and self.stock_status == "Reserved":
             self.db_set("stock_status", "Available", update_modified=False)
 
         return True
