@@ -23,6 +23,29 @@ class LoadingDeliveryNote(Document):
         customer's current address instead of whatever was on file (or
         missing) when the document was created."""
         self.refresh_consignee_details()
+        self.refresh_packaging_display()
+
+    def refresh_packaging_display(self):
+        """No. & Kind of Packages was permanently blank on this print format -
+        it referenced doc.package_type/doc.no_and_kind_of_packages, neither
+        of which existed on this doctype. loading_dn_print_service already
+        has a get_print_context() that correctly resolves this (preferring
+        actual loaded packages over the full order's expected count) but it
+        was never wired up to printing. Never let a resolution failure
+        block printing."""
+        from apc_operations.shipping.services.loading_dn_print_service import get_print_context
+
+        try:
+            ctx = get_print_context(self.name)
+        except Exception:
+            frappe.log_error(
+                title="Loading Delivery Note print context failed",
+                message=frappe.get_traceback(),
+            )
+            return
+
+        if ctx.get("no_and_kind_of_packages"):
+            self.no_and_kind_of_packages = ctx["no_and_kind_of_packages"]
 
     def refresh_consignee_details(self):
         from apc_operations.shipping.services.invoice_service import get_customer_address_block

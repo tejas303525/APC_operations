@@ -11,8 +11,45 @@ class DeliveryOrder(Document):
 	def validate(self):
 		self.sync_from_job_order()
 		self.set_buyer_from_customer()
+		self.recalculate_item_packaging()
 		self.calculate_totals()
 		self.sync_do_status_default()
+
+	def recalculate_item_packaging(self):
+		"""Keep each item row's net_weight and no_of_packages derived from its
+		own qty, not frozen at whatever the Job Order's full order quantity
+		was. qty gets reduced by hand (Transport Coordinator loading fewer
+		drums than originally ordered, e.g. 32 of 250) but net_weight/
+		no_of_packages were never recomputed to match, so both the DO record
+		and its print format (Total Net Weight, No. & Kind of Pkgs.) kept
+		showing the full original order's figures instead of what's actually
+		being loaded. Runs on every save so it self-corrects regardless of
+		how qty was edited, and reproduces the same figure for an untouched
+		full order (verified: 42.5 MT / 170 kg per drum = 250 drums, same as
+		before) - safe to always recompute, not just when qty looks reduced."""
+		from apc_operations.shipping.services.packing_calculation_service import (
+			get_packing_profile, expected_packaging_qty,
+		)
+		from apc_operations.shipping.services.uom_service import quantity_to_kg
+
+		for row in self.items:
+			if not row.item_code or not flt(row.qty):
+				continue
+
+			row.net_weight = quantity_to_kg(row.qty, row.uom)
+
+			profile = get_packing_profile(
+				row.item_code,
+				packaging_type=row.packing_unit_type,
+				packing_unit_type=row.packing_unit_type,
+			)
+			if profile:
+				row.no_of_packages = expected_packaging_qty(
+					quantity=row.qty,
+					uom=row.uom,
+					profile=profile,
+					packing_unit_type=row.packing_unit_type,
+				)
 
 	def before_print(self, print_settings=None):
 		"""Fill Marks & Nos./Container No. and No. & Kind of Packages from the

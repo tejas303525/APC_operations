@@ -48,6 +48,7 @@
   "column_break_3",
   "container_number",
   "seal_number",
+  "no_and_kind_of_packages",
   "material_section",
   "material_description",
   "batch_allocation_section",
@@ -377,6 +378,13 @@
    "fieldname": "seal_number",
    "fieldtype": "Data",
    "label": "Seal Number"
+  },
+  {
+   "description": "Refreshed automatically from loaded/expected packaging data each time this document is printed.",
+   "fieldname": "no_and_kind_of_packages",
+   "fieldtype": "Data",
+   "label": "No. & Kind of Packages",
+   "read_only": 1
   },
   {
    "fieldname": "material_section",
