@@ -63,6 +63,7 @@ apc_operations.patches.v0_9.resync_invoice_new_layout
 apc_operations.patches.v0_9.resync_all_print_format_logo_size
 apc_operations.patches.v0_9.resync_delivery_order_packages_display
 apc_operations.patches.v0_9.resync_print_formats_logo_png
+apc_operations.patches.v0_9.resync_print_formats_logo_aspect_ratio
 
 [post_model_sync]
 apc_operations.patches.v0_9.seed_stock_console_view_roles
