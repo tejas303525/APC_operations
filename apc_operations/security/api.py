@@ -21,6 +21,7 @@ from frappe.utils import now_datetime, today
 
 from apc_operations.security.doctype.security_inspection.security_inspection import (
 	DEFAULT_CHECKLIST_ITEMS,
+	get_checklist_template_items,
 )
 from apc_operations.services import console_status
 from apc_operations.services.console_queue_service import (
@@ -153,8 +154,26 @@ def _checklist_template() -> list[dict[str, Any]]:
 			"completed": 0,
 			"remarks": "",
 		}
-		for item in DEFAULT_CHECKLIST_ITEMS
+		for item in get_checklist_template_items()
 	]
+
+
+def _required_checklist_items(sddn_doc) -> list[str]:
+	"""Required checklist item texts that must be completed to verify this SDDN.
+
+	Taken from the checklist the SDDN's Security Inspection already holds (so
+	an inspection started before the template was edited is judged against
+	the items it was actually shown), otherwise from the current template."""
+	si_name = _find_security_inspection_for_sddn(sddn_doc)
+	if si_name:
+		rows = frappe.get_all(
+			"Security Checklist",
+			filters={"parent": si_name, "parenttype": "Security Inspection"},
+			fields=["checklist_item", "required"],
+		)
+		if rows:
+			return [r.checklist_item for r in rows if r.required]
+	return [i["checklist_item"] for i in get_checklist_template_items() if i.get("required")]
 
 
 def _find_security_inspection_for_sddn(sddn_doc) -> str | None:
@@ -531,19 +550,19 @@ def verify_security_delivery_draft_note(name: str, checks=None, checklist=None):
 	if not isinstance(checklist_payload, list):
 		checklist_payload = []
 
-	# Enforce required-item completion against the canonical template so the
-	# user cannot bypass it by trimming the payload client-side.
+	sddn = frappe.get_doc("Security Draft Delivery Note", name)
+
+	# Enforce required-item completion against the canonical checklist (not
+	# the submitted payload) so the user cannot bypass it by trimming the
+	# payload client-side.
 	completed_by_text = {
 		(row.get("checklist_item") or "").strip(): bool(row.get("completed"))
 		for row in checklist_payload
 	}
 	missing_required = []
-	for tmpl in DEFAULT_CHECKLIST_ITEMS:
-		if not tmpl.get("required"):
-			continue
-		item_text = tmpl["checklist_item"].strip()
-		if not completed_by_text.get(item_text):
-			missing_required.append(tmpl["checklist_item"])
+	for item_label in _required_checklist_items(sddn):
+		if not completed_by_text.get((item_label or "").strip()):
+			missing_required.append(item_label)
 	if missing_required:
 		frappe.throw(
 			_(
@@ -552,7 +571,6 @@ def verify_security_delivery_draft_note(name: str, checks=None, checklist=None):
 			).format("<br>- ".join(missing_required))
 		)
 
-	sddn = frappe.get_doc("Security Draft Delivery Note", name)
 	from apc_operations.services.customer_link_service import ensure_sddn_customer_links
 
 	ensure_sddn_customer_links(sddn)

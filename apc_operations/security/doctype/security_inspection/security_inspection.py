@@ -46,6 +46,33 @@ DEFAULT_CHECKLIST_ITEMS = [
 ]
 
 
+def get_checklist_template_items() -> list[dict]:
+    """Master security checklist, as maintained in the "Security Checklist
+    Template" settings screen (active items, in the order shown there).
+
+    Falls back to DEFAULT_CHECKLIST_ITEMS if the template has never been
+    seeded or has no active items, so inspections can never end up with an
+    empty checklist. Existing inspections keep the rows they were created
+    with - only new inspections pick up template edits.
+    """
+    try:
+        rows = frappe.get_all(
+            "Security Checklist Template Item",
+            filters={"parent": "Security Checklist Template", "parenttype": "Security Checklist Template", "active": 1},
+            fields=["checklist_item", "required"],
+            order_by="idx asc",
+        )
+    except Exception:
+        rows = []
+
+    items = [
+        {"checklist_item": (r.checklist_item or "").strip(), "required": int(r.required or 0)}
+        for r in rows
+        if (r.checklist_item or "").strip()
+    ]
+    return items or [dict(item) for item in DEFAULT_CHECKLIST_ITEMS]
+
+
 class SecurityInspection(Document):
     def before_insert(self):
         self.ensure_default_checklist_items()
@@ -170,7 +197,7 @@ class SecurityInspection(Document):
         if self.checklist_items:
             return
 
-        for item in DEFAULT_CHECKLIST_ITEMS:
+        for item in get_checklist_template_items():
             self.append("checklist_items", {
                 "checklist_item": item["checklist_item"],
                 "required": item["required"],

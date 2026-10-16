@@ -1,0 +1,65 @@
+{
+ "actions": [],
+ "creation": "2026-10-16 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "help_section",
+  "help_text",
+  "items_section",
+  "items"
+ ],
+ "fields": [
+  {
+   "fieldname": "help_section",
+   "fieldtype": "Section Break",
+   "label": "About"
+  },
+  {
+   "fieldname": "help_text",
+   "fieldtype": "HTML",
+   "options": "<p>This is the master checklist security completes for every dispatch (shown in the Security Console and printed on the Security Inspection).</p><p>Add, rename, reorder or deactivate items below. <b>Changes apply to new inspections only</b> - an inspection that has already started keeps the checklist it was created with. Items marked <b>Required</b> must be ticked before a Draft Delivery Note can be verified.</p>"
+  },
+  {
+   "fieldname": "items_section",
+   "fieldtype": "Section Break",
+   "label": "Checklist Items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Security Checklist Template Item"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-10-16 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Security",
+ "name": "Security Checklist Template",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Security Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Security User"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

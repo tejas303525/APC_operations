@@ -1,0 +1,48 @@
+{
+ "actions": [],
+ "creation": "2026-10-16 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "checklist_item",
+  "required",
+  "active"
+ ],
+ "fields": [
+  {
+   "fieldname": "checklist_item",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Checklist Item",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "required",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Required"
+  },
+  {
+   "default": "1",
+   "description": "Untick to stop using this item on new inspections without deleting it.",
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-16 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Security",
+ "name": "Security Checklist Template Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

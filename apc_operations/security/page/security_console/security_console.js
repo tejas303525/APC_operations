@@ -782,6 +782,49 @@ function openSddnModal(sddn, refresh) {
 				},
 				__("Documents")
 			);
+
+			// Print the security checklist (Security Inspection print format).
+			// While the checklist is still editable, save the current ticks first
+			// so the printout matches the screen - that also creates the Security
+			// Inspection if this SDDN doesn't have one yet.
+			d.add_custom_action(
+				__("Print Checklist"),
+				() => {
+					const win = window.open("", "_blank");
+					const openChecklist = (siName) => {
+						if (!siName) {
+							win && win.close();
+							frappe.msgprint(__("No Security Inspection exists for this SDDN yet."));
+							return;
+						}
+						const url = apcSecurityConsolePrintUrl(
+							"Security Inspection",
+							siName,
+							APC_SECURITY_PRINT_FORMATS.CHECKLIST
+						);
+						if (win) {
+							win.location.href = url;
+						} else {
+							apcSecurityConsoleOpenPrintDownload(url);
+						}
+					};
+					if (checklistEditable) {
+						const checklistPayload = collectSecurityChecklist(d, checklistItems);
+						APCConsoleUI.callApi("apc_operations.security.api.save_security_checklist", {
+							name: data.sddn,
+							checklist: JSON.stringify(checklistPayload),
+						})
+							.then((res) => openChecklist(res && res.security_inspection))
+							.catch((err) => {
+								win && win.close();
+								frappe.msgprint(err);
+							});
+					} else {
+						openChecklist(data.security_inspection);
+					}
+				},
+				__("Documents")
+			);
 		}
 		if (hasLdn && data.loading_delivery_note) {
 			d.add_custom_action(
@@ -1653,6 +1696,7 @@ function openLdnModal(ldn, refresh) {
 const APC_SECURITY_PRINT_FORMATS = {
 	LDN: "Standard Loading Delivery Note",
 	SDDN: "Draft Delivery Note",
+	CHECKLIST: "Standard Security Checklist",
 };
 
 function apcSecurityConsolePrintUrl(doctype, name, format) {
