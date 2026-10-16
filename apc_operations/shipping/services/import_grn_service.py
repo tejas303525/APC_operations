@@ -297,6 +297,9 @@ def approve_import_grn(grn_name: str, *, remarks: str | None = None) -> dict[str
 	grn.approved_by = frappe.session.user
 	grn.approved_on = now()
 	grn.save(ignore_permissions=True)
+	from apc_operations.shipping.services.issue_email_service import queue_issue_email
+
+	queue_issue_email("Import GRN", grn.name)
 
 	zoho_result = _post_zoho_receipt(grn)
 	if zoho_result.get("success") or zoho_result.get("stub"):

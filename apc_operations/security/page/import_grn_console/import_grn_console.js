@@ -247,6 +247,9 @@ function openImportGrnModal(item, refresh) {
 
 		if (data.can_approve) {
 			d.add_custom_action(__("Approve GRN"), () => {
+				frappe.confirm(
+					__("Approve GRN {0}? An email with the GRN attached will be sent to payables.", [grnName]),
+					() => {
 				const values = d.get_values() || {};
 				APCConsoleUI.callApi("apc_operations.security.grn_api.approve_import_grn_api", {
 					name: grnName,
@@ -271,6 +274,8 @@ function openImportGrnModal(item, refresh) {
 							indicator: "red",
 						})
 					);
+					}
+				);
 			});
 		}
 

@@ -308,6 +308,9 @@ def generate_delivery_order_for_job_order(
 		do.append("items", item)
 
 	do.insert(ignore_permissions=True)
+	from apc_operations.shipping.services.issue_email_service import queue_issue_email
+
+	queue_issue_email("Delivery Order", do.name)
 
 	if is_third_party:
 		# Third-party loading skips Security entirely - Pre-Check Clearance
@@ -591,6 +594,9 @@ def generate_followup_delivery_order_for_job_order(
 		do.append("items", item)
 
 	do.insert(ignore_permissions=True)
+	from apc_operations.shipping.services.issue_email_service import queue_issue_email
+
+	queue_issue_email("Delivery Order", do.name)
 
 	if is_third_party:
 		# Same as the primary DO path - third-party loading skips Security
@@ -860,6 +866,9 @@ def generate_followup_import_delivery_order_for_job_order(
 		do.append("items", item)
 
 	do.insert(ignore_permissions=True)
+	from apc_operations.shipping.services.issue_email_service import queue_issue_email
+
+	queue_issue_email("Delivery Order", do.name)
 
 	try:
 		do._ensure_pre_check_clearance()

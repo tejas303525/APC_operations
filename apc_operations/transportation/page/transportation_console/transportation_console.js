@@ -976,7 +976,9 @@ function attachIssueDoAction(dialog, data, refresh) {
 		: thirdPartyLoading
 		? __("ISSUE DO to QC")
 		: __("ISSUE DO to security");
-	dialog.add_custom_action(issueLabel, () => {
+	dialog.add_custom_action(issueLabel, () => frappe.confirm(
+		__("Issue the Delivery Order? An email with the DO attached will be sent to receivables."),
+		() => {
 		dialog.get_primary_btn()?.prop("disabled", true);
 		frappe.call({
 			method: issueApi,
@@ -998,14 +1000,17 @@ function attachIssueDoAction(dialog, data, refresh) {
 			error: (err) => apcConsoleShowError(err, __("Could not issue Delivery Order.")),
 			always: () => dialog.get_primary_btn()?.prop("disabled", false),
 		});
-	});
+		}
+	));
 }
 
 function attachFollowupIssueDoAction(dialog, data, refresh) {
 	if (!data || !data.can_issue_followup_do) {
 		return;
 	}
-	dialog.add_custom_action(__("ISSUE DO to security"), () => {
+	dialog.add_custom_action(__("ISSUE DO to security"), () => frappe.confirm(
+		__("Issue the follow-up Delivery Order? An email with the DO attached will be sent to receivables."),
+		() => {
 		const args = { job_order: data.job_order };
 		if (data.transport_schedule) {
 			args.transport_schedule = data.transport_schedule;
@@ -1028,7 +1033,8 @@ function attachFollowupIssueDoAction(dialog, data, refresh) {
 			error: (err) =>
 				apcConsoleShowError(err, __("Could not issue follow-up Delivery Order.")),
 		});
-	});
+		}
+	));
 }
 
 function attachImportHandoffActions(dialog, data, refresh) {

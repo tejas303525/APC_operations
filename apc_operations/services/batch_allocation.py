@@ -1453,6 +1453,9 @@ def confirm_dispatch_and_deduct_stock(loading_dn_name):
     loading_dn.db_set("dispatch_confirmed_on", frappe_now(), update_modified=False)
     loading_dn.db_set("dispatch_confirmed_by", frappe.session.user, update_modified=False)
     loading_dn.db_set("delivery_note_status", "Dispatch Confirmed", update_modified=False)
+    from apc_operations.shipping.services.issue_email_service import queue_issue_email
+
+    queue_issue_email("Loading Delivery Note", loading_dn.name)
 
     # Dispatch confirmed = transit starts for the outward leg. Nothing
     # previously set Transport Status automatically (it was a manual
