@@ -15,12 +15,29 @@ from frappe.utils import formatdate, nowdate
 PAYABLES = "payables@asia-petrochem.com"
 RECEIVABLES = "receivables@asia-petrochem.com"
 
-# doctype -> (recipient, print format, label)
+# doctype -> (default recipient, print format, label, settings field prefix)
 _CONFIG = {
-	"Import GRN": (PAYABLES, "Standard Import GRN", "GRN"),
-	"Delivery Order": (RECEIVABLES, "Standard Delivery Order", "Delivery Order"),
-	"Loading Delivery Note": (RECEIVABLES, "Standard Loading Delivery Note", "Delivery Note"),
+	"Import GRN": (PAYABLES, "Standard Import GRN", "GRN", "grn"),
+	"Delivery Order": (RECEIVABLES, "Standard Delivery Order", "Delivery Order", "delivery"),
+	"Loading Delivery Note": (
+		RECEIVABLES,
+		"Standard Loading Delivery Note",
+		"Delivery Note",
+		"delivery",
+	),
 }
+
+
+def _recipients(default: str, prefix: str) -> list[str]:
+	"""Recipients from Issue Email Settings; empty list when switched off."""
+	try:
+		settings = frappe.get_cached_doc("Issue Email Settings")
+	except Exception:
+		return [default]
+	if not settings.get(f"enable_{prefix}_email"):
+		return []
+	raw = settings.get(f"{prefix}_recipients") or default
+	return [e.strip() for e in raw.replace(";", ",").replace(chr(10), ",").split(",") if e.strip()]
 
 
 def queue_issue_email(doctype: str, name: str):
@@ -38,15 +55,16 @@ def queue_issue_email(doctype: str, name: str):
 
 
 def send_issue_email(doctype: str, name: str):
-	recipient, print_format, label = _CONFIG[doctype]
-	if not frappe.db.exists(doctype, name):
+	default, print_format, label, prefix = _CONFIG[doctype]
+	recipients = _recipients(default, prefix)
+	if not recipients or not frappe.db.exists(doctype, name):
 		return
 	today = formatdate(nowdate())
 	message = f"<p>Computer generated {label} {name} on {today}.</p><p>Please find it attached.</p>"
 	try:
 		pdf = frappe.get_print(doctype, name, print_format=print_format, as_pdf=True)
 		frappe.sendmail(
-			recipients=[recipient],
+			recipients=recipients,
 			subject=f"{label} {name} issued",
 			message=message,
 			attachments=[{"fname": f"{name}.pdf", "fcontent": pdf}],

@@ -1,0 +1,76 @@
+{
+ "actions": [],
+ "creation": "2026-10-16 15:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "help_text",
+  "grn_section",
+  "enable_grn_email",
+  "grn_recipients",
+  "delivery_section",
+  "enable_delivery_email",
+  "delivery_recipients"
+ ],
+ "fields": [
+  {
+   "fieldname": "help_text",
+   "fieldtype": "HTML",
+   "options": "<p>Automatic emails sent when a document is issued, with the document attached as PDF. Separate several addresses with commas.</p>"
+  },
+  {
+   "fieldname": "grn_section",
+   "fieldtype": "Section Break",
+   "label": "GRN (sent when a GRN is approved)"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_grn_email",
+   "fieldtype": "Check",
+   "label": "Send GRN Email"
+  },
+  {
+   "default": "payables@asia-petrochem.com",
+   "fieldname": "grn_recipients",
+   "fieldtype": "Small Text",
+   "label": "GRN Recipients"
+  },
+  {
+   "fieldname": "delivery_section",
+   "fieldtype": "Section Break",
+   "label": "Delivery Order / Delivery Note (sent when issued)"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_delivery_email",
+   "fieldtype": "Check",
+   "label": "Send Delivery Order / Delivery Note Email"
+  },
+  {
+   "default": "receivables@asia-petrochem.com",
+   "fieldname": "delivery_recipients",
+   "fieldtype": "Small Text",
+   "label": "Delivery Order / Delivery Note Recipients"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-10-16 15:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Shipping",
+ "name": "Issue Email Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
