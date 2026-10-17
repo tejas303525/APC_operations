@@ -255,6 +255,11 @@ def reserve_stock_for_job_order(job_order_name):
     if not jo.items:
         return
 
+    # Import = stock coming in from outside the country (APC is the buyer,
+    # there is no customer), so there is nothing to reserve or produce.
+    if (jo.commercial_movement or "").strip() == "Import":
+        return
+
     if jo.sales_demand:
         sd = frappe.get_doc("APC Sales Demand", jo.sales_demand)
         if len(sd.items) != len(jo.items):
