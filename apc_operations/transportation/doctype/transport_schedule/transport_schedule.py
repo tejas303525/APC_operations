@@ -90,6 +90,14 @@ class TransportSchedule(Document):
             # Avoid stamping an incorrect UOM when Job Order has mixed UOM rows.
             resolved_uom = None
 
+        # Partial load: the transporter-entered "Qty to Load" (cargo_weight) is less
+        # than the Job Order total. Use it so the Security Draft Delivery Note,
+        # Security Inspection and Loading Delivery Note show this dispatch, the
+        # same way the Delivery Order is scaled down.
+        cargo_weight = flt(self.get("cargo_weight"))
+        if cargo_weight > 0 and total_qty > 0 and cargo_weight < total_qty - 0.0001:
+            total_qty = cargo_weight
+
         return total_qty, resolved_uom
 
     def validate(self):
